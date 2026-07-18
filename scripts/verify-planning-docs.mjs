@@ -318,8 +318,9 @@ const automationSuiteRoots = new Map([
   ['test:bootstrap:cold', 'tests/bootstrap/']
 ])
 const automationTargetPattern =
-  /^`pnpm (test(?::(?:integration|e2e|security|performance|bootstrap:cold))?) -- (tests\/[a-z0-9./-]+\.spec\.ts)`$/
+  /^`pnpm (test(?::(?:integration|e2e|security|performance))?) -- (tests\/[a-z0-9./-]+\.spec\.ts)`$/
 const coldBootstrapTarget = '`pnpm test:bootstrap:cold`'
+const coldBootstrapPathTarget = '`pnpm test:bootstrap:cold -- tests/bootstrap/project-bootstrap-cold.spec.ts`'
 const parseAutomationTarget = (target) => {
   if (target === coldBootstrapTarget) return ['test:bootstrap:cold', 'tests/bootstrap/']
   return target.match(automationTargetPattern)?.slice(1) ?? null
@@ -327,6 +328,9 @@ const parseAutomationTarget = (target) => {
 const coldBootstrapMatch = parseAutomationTarget(coldBootstrapTarget)
 if (!coldBootstrapMatch || !coldBootstrapMatch[1].startsWith(automationSuiteRoots.get(coldBootstrapMatch[0]))) {
   errors.push('planning verifier does not recognize the TC-M0-008 cold-bootstrap automation target')
+}
+if (parseAutomationTarget(coldBootstrapPathTarget)) {
+  errors.push('planning verifier accepts an unauthorized path-bearing cold-bootstrap automation target')
 }
 
 for (const file of testCaseFiles) {
