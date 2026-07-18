@@ -55,6 +55,20 @@
 | electron-log | 脱敏后的本地滚动日志 | MIT | 否 | 否 | 自研文件日志适配器 | 低 |
 | ripgrep sidecar | 可取消的工作区全文搜索 | MIT OR Unlicense | 是，独立可执行文件 | 不通过 npm 安装脚本；受控下载/校验后打包 | JS 搜索、系统 ripgrep；性能或可重复性不足 | 中，需记录来源与 SHA-256 |
 | TypeScript 5.9.3、`@types/node` 24.10.1、`@types/react` 19.2.7、`@types/react-dom` 19.2.3、typescript-eslint | strict 类型检查、Node/Electron/React 编译期类型和类型感知 lint | Apache-2.0、MIT | 否 | 否 | JavaScript + JSDoc、Biome；跨进程契约保障较弱 | 仅构建期，中 |
+| `eslint` 10.7.0 | M0-T02 静态 lint 引擎 | MIT | 否 | 否 | Biome；规则迁移需评估 | 仅开发；不进入 renderer 生产依赖 |
+| `@eslint/js` 10.0.1 | M0-T02 ESLint 官方基础规则 | MIT | 否 | 否 | 手写规则基线 | 仅开发；不进入 renderer 生产依赖 |
+| `typescript-eslint` 8.64.0 | M0-T02 TypeScript parser 与规则 | MIT | 否 | 否 | Biome；类型感知 lint 覆盖需评估 | 仅开发；不进入 renderer 生产依赖 |
+| `globals` 17.7.0 | M0-T02 Node、浏览器和测试全局定义 | MIT | 否 | 否 | 手写全局清单 | 仅开发；不进入 renderer 生产依赖 |
+| `eslint-plugin-react-hooks` 7.1.1 | M0-T02 React Hooks 规则 | MIT | 否 | 否 | 手工审查 Hooks | 仅开发；不进入 renderer 生产依赖 |
+| `eslint-plugin-react-refresh` 0.5.3 | M0-T02 React Refresh 导出规则 | MIT | 否 | 否 | 手工导出约束 | 仅开发；不进入 renderer 生产依赖 |
+| `prettier` 3.9.5 | M0-T02 确定性格式化 | MIT | 否 | 否 | 手工格式化；一致性不足 | 仅开发；不进入 renderer 生产依赖 |
+| `vitest` 4.1.10 | M0-T02 单元、组件和集成测试运行器 | MIT | 否 | 否 | Node test runner、Jest；Vite 集成或 ESM 成本更高 | 仅开发；不进入 renderer 生产依赖 |
+| `@vitest/coverage-v8` 4.1.10 | M0-T02 V8 覆盖率 | MIT | 否 | 否 | 其他覆盖率提供器 | 仅开发；不进入 renderer 生产依赖 |
+| `jsdom` 29.1.1 | M0-T02 React 组件 DOM 环境 | MIT | 否 | 否 | happy-dom；行为差异需评估 | 仅开发；不进入 renderer 生产依赖 |
+| `@testing-library/dom` 10.4.1 | M0-T02 DOM 查询和交互断言 | MIT | 否 | 否 | 手写 DOM 断言 | 仅开发；不进入 renderer 生产依赖 |
+| `@testing-library/react` 16.3.2 | M0-T02 React 组件测试 | MIT | 否 | 否 | React test utilities；语义覆盖较弱 | 仅开发；不进入 renderer 生产依赖 |
+| `@testing-library/jest-dom` 6.9.1 | M0-T02 DOM 语义断言 | MIT | 否 | 否 | 手写断言 | 仅开发；不进入 renderer 生产依赖 |
+| `@playwright/test` 1.61.1 | M0-T02 Electron E2E 运行器 | Apache-2.0 | 是，测试浏览器/驱动 | 包安装不隐式下载 Playwright 浏览器；仅由显式受控命令下载 | WebdriverIO、自研 Electron driver | 仅开发；不进入 renderer 生产依赖，高 |
 | Vitest、Testing Library | 单元、领域和 React 行为测试 | MIT | 否 | 否 | Node test runner、Jest；Vite 集成或 ESM 成本更高 | 仅开发，中 |
 | Playwright | Electron E2E、打包前安全和交互测试 | Apache-2.0 | 是，测试浏览器/驱动 | 包安装不隐式取浏览器；通过受控 `playwright install` 获取并由 CI 缓存/校验 | WebdriverIO、自研 Electron driver | 仅开发，高 |
 | fast-check | 编辑序列、编码、EOL 和补丁性质测试 | MIT | 否 | 否 | 自研随机生成器 | 仅开发，低 |
@@ -73,6 +87,7 @@
 - ESLint + typescript-eslint：静态规则。
 - Prettier：仅格式化项目源码和自有文档；绝不格式化用户 Markdown fixture 输出。
 - `tsc --noEmit`：严格类型门禁。
+- `pnpm check`：无网络的日常质量门禁；冷自举另由显式、允许联网的 `pnpm test:bootstrap:cold` 执行，不进入 `check`。
 
 ## 5. 构建与发布
 

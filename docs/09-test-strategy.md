@@ -97,6 +97,8 @@
 M0 建立以下脚本，之后任务不得改名而不更新全部文档：
 
 ```powershell
+pnpm format
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test
@@ -104,11 +106,14 @@ pnpm test:integration
 pnpm test:e2e
 pnpm test:security
 pnpm test:performance
+pnpm test:bootstrap:cold
 pnpm build
 pnpm check
 ```
 
-`pnpm check` 至少包含 lint、typecheck、unit、integration 和 build。E2E、安全、性能按任务和里程碑显式运行。
+`pnpm check` 至少包含 format:check、lint、typecheck、unit、integration 和 build，并且不得访问网络。E2E、安全、性能按任务和里程碑显式运行。`pnpm test:bootstrap:cold` 是使用空项目级 store 的显式、允许联网冷自举门禁，不进入 `check`。
+
+TC-M0-002 在临时项目副本中启动嵌套 `pnpm check` 时必须设置 `LATTICE_QUALITY_META_CHILD=1`。集成测试配置仅在该变量存在时排除 `quality-scripts.spec.ts` 自身，仍运行其余集成测试；顶层 `test:integration` 不设置该变量，因此持续覆盖 TC-M0-002，避免递归而不跳过真实集成验证。
 
 **M0-T01 自举例外**：M0-T01 尚无上述质量脚本，只执行 `pnpm install`、开发窗口 smoke、`pnpm build`、lockfile/产物检查，并保存命令退出码作为 TC-M0-001 证据。M0-T02 建立完整脚本后必须把 TC-M0-001 纳入 `test:integration`；从 M0-T02 起恢复“每任务运行 `pnpm check`”规则。禁止用空脚本或固定成功脚本伪造自举通过。
 

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
-  "current_task": null,
+  "current_task": "M0-T02",
   "allowed_statuses": [
     "blocked",
     "ready",
@@ -37,7 +37,7 @@
         }
       ]
     },
-    { "id": "M0-T02", "status": "ready", "depends_on": ["M0-T01"], "manual_gate": false, "evidence": [] },
+    { "id": "M0-T02", "status": "in_progress", "depends_on": ["M0-T01"], "manual_gate": false, "evidence": [] },
     { "id": "M0-T03", "status": "blocked", "depends_on": ["M0-T02"], "manual_gate": false, "evidence": [] },
     { "id": "M0-T04", "status": "blocked", "depends_on": ["M0-T03"], "manual_gate": false, "evidence": [] },
     { "id": "M0-T05", "status": "blocked", "depends_on": ["M0-T04"], "manual_gate": false, "evidence": [] },

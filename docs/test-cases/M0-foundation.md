@@ -6,8 +6,9 @@
 
 | ID | 任务 | 层级/级别 | 数据/环境 | 步骤 | 预期 | 自动化 |
 | --- | --- | --- | --- | --- | --- | --- |
-| TC-M0-001 | M0-T01 | integration/P1 | ENV-M0-A | 在空路径安装依赖，执行开发启动和生产构建，检查 lockfile 与产物 | 只生成 `pnpm-lock.yaml`；窗口可启动；构建无未跟踪 npm/yarn lockfile | `pnpm test:integration -- tests/integration/project-bootstrap.spec.ts` |
-| TC-M0-002 | M0-T02 | integration/P1 | ENV-M0-A | 依次运行全部约定脚本；分别注入类型、lint、单测和构建错误 | 正常工程全部为 0；每种故障使相应命令和 `pnpm check` 非 0，且没有 `.skip/.only` | `pnpm test:integration -- tests/integration/quality-scripts.spec.ts` |
+| TC-M0-001 | M0-T01 | integration/P1 | ENV-M0-A with validated store and offline install; automated by M0-T02 | frozen offline install and two builds in a Chinese-and-space path | unique lockfile, no pending builds, stable artifact hashes, cleanup | `pnpm test:integration -- tests/integration/project-bootstrap.spec.ts` |
+| TC-M0-002 | M0-T02 | integration/P1 | isolated temporary copies | run normal scripts; inject format, lint, type, unit, integration, and build faults | direct commands and guarded nested `check` fail correctly without recursion | `pnpm test:integration -- tests/integration/quality-scripts.spec.ts` |
+| TC-M0-008 | M0-T02 | integration/P1 | Chinese-and-space path, empty project store, network allowed | frozen install and two builds | unique lockfile, no pending builds, stable artifacts, cleanup | `pnpm test:bootstrap:cold` |
 | TC-M0-003 | M0-T03 | security/P0 | SEC-M0-A | 启动打包配置，从 renderer 探测 Node/Electron/裸 IPC/preload 表面 | `require/process/ipcRenderer/fs/shell` 不可得；preload 只有批准方法；错误 sender/参数被拒 | `pnpm test:security -- tests/security/electron-boundary.spec.ts` |
 | TC-M0-004 | M0-T03 | e2e-security/P0 | SEC-M0-B | 触发 http/file/javascript/data/自定义协议、导航、新窗口和权限请求 | 仅经确认的 https/mailto 外链交给系统；其余拒绝；主窗口不导航；无 DevTools 后门 | `pnpm test:e2e -- tests/e2e/navigation-policy.spec.ts` |
 | TC-M0-005 | M0-T04 | unit-security/P1 | CONTRACT-M0 | 对每个 Zod 请求/响应运行有效值、缺字段、未知字段、超限值、错误 sender 和不可序列化结果 | 返回稳定 `Result`/错误码/request ID；日志脱敏；未知 channel 不可调用 | `pnpm test -- tests/unit/shared/contracts.spec.ts` |
@@ -18,7 +19,8 @@ M0-T01 自举执行说明：TC-M0-001 的“自动化”列固定其最终回归
 
 ## 参数矩阵
 
-- `ENV-M0-A`：含空格和中文的普通用户路径；无全局 pnpm 缓存的干净环境；重复执行两次验证幂等。
+- `ENV-M0-A`：含空格和中文的普通用户路径；复用已验证的 pnpm store；每日回归时冻结离线安装并重复执行两次验证幂等。
+- `ENV-M0-B`：含空格和中文的普通用户路径；空项目级 pnpm store；允许联网执行冻结安装和两次构建的冷自举门禁。
 - `SEC-M0-A`：主窗口、伪造窗口、已销毁窗口；有效/缺失/错误 request ID；对象原型污染和超大 payload。
 - `SEC-M0-B`：`https:`、`mailto:`、`http:`、`file:`、`javascript:`、`data:`、大小写/编码混淆协议、重定向。
 - `CONTRACT-M0`：成功、业务错误、校验错误、权限错误、取消、超时；错误详情不得含正文或绝对路径。

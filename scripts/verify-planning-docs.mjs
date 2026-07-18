@@ -314,8 +314,20 @@ const automationSuiteRoots = new Map([
   ['test:integration', 'tests/integration/'],
   ['test:e2e', 'tests/e2e/'],
   ['test:security', 'tests/security/'],
-  ['test:performance', 'tests/performance/']
+  ['test:performance', 'tests/performance/'],
+  ['test:bootstrap:cold', 'tests/bootstrap/']
 ])
+const automationTargetPattern =
+  /^`pnpm (test(?::(?:integration|e2e|security|performance|bootstrap:cold))?) -- (tests\/[a-z0-9./-]+\.spec\.ts)`$/
+const coldBootstrapTarget = '`pnpm test:bootstrap:cold`'
+const parseAutomationTarget = (target) => {
+  if (target === coldBootstrapTarget) return ['test:bootstrap:cold', 'tests/bootstrap/']
+  return target.match(automationTargetPattern)?.slice(1) ?? null
+}
+const coldBootstrapMatch = parseAutomationTarget(coldBootstrapTarget)
+if (!coldBootstrapMatch || !coldBootstrapMatch[1].startsWith(automationSuiteRoots.get(coldBootstrapMatch[0]))) {
+  errors.push('planning verifier does not recognize the TC-M0-008 cold-bootstrap automation target')
+}
 
 for (const file of testCaseFiles) {
   const content = read(file)
@@ -337,12 +349,10 @@ for (const file of testCaseFiles) {
     const cells = row.split('|').map((value) => value.trim()).filter(Boolean)
     if (cells.length < 7) errors.push(`${caseId} does not contain all required table fields`)
     const automationTarget = cells[6] ?? ''
-    const targetMatch = automationTarget.match(
-      /^`pnpm (test(?::(?:integration|e2e|security|performance))?) -- (tests\/[a-z0-9./-]+\.spec\.ts)`$/
-    )
+    const targetMatch = parseAutomationTarget(automationTarget)
     if (!targetMatch) {
       errors.push(`${caseId} has ambiguous automation target: ${automationTarget}`)
-    } else if (!targetMatch[2].startsWith(automationSuiteRoots.get(targetMatch[1]))) {
+    } else if (!targetMatch[1].startsWith(automationSuiteRoots.get(targetMatch[0]))) {
       errors.push(`${caseId} automation script/path mismatch: ${automationTarget}`)
     }
   }

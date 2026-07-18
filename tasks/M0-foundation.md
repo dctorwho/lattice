@@ -14,11 +14,15 @@
 ## M0-T02 质量工具链
 
 - 依赖：M0-T01
-- 需求：NFR-008
-- 交付：strict TypeScript、ESLint、Prettier、Vitest、Testing Library、Playwright Electron；建立 `lint/typecheck/test/test:integration/test:e2e/test:security/test:performance/build/check` 脚本和最小 smoke tests；将 M0-T01 的 TC-M0-001 命令验收反向自动化到 `test:integration`。
-- 非目标：产品功能测试。
-- 验证：`pnpm check`、`pnpm test:e2e`；故意类型错误和失败测试能让命令非零退出。
-- 完成：命令与 `docs/09-test-strategy.md` 一致。
+- 需求：NFR-008（本任务建立严格类型、可失败测试、临时项目隔离和后续可替换边界测试的基础，不声称产品文件系统、时钟、随机数、进程或对话框边界已经实现）
+- 设计决策：`pnpm check` 是无网络日常门禁；TC-M0-001 复用已验证 store 做离线回归；TC-M0-008 单独验证空 store 联网自举；TC-M0-002 在临时项目副本中注入故障，并以 `LATTICE_QUALITY_META_CHILD=1` 只阻止元测试递归。
+- 交付：strict TypeScript、ESLint、Prettier、Vitest、Testing Library、Playwright Electron；建立 `format/format:check/lint/typecheck/test/test:integration/test:e2e/test:security/test:performance/test:bootstrap:cold/build/check` 和真实 smoke tests；将 M0-T01 的 TC-M0-001 自举验收反向自动化到 `test:integration`。
+- 预期文件：质量配置、`tests/helpers/`、单元/集成/E2E/安全/性能/冷自举用例、M0-T02 证据，以及同步的技术栈、测试策略和用例文档。
+- 非目标：产品功能测试；M0-T03 的完整 Electron 安全策略；M0-T06 的 CI、SBOM 和完整依赖审计；产品性能达标声明。
+- 自动验证：`pnpm check` 连续两次；`pnpm test:e2e`、`pnpm test:security`、`pnpm test:performance`、`pnpm test:bootstrap:cold`；格式、lint、类型、单元、集成和构建六类故障均使直接命令与 `pnpm check` 非零退出。
+- 人工验证：不适用（`manual_gate:false`）；Electron 启动由自动 E2E 验证。
+- 失败回退：保持任务 `in_progress`，通过可审阅补丁撤销本任务新增配置或依赖并保留 M0-T01 基线；不得弱化规则、删除用例或使用破坏性 Git 命令。
+- 完成：命令、依赖、测试 ID 和文档一致；证据完整；状态设为 `passed` 并只解锁 M0-T03。
 
 ## M0-T03 安全 Electron 壳
 
