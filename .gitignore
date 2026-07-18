@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+out/
+dist/
+release/
+coverage/
+playwright-report/
+test-results/
+.codex-runs/
+.superpowers/
+*.log
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db

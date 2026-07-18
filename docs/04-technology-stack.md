@@ -1,0 +1,98 @@
+# 技术栈与依赖策略
+
+版本基线日期：2026-07-15。首次安装后由 `pnpm-lock.yaml` 固定精确版本。
+
+## 1. 核心栈
+
+| 层 | 选择 | 版本策略 | 理由 |
+| --- | --- | --- | --- |
+| 桌面 | Electron | 初始 43.1.1 | 与 Typora 公开技术路线接近，Node/Chromium、打印和 Windows 集成成熟 |
+| 构建 | electron-vite / Vite | 5.0.0 / 7.2.6 | 明确分离 main/preload/renderer，开发反馈快 |
+| 语言 | TypeScript | 5.9.3，strict | 共享 IPC 与领域类型；固定兼容版本，不跟随未评审主版本 |
+| UI | React / React DOM | 19.2.7 | 壳层、设置和复杂块组件生态成熟 |
+| 编辑器 | CodeMirror 6 | 各包固定 lockfile | 文本是权威，支持增量 transaction、decorations 和虚拟化 |
+| 增量语法 | `@lezer/markdown` | CodeMirror 兼容版本 | 范围解析和编辑投影 |
+| 预览解析 | `markdown-it` | 固定主版本 | 可扩展 GFM/Typora 语法；只读渲染，不负责保存 |
+| 公式 | `mathjax@4` | 4.x | 对齐 Typora 1.13 系列，离线本地组件 |
+| 图表 | Mermaid | 11.13.x | 对齐兼容基线，隔离或 worker 渲染 |
+| 高亮 | Shiki core | 固定主版本、按需语言 | 编辑外渲染和导出一致，语言包懒加载 |
+
+## 2. 应用依赖
+
+- `zod`：IPC、设置、恢复和任务元数据的运行时校验。
+- `chokidar`：跨平台文件 watcher；用测试适配器隔离时间和事件差异。
+- `fast-glob`：工作区初始枚举；不用于正文搜索。
+- `zustand`：只保存 UI/工作区派生状态，不保存完整文档。
+- `i18next` + React binding：本地化。
+- Radix UI primitives：菜单、对话框、tooltip、popover 和无障碍交互。
+- Lucide：独立开源图标集；不复用 Typora 图标。
+- DOMPurify：渲染 HTML/SVG 的第一层净化，后面仍有 CSP 与隔离。
+- `electron-log`：本地滚动日志，必须增加内容和路径脱敏层。
+- ripgrep sidecar：全局搜索，发布时记录二进制来源、哈希和许可证。
+
+## 3. 直接依赖准入台账
+
+下表在首次安装前冻结直接依赖准入。许可证均允许本项目按当前分发模式使用；M0-T06 仍须根据 lockfile 对传递依赖、实际许可证文本、安装脚本和制品做复核。任何版本或用途变化都必须先更新本表。
+
+| 依赖 | 用途 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 | 包体影响 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Electron 43.1.1 | Windows 桌面运行时、打印和系统集成 | MIT | 是，打包 Chromium/Node | npm 安装期不下载运行时；Electron 42+ 在首次执行 Electron 时下载。`electron-vite dev` 5.0.0 会先读取 `path.txt`，所以 `dev` 脚本先执行 `electron --version` 触发受控下载；必须单独验证 CDN/代理与窗口 smoke | Tauri、CEF；不能满足当前 Web 编辑器生态和 Electron 对齐目标 | 极高，主要应用体积来源 |
+| electron-vite 5.0.0 | main/preload/renderer 构建分层 | MIT | 否 | 否 | 手工 Vite/Rollup 多入口配置 | 仅构建期，运行体积低 |
+| Vite 7.2.6、`@vitejs/plugin-react` 5.1.1 | renderer 构建、TSX 转换与开发热更新 | MIT | Vite 的 esbuild 依赖使用预构建平台包 | esbuild 有受控安装脚本，仅批准 `esbuild`，禁止全量批准 | 手工 Rollup/React JSX 配置；维护与 HMR 成本更高 | 仅构建期，中 |
+| React、React DOM 19.2.7 | 应用壳、设置和复杂块 UI；将 React 树挂载到 renderer DOM | MIT | 否 | 否 | Preact、原生 DOM；生态和可访问组件覆盖较弱 | 中 |
+| CodeMirror 6、`@lezer/markdown` | 文本权威、增量编辑、投影与语法范围 | MIT | 否 | 否 | Monaco、ProseMirror；不符合体积或源码权威约束 | 中 |
+| `markdown-it` | 只读语义渲染与 HTML 输出 | MIT | 否 | 否 | unified/remark；扩展适配成本更高 | 低–中 |
+| `mathjax@4` | 离线公式渲染 | Apache-2.0 | 否 | 否 | KaTeX；兼容范围不等价 | 高，按组件裁剪和懒加载 |
+| Mermaid 11.13.x | 兼容图表渲染 | MIT | 否 | 否 | 各图类独立库；兼容和维护成本高 | 高，必须懒加载 |
+| Shiki core | 代码高亮和导出一致性 | MIT | 否 | 否 | highlight.js、CodeMirror language data | 中，语言包按需加载 |
+| Zod | IPC、设置、恢复和元数据运行时校验 | MIT | 否 | 否 | 手写校验、Valibot；契约一致性成本更高 | 低 |
+| chokidar、fast-glob | watcher 和工作区枚举 | MIT | 否 | 否 | Node `fs.watch`/手写遍历；Windows 差异处理成本高 | 低 |
+| Zustand | 仅保存派生 UI/工作区状态 | MIT | 否 | 否 | React context/reducer | 低 |
+| i18next、react-i18next | 简中/英文及后续本地化 | MIT | 否 | 否 | FormatJS、自研字典层 | 低–中 |
+| Radix UI primitives | 菜单、对话框、popover 和键盘交互 | MIT | 否 | 否 | React Aria、自研 primitives | 中，按组件引入 |
+| Lucide | 独立开源图标 | ISC；部分源自 Feather 的图标为 MIT | 否 | 否 | 自绘 SVG、其他开源图标集 | 低，按图标 tree-shake |
+| DOMPurify | HTML/SVG 第一层净化 | Apache-2.0 OR MPL-2.0 | 否 | 否 | sanitize-html；浏览器隔离集成更重 | 低 |
+| electron-log | 脱敏后的本地滚动日志 | MIT | 否 | 否 | 自研文件日志适配器 | 低 |
+| ripgrep sidecar | 可取消的工作区全文搜索 | MIT OR Unlicense | 是，独立可执行文件 | 不通过 npm 安装脚本；受控下载/校验后打包 | JS 搜索、系统 ripgrep；性能或可重复性不足 | 中，需记录来源与 SHA-256 |
+| TypeScript 5.9.3、`@types/node` 24.10.1、`@types/react` 19.2.7、`@types/react-dom` 19.2.3、typescript-eslint | strict 类型检查、Node/Electron/React 编译期类型和类型感知 lint | Apache-2.0、MIT | 否 | 否 | JavaScript + JSDoc、Biome；跨进程契约保障较弱 | 仅构建期，中 |
+| Vitest、Testing Library | 单元、领域和 React 行为测试 | MIT | 否 | 否 | Node test runner、Jest；Vite 集成或 ESM 成本更高 | 仅开发，中 |
+| Playwright | Electron E2E、打包前安全和交互测试 | Apache-2.0 | 是，测试浏览器/驱动 | 包安装不隐式取浏览器；通过受控 `playwright install` 获取并由 CI 缓存/校验 | WebdriverIO、自研 Electron driver | 仅开发，高 |
+| fast-check | 编辑序列、编码、EOL 和补丁性质测试 | MIT | 否 | 否 | 自研随机生成器 | 仅开发，低 |
+| axe-core | 自动无障碍检查 | MPL-2.0 | 否 | 否 | Lighthouse、自研规则；覆盖不足 | 仅测试，低–中 |
+| ESLint、Prettier | 静态规则和项目源码格式化 | MIT | 否 | 否 | Biome；规则迁移和类型 lint 覆盖需评估 | 仅开发，中 |
+| electron-builder | Windows unpacked/NSIS 打包、制品元数据 | MIT | 是，使用平台打包工具和可选原生辅助程序 | 可能下载/重建平台辅助程序，M0-T06 固定来源和哈希 | Electron Forge、手工 NSIS | 仅构建，高 |
+| electron-updater | M8 默认关闭的签名更新适配 | MIT | 否；随制品使用平台安装器 | 无直接安装脚本，传递依赖由 M8 审计 | 自研签名 feed adapter | 运行时低；M8 前不启用 |
+
+## 4. 测试和质量
+
+- Vitest：领域、解析、命令和组件单元测试。
+- Testing Library：React 行为测试。
+- Playwright Electron：打包前桌面端到端测试和截图回归。
+- fast-check：编辑序列、编码、EOL 和补丁性质测试。
+- axe-core：自动无障碍检查。
+- ESLint + typescript-eslint：静态规则。
+- Prettier：仅格式化项目源码和自有文档；绝不格式化用户 Markdown fixture 输出。
+- `tsc --noEmit`：严格类型门禁。
+
+## 5. 构建与发布
+
+- pnpm 为唯一包管理器。
+- electron-builder 生成 Windows NSIS 安装包和 unpacked 测试包。
+- 首发不启用自动更新；公开发布时使用签名制品和 `electron-updater`。
+- Pandoc 不随核心包强绑定。导入和高级导出先检测用户配置路径；未来是否捆绑需要单独许可证、体积和更新评审。
+
+## 6. 明确不采用
+
+- **ProseMirror/Tiptap 作为文档权威**：其规范化 schema 和 Markdown serializer 会改变源码布局。
+- **Monaco**：IDE 功能和体积超过 Markdown 混合编辑需求，block widget 模型不合适。
+- **双栏预览**：违背产品的单栏混合编辑目标。
+- **SQLite 作为文档存储**：用户文件必须是权威，恢复只需版本化文件。
+- **renderer Node integration**：扩大不可信 Markdown 到系统权限的攻击面。
+- **CDN 资源**：离线和可重复导出要求公式、图表、字体与脚本本地提供。
+- **Tailwind 作为主题核心**：自定义 CSS 主题和公开选择器兼容需要稳定、语义化 DOM 与 CSS 变量。
+
+## 7. 依赖准入
+
+新增生产依赖必须在本文件补充：用途、许可证、是否包含原生二进制、是否执行安装脚本、替代方案和包体影响。禁止为了单个小工具函数引入大依赖。每个里程碑结束执行许可证和漏洞审计；安全更新不得跳过回归测试。
+
+M0-T01 手工建立最小骨架，不运行 `@quick-start/electron@latest` 或其他生成器，避免未固定版本带入未审阅依赖、脚本和 Electron 权限配置。
