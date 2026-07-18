@@ -30,9 +30,9 @@ const requiredFiles = [
       '07': 'iteration-roadmap',
       '08': 'development-plan',
       '09': 'test-strategy',
-      '10': 'release-quality-gates',
-      '11': 'codex-cli-runbook',
-      '12': 'risk-register'
+      10: 'release-quality-gates',
+      11: 'codex-cli-runbook',
+      12: 'risk-register'
     }
     return `docs/${number}-${names[number]}.md`
   }),
@@ -97,10 +97,22 @@ try {
 
 function isRfc3339DateTime(value) {
   if (typeof value !== 'string') return false
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/.exec(value)
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-](\d{2}):(\d{2}))$/.exec(value)
   if (!match) return false
 
-  const [, yearText, monthText, dayText, hourText, minuteText, secondText, zone, offsetHourText, offsetMinuteText] = match
+  const [
+    ,
+    yearText,
+    monthText,
+    dayText,
+    hourText,
+    minuteText,
+    secondText,
+    zone,
+    offsetHourText,
+    offsetMinuteText
+  ] = match
   const year = Number(yearText)
   const month = Number(monthText)
   const day = Number(dayText)
@@ -130,27 +142,36 @@ function validateStateAgainstSchema(value, schema) {
     if (!(key in value)) errors.push(`tasks/state.json is missing required property: ${key}`)
   }
   if (value.schema_version !== schema.properties?.schema_version?.const) {
-    errors.push(`tasks/state.json schema_version must be ${schema.properties?.schema_version?.const}`)
+    errors.push(
+      `tasks/state.json schema_version must be ${schema.properties?.schema_version?.const}`
+    )
   }
   if (typeof value.product_baseline !== 'string' || value.product_baseline.length === 0) {
     errors.push('tasks/state.json product_baseline must be a non-empty string')
   }
   const milestonePattern = new RegExp(schema.properties?.current_milestone?.pattern ?? '^$')
-  if (typeof value.current_milestone !== 'string' || !milestonePattern.test(value.current_milestone)) {
+  if (
+    typeof value.current_milestone !== 'string' ||
+    !milestonePattern.test(value.current_milestone)
+  ) {
     errors.push(`tasks/state.json has invalid current_milestone: ${value.current_milestone}`)
   }
   const taskIdPattern = new RegExp(
     schema.properties?.current_task?.oneOf?.find((item) => item.type === 'string')?.pattern ?? '^$'
   )
-  if (value.current_task !== null &&
-      (typeof value.current_task !== 'string' || !taskIdPattern.test(value.current_task))) {
+  if (
+    value.current_task !== null &&
+    (typeof value.current_task !== 'string' || !taskIdPattern.test(value.current_task))
+  ) {
     errors.push(`tasks/state.json has invalid current_task: ${value.current_task}`)
   }
 
   const statusEnum = new Set(schema.properties?.allowed_statuses?.items?.enum ?? [])
-  if (!Array.isArray(value.allowed_statuses) ||
-      new Set(value.allowed_statuses).size !== value.allowed_statuses.length ||
-      value.allowed_statuses.some((status) => !statusEnum.has(status))) {
+  if (
+    !Array.isArray(value.allowed_statuses) ||
+    new Set(value.allowed_statuses).size !== value.allowed_statuses.length ||
+    value.allowed_statuses.some((status) => !statusEnum.has(status))
+  ) {
     errors.push('tasks/state.json allowed_statuses violates state.schema.json')
   }
   if (!Array.isArray(value.tasks) || value.tasks.length === 0) {
@@ -170,17 +191,25 @@ function validateStateAgainstSchema(value, schema) {
       continue
     }
     for (const key of Object.keys(task)) {
-      if (!taskKeys.has(key)) errors.push(`${task.id ?? `tasks[${index}]`} has unsupported property: ${key}`)
+      if (!taskKeys.has(key))
+        errors.push(`${task.id ?? `tasks[${index}]`} has unsupported property: ${key}`)
     }
     for (const key of taskRequired) {
-      if (!(key in task)) errors.push(`${task.id ?? `tasks[${index}]`} is missing required property: ${key}`)
+      if (!(key in task))
+        errors.push(`${task.id ?? `tasks[${index}]`} is missing required property: ${key}`)
     }
     if (typeof task.id !== 'string' || !taskIdPattern.test(task.id)) {
       errors.push(`tasks/state.json has invalid task id at index ${index}: ${task.id}`)
     }
-    if (!statusEnum.has(task.status)) errors.push(`${task.id} has schema-invalid status: ${task.status}`)
-    if (!Array.isArray(task.depends_on) || new Set(task.depends_on).size !== task.depends_on.length ||
-        task.depends_on.some((dependency) => typeof dependency !== 'string' || !taskIdPattern.test(dependency))) {
+    if (!statusEnum.has(task.status))
+      errors.push(`${task.id} has schema-invalid status: ${task.status}`)
+    if (
+      !Array.isArray(task.depends_on) ||
+      new Set(task.depends_on).size !== task.depends_on.length ||
+      task.depends_on.some(
+        (dependency) => typeof dependency !== 'string' || !taskIdPattern.test(dependency)
+      )
+    ) {
       errors.push(`${task.id} has schema-invalid depends_on`)
     }
     if (typeof task.manual_gate !== 'boolean') errors.push(`${task.id} manual_gate must be boolean`)
@@ -194,12 +223,15 @@ function validateStateAgainstSchema(value, schema) {
         continue
       }
       for (const key of Object.keys(evidence)) {
-        if (!evidenceKeys.has(key)) errors.push(`${task.id} evidence[${evidenceIndex}] has unsupported property: ${key}`)
+        if (!evidenceKeys.has(key))
+          errors.push(`${task.id} evidence[${evidenceIndex}] has unsupported property: ${key}`)
       }
       for (const key of evidenceSchema.required ?? []) {
-        if (!(key in evidence)) errors.push(`${task.id} evidence[${evidenceIndex}] is missing ${key}`)
+        if (!(key in evidence))
+          errors.push(`${task.id} evidence[${evidenceIndex}] is missing ${key}`)
       }
-      if (!evidenceKinds.has(evidence.kind)) errors.push(`${task.id} evidence[${evidenceIndex}] has invalid kind`)
+      if (!evidenceKinds.has(evidence.kind))
+        errors.push(`${task.id} evidence[${evidenceIndex}] has invalid kind`)
       if (typeof evidence.summary !== 'string' || evidence.summary.length === 0) {
         errors.push(`${task.id} evidence[${evidenceIndex}] summary must be non-empty`)
       }
@@ -207,7 +239,9 @@ function validateStateAgainstSchema(value, schema) {
         errors.push(`${task.id} evidence[${evidenceIndex}] path must be a string`)
       }
       if (!isRfc3339DateTime(evidence.recorded_at)) {
-        errors.push(`${task.id} evidence[${evidenceIndex}] recorded_at must be an RFC 3339 date-time`)
+        errors.push(
+          `${task.id} evidence[${evidenceIndex}] recorded_at must be an RFC 3339 date-time`
+        )
       }
     }
   }
@@ -218,7 +252,8 @@ const stateIsSchemaValid = validateStateAgainstSchema(state, stateSchema)
 if (!stateIsSchemaValid || requiredFiles.some((file) => !exists(file))) reportErrorsAndExit()
 
 const tasks = state.tasks ?? []
-if (tasks.length < 77) errors.push(`planning baseline requires at least 77 tasks, found ${tasks.length}`)
+if (tasks.length < 77)
+  errors.push(`planning baseline requires at least 77 tasks, found ${tasks.length}`)
 const ids = new Set()
 for (const task of tasks) {
   if (ids.has(task.id)) errors.push(`duplicate task id: ${task.id}`)
@@ -320,37 +355,52 @@ const automationSuiteRoots = new Map([
 const automationTargetPattern =
   /^`pnpm (test(?::(?:integration|e2e|security|performance))?) -- (tests\/[a-z0-9./-]+\.spec\.ts)`$/
 const coldBootstrapTarget = '`pnpm test:bootstrap:cold`'
-const coldBootstrapPathTarget = '`pnpm test:bootstrap:cold -- tests/bootstrap/project-bootstrap-cold.spec.ts`'
+const coldBootstrapPathTarget =
+  '`pnpm test:bootstrap:cold -- tests/bootstrap/project-bootstrap-cold.spec.ts`'
 const parseAutomationTarget = (target) => {
   if (target === coldBootstrapTarget) return ['test:bootstrap:cold', 'tests/bootstrap/']
   return target.match(automationTargetPattern)?.slice(1) ?? null
 }
 const coldBootstrapMatch = parseAutomationTarget(coldBootstrapTarget)
-if (!coldBootstrapMatch || !coldBootstrapMatch[1].startsWith(automationSuiteRoots.get(coldBootstrapMatch[0]))) {
+if (
+  !coldBootstrapMatch ||
+  !coldBootstrapMatch[1].startsWith(automationSuiteRoots.get(coldBootstrapMatch[0]))
+) {
   errors.push('planning verifier does not recognize the TC-M0-008 cold-bootstrap automation target')
 }
 if (parseAutomationTarget(coldBootstrapPathTarget)) {
-  errors.push('planning verifier accepts an unauthorized path-bearing cold-bootstrap automation target')
+  errors.push(
+    'planning verifier accepts an unauthorized path-bearing cold-bootstrap automation target'
+  )
 }
 
 for (const file of testCaseFiles) {
   const content = read(file)
   const milestone = path.basename(file).match(/^(M\d)-/)?.[1]
-  for (const heading of ['## 自动化与半自动用例', '## 参数矩阵', '## 人工门禁', '## 证据与停止条件']) {
+  for (const heading of [
+    '## 自动化与半自动用例',
+    '## 参数矩阵',
+    '## 人工门禁',
+    '## 证据与停止条件'
+  ]) {
     if (!content.includes(heading)) errors.push(`${file} is missing required section: ${heading}`)
   }
   if (/\bTBD\b|待定/i.test(content)) errors.push(`${file} contains unresolved TBD/待定 content`)
 
   for (const match of content.matchAll(/^(\| (TC-(M\d)-\d{3}) \| (M\d-T\d{2}) \|.*)$/gm)) {
     const [, row, caseId, caseMilestone, taskId] = match
-    if (automatedCases.has(caseId) || manualCases.has(caseId)) errors.push(`duplicate test case id: ${caseId}`)
+    if (automatedCases.has(caseId) || manualCases.has(caseId))
+      errors.push(`duplicate test case id: ${caseId}`)
     automatedCases.set(caseId, { file, taskId, row })
     if (!ids.has(taskId)) errors.push(`${caseId} references unknown task ${taskId}`)
     if (caseMilestone !== milestone || !taskId.startsWith(`${milestone}-`)) {
       errors.push(`${caseId} milestone/task mismatch in ${file}: ${taskId}`)
     }
     taskToAutomatedCases.get(taskId)?.push(caseId)
-    const cells = row.split('|').map((value) => value.trim()).filter(Boolean)
+    const cells = row
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean)
     if (cells.length < 7) errors.push(`${caseId} does not contain all required table fields`)
     const automationTarget = cells[6] ?? ''
     const targetMatch = parseAutomationTarget(automationTarget)
@@ -363,14 +413,18 @@ for (const file of testCaseFiles) {
 
   for (const match of content.matchAll(/^(\| (MAN-(M\d)-\d{3}) \| (M\d-T\d{2}) \|.*)$/gm)) {
     const [, row, caseId, caseMilestone, taskId] = match
-    if (manualCases.has(caseId) || automatedCases.has(caseId)) errors.push(`duplicate test case id: ${caseId}`)
+    if (manualCases.has(caseId) || automatedCases.has(caseId))
+      errors.push(`duplicate test case id: ${caseId}`)
     manualCases.set(caseId, { file, taskId, row })
     if (!ids.has(taskId)) errors.push(`${caseId} references unknown task ${taskId}`)
     if (caseMilestone !== milestone || !taskId.startsWith(`${milestone}-`)) {
       errors.push(`${caseId} milestone/task mismatch in ${file}: ${taskId}`)
     }
     taskToManualCases.get(taskId)?.push(caseId)
-    const cells = row.split('|').map((value) => value.trim()).filter(Boolean)
+    const cells = row
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean)
     if (cells.length < 6) errors.push(`${caseId} does not contain all required manual table fields`)
   }
 }
@@ -388,7 +442,9 @@ for (const task of tasks) {
 }
 
 if (automatedCases.size < 85) {
-  errors.push(`planning baseline requires at least 85 automated cases, found ${automatedCases.size}`)
+  errors.push(
+    `planning baseline requires at least 85 automated cases, found ${automatedCases.size}`
+  )
 }
 if (manualCases.size < 13) {
   errors.push(`planning baseline requires at least 13 manual cases, found ${manualCases.size}`)
@@ -430,7 +486,9 @@ const definedRequirements = new Set(
     .filter((id) => requirementPrefixes.has(id.split('-')[0]))
 )
 if (definedRequirements.size < 83) {
-  errors.push(`planning baseline requires at least 83 requirements, found ${definedRequirements.size}`)
+  errors.push(
+    `planning baseline requires at least 83 requirements, found ${definedRequirements.size}`
+  )
 }
 if (!definedRequirements.has('EXP-009')) {
   errors.push('missing EXP-009 Pandoc import requirement')
@@ -443,42 +501,81 @@ for (const id of definedRequirements) {
 const matrixText = read('docs/02-compatibility-matrix.md')
 const compatibilityIds = [...matrixText.matchAll(/^\| (COMP-\d{3}) \|/gm)].map((match) => match[1])
 const compatibilitySet = new Set(compatibilityIds)
-if (compatibilityIds.length !== compatibilitySet.size) errors.push('duplicate COMP id in compatibility matrix')
+if (compatibilityIds.length !== compatibilitySet.size)
+  errors.push('duplicate COMP id in compatibility matrix')
 for (let value = 1; value <= 36; value += 1) {
   const id = `COMP-${String(value).padStart(3, '0')}`
   if (!compatibilitySet.has(id)) errors.push(`missing compatibility item ${id}`)
 }
 const taskCompatibilityRefs = expandReferences(taskDocs, new Set(['COMP']))
 for (const id of compatibilitySet) {
-  if (!taskCompatibilityRefs.has(id)) errors.push(`compatibility item ${id} is not referenced by a task`)
+  if (!taskCompatibilityRefs.has(id))
+    errors.push(`compatibility item ${id} is not referenced by a task`)
 }
 
 const requiredPlanningContracts = new Map([
-  ['AGENTS.md', ['M0-T01 自举例外', '`pnpm install`', '`pnpm build`', 'TC-M0-001', 'M0-T02', '占位 `check`']],
-  ['docs/09-test-strategy.md', ['M0-T01 自举例外', '`pnpm install`', '`pnpm build`', 'TC-M0-001', 'M0-T02', '固定成功脚本']],
-  ['tasks/M0-foundation.md', ['`package.json#packageManager`', '`pnpm@11.12.0`', 'M0-T01 自举例外', 'TC-M0-001']],
+  [
+    'AGENTS.md',
+    ['M0-T01 自举例外', '`pnpm install`', '`pnpm build`', 'TC-M0-001', 'M0-T02', '占位 `check`']
+  ],
+  [
+    'docs/09-test-strategy.md',
+    ['M0-T01 自举例外', '`pnpm install`', '`pnpm build`', 'TC-M0-001', 'M0-T02', '固定成功脚本']
+  ],
+  [
+    'tasks/M0-foundation.md',
+    ['`package.json#packageManager`', '`pnpm@11.12.0`', 'M0-T01 自举例外', 'TC-M0-001']
+  ],
   ['docs/08-development-plan.md', ['pnpm 11.12.0', '`corepack install --global pnpm@11.12.0`']],
-  ['docs/11-codex-cli-runbook.md', ['corepack install --global pnpm@11.12.0', 'M0-T01 使用', '占位脚本']],
-  ['docs/04-technology-stack.md', ['| 依赖 | 用途 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 | 包体影响 |']],
+  [
+    'docs/11-codex-cli-runbook.md',
+    ['corepack install --global pnpm@11.12.0', 'M0-T01 使用', '占位脚本']
+  ],
+  [
+    'docs/04-technology-stack.md',
+    ['| 依赖 | 用途 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 | 包体影响 |']
+  ],
   ['docs/02-compatibility-matrix.md', ['EXP-005,007,009', 'IMP-001..030']],
   ['docs/03-architecture.md', ['Pandoc 导入是独立的只读源转换', '不创建部分会话']],
   ['docs/05-data-safety-and-security.md', ['Pandoc 导入只读源文件', 'staging']],
-  ['docs/15-public-contracts.md', ['interface ImportAdapter', 'interface ImportedDocument', 'stagingId', 'file.new/open/openFolder/import']],
-  ['docs/17-settings-and-storage-schema.md', ['interface RecoveryMetaV2', 'importStagingId', 'M6-T08']],
-  ['docs/18-error-catalog.md', ['IMPORT_UNSUPPORTED_FORMAT', 'IMPORT_OUTPUT_INVALID', 'IMPORT_FAILED']],
+  [
+    'docs/15-public-contracts.md',
+    [
+      'interface ImportAdapter',
+      'interface ImportedDocument',
+      'stagingId',
+      'file.new/open/openFolder/import'
+    ]
+  ],
+  [
+    'docs/17-settings-and-storage-schema.md',
+    ['interface RecoveryMetaV2', 'importStagingId', 'M6-T08']
+  ],
+  [
+    'docs/18-error-catalog.md',
+    ['IMPORT_UNSUPPORTED_FORMAT', 'IMPORT_OUTPUT_INVALID', 'IMPORT_FAILED']
+  ],
   ['docs/19-user-journeys.md', ['## J-013 Pandoc 导入', '源文件哈希始终不变']],
   ['docs/21-command-menu-inventory.md', ['`file.import`', 'Pandoc 缺失']],
   ['docs/test-cases/M6-export.md', ['TC-M6-010', 'PANDOCIMPORT-M6', 'MAN-M6-002']]
 ])
 for (const [file, snippets] of requiredPlanningContracts) {
   for (const snippet of snippets) {
-    if (!read(file).includes(snippet)) errors.push(`${file} is missing required planning contract: ${snippet}`)
+    if (!read(file).includes(snippet))
+      errors.push(`${file} is missing required planning contract: ${snippet}`)
   }
 }
 
 const bootstrapSection = taskSections.get('M0-T01') ?? ''
-for (const snippet of ['pnpm install', '开发窗口启动', 'pnpm build', 'pnpm-lock.yaml', 'TC-M0-001']) {
-  if (!bootstrapSection.includes(snippet)) errors.push(`M0-T01 bootstrap contract is missing: ${snippet}`)
+for (const snippet of [
+  'pnpm install',
+  '开发窗口启动',
+  'pnpm build',
+  'pnpm-lock.yaml',
+  'TC-M0-001'
+]) {
+  if (!bootstrapSection.includes(snippet))
+    errors.push(`M0-T01 bootstrap contract is missing: ${snippet}`)
 }
 if (/\bpnpm\s+check\b/.test(bootstrapSection)) {
   errors.push('M0-T01 bootstrap exception must not require pnpm check before M0-T02 creates it')
@@ -487,12 +584,17 @@ if (!taskSections.get('M0-T02')?.includes('反向自动化')) {
   errors.push('M0-T02 must explicitly automate the M0-T01 bootstrap regression')
 }
 
-const pandocImportRequirementRefs = expandReferences(taskSections.get('M6-T08') ?? '', requirementPrefixes)
+const pandocImportRequirementRefs = expandReferences(
+  taskSections.get('M6-T08') ?? '',
+  requirementPrefixes
+)
 if (!pandocImportRequirementRefs.has('EXP-009')) {
   errors.push('M6-T08 must own EXP-009')
 }
 if ((taskToAutomatedCases.get('M6-T08') ?? []).join(',') !== 'TC-M6-010') {
-  errors.push(`M6-T08 must own exactly TC-M6-010, found ${(taskToAutomatedCases.get('M6-T08') ?? []).join(', ')}`)
+  errors.push(
+    `M6-T08 must own exactly TC-M6-010, found ${(taskToAutomatedCases.get('M6-T08') ?? []).join(', ')}`
+  )
 }
 if (!(taskToManualCases.get('M6-T09') ?? []).includes('MAN-M6-002')) {
   errors.push('M6-T09 must own MAN-M6-002')
@@ -524,17 +626,25 @@ for (const file of markdownFiles) {
 }
 
 const inProgress = tasks.filter((task) => task.status === 'in_progress')
-if (inProgress.length > 1) errors.push(`more than one in_progress task: ${inProgress.map((task) => task.id).join(', ')}`)
+if (inProgress.length > 1)
+  errors.push(`more than one in_progress task: ${inProgress.map((task) => task.id).join(', ')}`)
 if (inProgress.length === 0 && state.current_task !== null) {
   errors.push(`current_task must be null when no task is in_progress: ${state.current_task}`)
 }
 if (inProgress.length === 1 && state.current_task !== inProgress[0].id) {
-  errors.push(`current_task ${state.current_task} does not match in_progress task ${inProgress[0].id}`)
+  errors.push(
+    `current_task ${state.current_task} does not match in_progress task ${inProgress[0].id}`
+  )
 }
 
 for (const task of tasks) {
-  const dependenciesPassed = (task.depends_on ?? []).every((id) => byId.get(id)?.status === 'passed')
-  if (['ready', 'in_progress', 'awaiting_manual', 'passed', 'failed'].includes(task.status) && !dependenciesPassed) {
+  const dependenciesPassed = (task.depends_on ?? []).every(
+    (id) => byId.get(id)?.status === 'passed'
+  )
+  if (
+    ['ready', 'in_progress', 'awaiting_manual', 'passed', 'failed'].includes(task.status) &&
+    !dependenciesPassed
+  ) {
     errors.push(`${task.id} is ${task.status} while one or more dependencies are not passed`)
   }
   if (task.status === 'blocked' && dependenciesPassed) {
@@ -551,7 +661,8 @@ for (const task of tasks) {
     const hasAutomatedEvidence = (task.evidence ?? []).some((item) =>
       ['command', 'test', 'report'].includes(item.kind)
     )
-    if (!hasAutomatedEvidence) errors.push(`${task.id} passed without automated command/test/report evidence`)
+    if (!hasAutomatedEvidence)
+      errors.push(`${task.id} passed without automated command/test/report evidence`)
   }
 }
 
@@ -562,13 +673,18 @@ for (const file of requiredFiles.filter((file) => /^docs\/\d{2}-.*\.md$/.test(fi
 }
 
 for (const file of markdownFiles) {
-  const fenceCount = read(file).split(/\r?\n/).filter((line) => /^```/.test(line)).length
+  const fenceCount = read(file)
+    .split(/\r?\n/)
+    .filter((line) => /^```/.test(line)).length
   if (fenceCount % 2 !== 0) errors.push(`unbalanced fenced code block in ${file}`)
 }
 
 const agentsBytes = Buffer.byteLength(read('AGENTS.md'), 'utf8')
-if (agentsBytes > 32768) errors.push(`AGENTS.md exceeds Codex default 32 KiB instruction limit: ${agentsBytes}`)
+if (agentsBytes > 32768)
+  errors.push(`AGENTS.md exceeds Codex default 32 KiB instruction limit: ${agentsBytes}`)
 
 if (errors.length > 0) reportErrorsAndExit()
 
-console.log(`Planning documentation verified: ${requiredFiles.length} required files, ${tasks.length} tasks, ${automatedCases.size} automated test cases, ${manualCases.size} manual cases, ${definedRequirements.size} requirements, ${compatibilitySet.size} compatibility items.`)
+console.log(
+  `Planning documentation verified: ${requiredFiles.length} required files, ${tasks.length} tasks, ${automatedCases.size} automated test cases, ${manualCases.size} manual cases, ${definedRequirements.size} requirements, ${compatibilitySet.size} compatibility items.`
+)

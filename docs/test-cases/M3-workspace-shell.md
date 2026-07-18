@@ -4,17 +4,17 @@
 
 ## 自动化与半自动用例
 
-| ID | 任务 | 层级/级别 | 数据/环境 | 步骤 | 预期 | 自动化 |
-| --- | --- | --- | --- | --- | --- | --- |
-| TC-M3-001 | M3-T01 | component-e2e/P1 | CMD-M3 | 在不同会话/选区/工作区状态从菜单、顶部按钮、右键和快捷键触发命令 | 四入口映射同一 ID，visible/enabled/checked 同步；未实现命令不出现；冲突有诊断 | `pnpm test:e2e -- tests/e2e/window-commands.spec.ts` |
-| TC-M3-002 | M3-T02 | integration-security/P0 | WSROOT-M3 | 选择根目录，枚举扩展/隐藏/忽略/symlink；伪造工作区外路径；中途取消 | 只返回授权根内文件；策略一致；symlink 不逃逸；取消停止任务且 editor 仍可输入 | `pnpm test:integration -- tests/integration/workspace-enumeration.spec.ts` |
-| TC-M3-003 | M3-T03 | e2e/P0 | FILEOP-M3 | 树/列表切换、排序、展开/选中；新建/重命名/移动/回收站删除/显示；注入权限/占用失败 | 两视图一致；自然排序正确；危险操作确认；失败可恢复且活动文档/源码不丢失 | `pnpm test:e2e -- tests/e2e/workspace-file-ops.spec.ts` |
-| TC-M3-004 | M3-T04 | component-performance/P1 | OUTLINE-M3 | 加载大纲样本，层级/平铺/折叠/过滤/跟随/点击；编辑标题后检查增量更新 | 重复标题和层级跳跃稳定；定位正确；不另行全量解析；长文输入不阻塞 | `pnpm test -- tests/unit/component/outline.spec.ts` |
-| TC-M3-005 | M3-T05 | component-performance/P1 | OPEN-M3 | 对 10,000 文件按文件名/相对路径搜索，键盘选择、取消并检查排序和最近项 | 中文/大小写/分隔符规则一致；结果只在根内；首结果达预算；取消不改变会话 | `pnpm test -- tests/unit/component/quick-open.spec.ts` |
-| TC-M3-006 | M3-T06 | integration-security/P0 | SEARCH-M3 | 用普通/Unicode/元字符查询搜索；忽略/二进制/大结果；合并脏文档；取消进程 | `spawn` 参数数组且 `shell:false`；结果位置正确去重；上限生效；取消终止 sidecar | `pnpm test:integration -- tests/integration/global-search.spec.ts` |
-| TC-M3-007 | M3-T07 | e2e/P1 | SESSION-M3 | 多窗口打开最近项目，改变尺寸/显示器/侧栏/活动文件/滚动；崩溃后断开显示器重启 | 窗口回到可见区域；状态按窗口恢复；丢失路径可移除；session.json 无正文 | `pnpm test:e2e -- tests/e2e/window-session.spec.ts` |
-| TC-M3-008 | M3-T08 | performance-regression/P0 | GATE-M3 | 在 10,000 文件工作区同时编辑、枚举、快速打开、搜索和取消；运行全量回归 | 输入 P95 不越预算；任务可取消；文件错误矩阵全通过；无路径越权/P0/P1 | `pnpm test:performance -- tests/performance/m3-gate.spec.ts` |
-| TC-M3-009 | M3-T03 | integration/P0 | FILEFAULT-M3 | 对 rename/move/trash 的预检、执行、watcher 更新和 UI 提交逐点注入失败 | 磁盘、树、最近项和活动 session 最终一致；不虚报成功；给出可操作错误 | `pnpm test:integration -- tests/integration/file-operation-faults.spec.ts` |
+| ID        | 任务   | 层级/级别                 | 数据/环境    | 步骤                                                                              | 预期                                                                           | 自动化                                                                     |
+| --------- | ------ | ------------------------- | ------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| TC-M3-001 | M3-T01 | component-e2e/P1          | CMD-M3       | 在不同会话/选区/工作区状态从菜单、顶部按钮、右键和快捷键触发命令                  | 四入口映射同一 ID，visible/enabled/checked 同步；未实现命令不出现；冲突有诊断  | `pnpm test:e2e -- tests/e2e/window-commands.spec.ts`                       |
+| TC-M3-002 | M3-T02 | integration-security/P0   | WSROOT-M3    | 选择根目录，枚举扩展/隐藏/忽略/symlink；伪造工作区外路径；中途取消                | 只返回授权根内文件；策略一致；symlink 不逃逸；取消停止任务且 editor 仍可输入   | `pnpm test:integration -- tests/integration/workspace-enumeration.spec.ts` |
+| TC-M3-003 | M3-T03 | e2e/P0                    | FILEOP-M3    | 树/列表切换、排序、展开/选中；新建/重命名/移动/回收站删除/显示；注入权限/占用失败 | 两视图一致；自然排序正确；危险操作确认；失败可恢复且活动文档/源码不丢失        | `pnpm test:e2e -- tests/e2e/workspace-file-ops.spec.ts`                    |
+| TC-M3-004 | M3-T04 | component-performance/P1  | OUTLINE-M3   | 加载大纲样本，层级/平铺/折叠/过滤/跟随/点击；编辑标题后检查增量更新               | 重复标题和层级跳跃稳定；定位正确；不另行全量解析；长文输入不阻塞               | `pnpm test -- tests/unit/component/outline.spec.ts`                        |
+| TC-M3-005 | M3-T05 | component-performance/P1  | OPEN-M3      | 对 10,000 文件按文件名/相对路径搜索，键盘选择、取消并检查排序和最近项             | 中文/大小写/分隔符规则一致；结果只在根内；首结果达预算；取消不改变会话         | `pnpm test -- tests/unit/component/quick-open.spec.ts`                     |
+| TC-M3-006 | M3-T06 | integration-security/P0   | SEARCH-M3    | 用普通/Unicode/元字符查询搜索；忽略/二进制/大结果；合并脏文档；取消进程           | `spawn` 参数数组且 `shell:false`；结果位置正确去重；上限生效；取消终止 sidecar | `pnpm test:integration -- tests/integration/global-search.spec.ts`         |
+| TC-M3-007 | M3-T07 | e2e/P1                    | SESSION-M3   | 多窗口打开最近项目，改变尺寸/显示器/侧栏/活动文件/滚动；崩溃后断开显示器重启      | 窗口回到可见区域；状态按窗口恢复；丢失路径可移除；session.json 无正文          | `pnpm test:e2e -- tests/e2e/window-session.spec.ts`                        |
+| TC-M3-008 | M3-T08 | performance-regression/P0 | GATE-M3      | 在 10,000 文件工作区同时编辑、枚举、快速打开、搜索和取消；运行全量回归            | 输入 P95 不越预算；任务可取消；文件错误矩阵全通过；无路径越权/P0/P1            | `pnpm test:performance -- tests/performance/m3-gate.spec.ts`               |
+| TC-M3-009 | M3-T03 | integration/P0            | FILEFAULT-M3 | 对 rename/move/trash 的预检、执行、watcher 更新和 UI 提交逐点注入失败             | 磁盘、树、最近项和活动 session 最终一致；不虚报成功；给出可操作错误            | `pnpm test:integration -- tests/integration/file-operation-faults.spec.ts` |
 
 ## 参数矩阵
 
@@ -28,8 +28,8 @@
 
 ## 人工门禁
 
-| ID | 任务 | 环境 | 步骤 | 通过条件 | 证据 |
-| --- | --- | --- | --- | --- | --- |
+| ID         | 任务   | 环境                           | 步骤                                                                                                                                    | 通过条件                                                                               | 证据                                                            |
+| ---------- | ------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | MAN-M3-001 | M3-T08 | 真实大仓库、ENV-SYNC、多显示器 | 1. 打开 10,000+ 文件仓库并持续输入；2. 在同步目录制造外部事件；3. 走新建/重命名/移动/回收站；4. 启动并取消大搜索；5. 断开副显示器后重启 | 输入无明显停顿；路径不越权；同步事件不误操作；删除确入回收站；搜索可终止；窗口始终可见 | 仓库规模、性能记录、资源管理器/任务管理器截图、会话文件脱敏审计 |
 
 ## 证据与停止条件

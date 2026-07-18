@@ -23,44 +23,45 @@
 
 ## File Map
 
-| File | Responsibility |
-| --- | --- |
-| `tasks/state.json` | Select M0-T02, record status and final evidence, unlock only M0-T03 when passed |
-| `tasks/M0-foundation.md` | Complete M0-T02 Definition of Ready and acceptance contract |
-| `docs/04-technology-stack.md` | Freeze exact quality-tool versions, licenses, scripts, and scope |
-| `docs/09-test-strategy.md` | Define daily versus explicit gates and recursion/cold-bootstrap policy |
-| `docs/test-cases/M0-foundation.md` | Refine TC-M0-001/002 and add TC-M0-008 |
-| `package.json`, `pnpm-lock.yaml` | Exact dependencies and stable command contract |
-| `eslint.config.mjs` | Flat ESLint rules for JavaScript, TypeScript, React Hooks, and React Refresh |
-| `prettier.config.mjs`, `.prettierignore` | Deterministic formatting and fixture/generated-file exclusions |
-| `tsconfig.test.json` | Strict typecheck for configs, helpers, and tests |
-| `vitest.config.ts` | Unit/component suite and coverage |
-| `vitest.integration.config.ts` | Integration suite and child-only meta-test exclusion |
-| `vitest.bootstrap.config.ts` | Explicit cold-bootstrap suite |
-| `vitest.performance.config.ts` | Performance-harness suite |
-| `playwright.config.ts` | Electron launch smoke |
-| `playwright.security.config.ts` | M0-T02 renderer-boundary smoke |
-| `tests/setup.ts` | Testing Library DOM matchers and cleanup |
-| `tests/helpers/command.ts` | Timeout-aware, `shell:false` child process runner and pnpm invocation |
-| `tests/helpers/project-copy.ts` | Safe tracked-file copy and retrying cleanup |
-| `tests/helpers/artifacts.ts` | Lockfile and deterministic build-artifact assertions |
-| `tests/helpers/bootstrap-project.ts` | Shared offline/cold bootstrap workflow |
-| `tests/helpers/performance.ts` | Median, P95, and threshold evaluation |
-| `tests/unit/app.smoke.spec.tsx` | Existing React bootstrap behavior |
-| `tests/unit/helpers/*.spec.ts` | Helper behavior, timeout, cleanup, hashing, and metrics |
-| `tests/integration/project-bootstrap.spec.ts` | Offline TC-M0-001 regression |
-| `tests/integration/quality-scripts.spec.ts` | TC-M0-002 positive and fault-injection matrix |
-| `tests/bootstrap/project-cold-bootstrap.spec.ts` | Network-enabled TC-M0-008 |
-| `tests/e2e/app-launch.spec.ts` | Real Electron startup and close |
-| `tests/security/electron-boundary.smoke.spec.ts` | Current renderer privilege boundary |
-| `tests/performance/harness.smoke.spec.ts` | Measurement harness behavior |
-| `docs/evidence/M0-T02-quality-toolchain-2026-07-18.md` | Commands, exits, counts, hashes, cleanup, and residual risks |
+| File                                                   | Responsibility                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `tasks/state.json`                                     | Select M0-T02, record status and final evidence, unlock only M0-T03 when passed |
+| `tasks/M0-foundation.md`                               | Complete M0-T02 Definition of Ready and acceptance contract                     |
+| `docs/04-technology-stack.md`                          | Freeze exact quality-tool versions, licenses, scripts, and scope                |
+| `docs/09-test-strategy.md`                             | Define daily versus explicit gates and recursion/cold-bootstrap policy          |
+| `docs/test-cases/M0-foundation.md`                     | Refine TC-M0-001/002 and add TC-M0-008                                          |
+| `package.json`, `pnpm-lock.yaml`                       | Exact dependencies and stable command contract                                  |
+| `eslint.config.mjs`                                    | Flat ESLint rules for JavaScript, TypeScript, React Hooks, and React Refresh    |
+| `prettier.config.mjs`, `.prettierignore`               | Deterministic formatting and fixture/generated-file exclusions                  |
+| `tsconfig.test.json`                                   | Strict typecheck for configs, helpers, and tests                                |
+| `vitest.config.ts`                                     | Unit/component suite and coverage                                               |
+| `vitest.integration.config.ts`                         | Integration suite and child-only meta-test exclusion                            |
+| `vitest.bootstrap.config.ts`                           | Explicit cold-bootstrap suite                                                   |
+| `vitest.performance.config.ts`                         | Performance-harness suite                                                       |
+| `playwright.config.ts`                                 | Electron launch smoke                                                           |
+| `playwright.security.config.ts`                        | M0-T02 renderer-boundary smoke                                                  |
+| `tests/setup.ts`                                       | Testing Library DOM matchers and cleanup                                        |
+| `tests/helpers/command.ts`                             | Timeout-aware, `shell:false` child process runner and pnpm invocation           |
+| `tests/helpers/project-copy.ts`                        | Safe tracked-file copy and retrying cleanup                                     |
+| `tests/helpers/artifacts.ts`                           | Lockfile and deterministic build-artifact assertions                            |
+| `tests/helpers/bootstrap-project.ts`                   | Shared offline/cold bootstrap workflow                                          |
+| `tests/helpers/performance.ts`                         | Median, P95, and threshold evaluation                                           |
+| `tests/unit/app.smoke.spec.tsx`                        | Existing React bootstrap behavior                                               |
+| `tests/unit/helpers/*.spec.ts`                         | Helper behavior, timeout, cleanup, hashing, and metrics                         |
+| `tests/integration/project-bootstrap.spec.ts`          | Offline TC-M0-001 regression                                                    |
+| `tests/integration/quality-scripts.spec.ts`            | TC-M0-002 positive and fault-injection matrix                                   |
+| `tests/bootstrap/project-cold-bootstrap.spec.ts`       | Network-enabled TC-M0-008                                                       |
+| `tests/e2e/app-launch.spec.ts`                         | Real Electron startup and close                                                 |
+| `tests/security/electron-boundary.smoke.spec.ts`       | Current renderer privilege boundary                                             |
+| `tests/performance/harness.smoke.spec.ts`              | Measurement harness behavior                                                    |
+| `docs/evidence/M0-T02-quality-toolchain-2026-07-18.md` | Commands, exits, counts, hashes, cleanup, and residual risks                    |
 
 ---
 
 ### Task 1: Make M0-T02 Ready and Select It
 
 **Files:**
+
 - Modify: `tasks/state.json`
 - Modify: `tasks/M0-foundation.md`
 - Modify: `docs/04-technology-stack.md`
@@ -68,6 +69,7 @@
 - Modify: `docs/test-cases/M0-foundation.md`
 
 **Interfaces:**
+
 - Consumes: approved design `docs/superpowers/specs/2026-07-18-m0-t02-quality-readiness-design.md`
 - Produces: complete M0-T02 task contract, stable TC-M0-008, and `current_task: "M0-T02"`
 
@@ -80,7 +82,13 @@ Change only the task selector and M0-T02 entry:
 ```
 
 ```json
-{ "id": "M0-T02", "status": "in_progress", "depends_on": ["M0-T01"], "manual_gate": false, "evidence": [] }
+{
+  "id": "M0-T02",
+  "status": "in_progress",
+  "depends_on": ["M0-T01"],
+  "manual_gate": false,
+  "evidence": []
+}
 ```
 
 Run: `node scripts/verify-planning-docs.mjs`
@@ -157,6 +165,7 @@ git commit -m "docs(M0-T02): resolve readiness review findings"
 ### Task 2: Install the Frozen Toolchain and Establish Configuration
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `pnpm-lock.yaml`
 - Modify: `tsconfig.json`
@@ -173,6 +182,7 @@ git commit -m "docs(M0-T02): resolve readiness review findings"
 - Create: `tests/setup.ts`
 
 **Interfaces:**
+
 - Consumes: exact dependency list and command contract from Task 1
 - Produces: stable quality commands and typed test/config compilation
 
@@ -210,12 +220,7 @@ Create `tsconfig.test.json`:
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": [
-    "tests/**/*.ts",
-    "tests/**/*.tsx",
-    "vitest*.config.ts",
-    "playwright*.config.ts"
-  ]
+  "include": ["tests/**/*.ts", "tests/**/*.tsx", "vitest*.config.ts", "playwright*.config.ts"]
 }
 ```
 
@@ -329,7 +334,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/integration/**/*.spec.ts'],
-    exclude: isMetaChild ? ['tests/integration/quality-scripts.spec.ts'] : [] ,
+    exclude: isMetaChild ? ['tests/integration/quality-scripts.spec.ts'] : [],
     testTimeout: 180_000,
     hookTimeout: 180_000,
     sequence: { concurrent: false }
@@ -463,6 +468,7 @@ git commit -m "build(M0-T02): add frozen quality toolchain"
 ### Task 3: Build Tested Process, Copy, Artifact, and Performance Helpers
 
 **Files:**
+
 - Create: `tests/helpers/command.ts`
 - Create: `tests/helpers/project-copy.ts`
 - Create: `tests/helpers/artifacts.ts`
@@ -473,6 +479,7 @@ git commit -m "build(M0-T02): add frozen quality toolchain"
 - Create: `tests/unit/helpers/performance.spec.ts`
 
 **Interfaces:**
+
 - Produces: `runCommand`, `pnpmCommand`, `listProjectFiles`, `copyProject`, `removeWithRetry`, `assertSingleLockfile`, `hashArtifacts`, `summarizeSamples`, `assertWithinThreshold`
 
 - [ ] **Step 1: Write failing process-runner tests**
@@ -726,9 +733,9 @@ describe('performance statistics', () => {
 
   it('reports threshold violations', () => {
     const summary = summarizeSamples([1, 2, 3, 4, 100])
-    expect(() =>
-      assertWithinThreshold('fixture', summary, { median: 3, p95: 99 })
-    ).toThrow(/fixture.*p95.*100.*99/)
+    expect(() => assertWithinThreshold('fixture', summary, { median: 3, p95: 99 })).toThrow(
+      /fixture.*p95.*100.*99/
+    )
   })
 })
 ```
@@ -782,12 +789,14 @@ git commit -m "test(M0-T02): add isolated quality helpers"
 ### Task 4: Add Real Unit, E2E, Security, and Performance Smoke Tests
 
 **Files:**
+
 - Create: `tests/unit/app.smoke.spec.tsx`
 - Create: `tests/e2e/app-launch.spec.ts`
 - Create: `tests/security/electron-boundary.smoke.spec.ts`
 - Create: `tests/performance/harness.smoke.spec.ts`
 
 **Interfaces:**
+
 - Consumes: existing `App`, Playwright configs, and performance helper
 - Produces: non-placeholder tests for every explicit M0-T02 suite
 
@@ -948,12 +957,14 @@ git commit -m "test(M0-T02): add executable smoke suites"
 ### Task 5: Automate Offline and Cold Bootstrap Acceptance
 
 **Files:**
+
 - Create: `tests/helpers/bootstrap-project.ts`
 - Create: `tests/unit/helpers/bootstrap-project.spec.ts`
 - Create: `tests/integration/project-bootstrap.spec.ts`
 - Create: `tests/bootstrap/project-cold-bootstrap.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `runCommand`, `pnpmCommand`, `listProjectFiles`, `copyProject`, `removeWithRetry`, `assertSingleLockfile`, `hashArtifacts`
 - Produces: `verifyBootstrap(options): Promise<BootstrapEvidence>` shared by TC-M0-001 and TC-M0-008
 
@@ -1205,10 +1216,12 @@ git commit -m "test(M0-T02): automate bootstrap acceptance"
 ### Task 6: Prove Every Quality Command Fails Correctly Without Recursion
 
 **Files:**
+
 - Create: `tests/integration/quality-scripts.spec.ts`
 - Modify: `vitest.integration.config.ts` (retain the exact child-only exclusion while formatting or type corrections are made)
 
 **Interfaces:**
+
 - Consumes: temporary copy and command helpers; `LATTICE_QUALITY_META_CHILD=1`
 - Produces: TC-M0-002 evidence for normal commands and six injected faults
 
@@ -1263,17 +1276,26 @@ const faults = [
   {
     name: 'type',
     directScript: 'typecheck',
-    inject: (root: string) => writeFile(join(root, 'tests/injected-type.ts'), 'export const value: string = 1\n')
+    inject: (root: string) =>
+      writeFile(join(root, 'tests/injected-type.ts'), 'export const value: string = 1\n')
   },
   {
     name: 'unit',
     directScript: 'test',
-    inject: (root: string) => writeFile(join(root, 'tests/unit/injected-failure.spec.ts'), "import { expect, it } from 'vitest'\nit('fails', () => expect(true).toBe(false))\n")
+    inject: (root: string) =>
+      writeFile(
+        join(root, 'tests/unit/injected-failure.spec.ts'),
+        "import { expect, it } from 'vitest'\nit('fails', () => expect(true).toBe(false))\n"
+      )
   },
   {
     name: 'integration',
     directScript: 'test:integration',
-    inject: (root: string) => writeFile(join(root, 'tests/integration/injected-failure.spec.ts'), "import { expect, it } from 'vitest'\nit('fails', () => expect(true).toBe(false))\n")
+    inject: (root: string) =>
+      writeFile(
+        join(root, 'tests/integration/injected-failure.spec.ts'),
+        "import { expect, it } from 'vitest'\nit('fails', () => expect(true).toBe(false))\n"
+      )
   },
   {
     name: 'build',
@@ -1315,10 +1337,12 @@ git commit -m "test(M0-T02): enforce quality command failures"
 ### Task 7: Record Evidence, Close M0-T02, and Request Review
 
 **Files:**
+
 - Create: `docs/evidence/M0-T02-quality-toolchain-2026-07-18.md`
 - Modify: `tasks/state.json`
 
 **Interfaces:**
+
 - Consumes: all M0-T02 commands and test output
 - Produces: auditable task evidence, M0-T02 `passed`, M0-T03 `ready`
 
@@ -1351,21 +1375,27 @@ Create `docs/evidence/M0-T02-quality-toolchain-2026-07-18.md` with:
 # M0-T02 Quality Toolchain Evidence
 
 ## Environment
+
 - Windows version, Node, Corepack, pnpm, Electron
 
 ## Daily gate
+
 - two `pnpm check` executions: timestamps, exit codes, test counts, coverage summaries
 
 ## Explicit gates
+
 - E2E, scoped security smoke, performance-harness smoke, TC-M0-008 cold bootstrap
 
 ## Fault injection
+
 - format, lint, type, unit, integration, build: direct command exit and guarded `check` exit
 
 ## Bootstrap artifacts
+
 - unique lockfile result, pending-build result, first/second SHA-256 maps, cleanup result
 
 ## Scope and residual risks
+
 - M0-T03 still owns CSP/navigation/new-window/permission/external-link policies
 - M0-T06 still owns CI, SBOM, complete license/transitive dependency audit, and packaged performance gates
 - M0-T02 manual verification: not applicable

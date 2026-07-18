@@ -39,7 +39,7 @@ type Encoding = 'utf8' | 'utf8-bom' | 'utf16le' | 'utf16be'
 type Eol = '\n' | '\r\n'
 
 interface SourceBuffer {
-  readonly text: string              // CodeMirror 使用的规范 LF 文本
+  readonly text: string // CodeMirror 使用的规范 LF 文本
   readonly encoding: Encoding
   readonly eolByLine: readonly Eol[] // 保留每一条原始行结束符
   readonly originalBytesHash: string

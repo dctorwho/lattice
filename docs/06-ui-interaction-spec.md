@@ -35,19 +35,19 @@ Windows 首版使用最小化单文档窗口，不引入标签页：
 
 核心 Windows 快捷键：
 
-| 命令 | 默认键位 |
-| --- | --- |
+| 命令                | 默认键位                                |
+| ------------------- | --------------------------------------- |
 | 新建/打开/保存/另存 | Ctrl+N / Ctrl+O / Ctrl+S / Ctrl+Shift+S |
-| 撤销/重做 | Ctrl+Z / Ctrl+Y |
-| 查找/替换 | Ctrl+F / Ctrl+H |
-| 全局搜索 | Ctrl+Shift+F |
-| 快速打开 | Ctrl+P |
-| 源码模式 | Ctrl+/ |
-| 加粗/斜体/代码 | Ctrl+B / Ctrl+I / Ctrl+Shift+` |
-| 标题 1–6 | Ctrl+1 … Ctrl+6 |
-| 普通段落 | Ctrl+0 |
-| 链接/图片 | Ctrl+K / Ctrl+Shift+I |
-| 缩放 | Ctrl+= / Ctrl+- / Ctrl+0 |
+| 撤销/重做           | Ctrl+Z / Ctrl+Y                         |
+| 查找/替换           | Ctrl+F / Ctrl+H                         |
+| 全局搜索            | Ctrl+Shift+F                            |
+| 快速打开            | Ctrl+P                                  |
+| 源码模式            | Ctrl+/                                  |
+| 加粗/斜体/代码      | Ctrl+B / Ctrl+I / Ctrl+Shift+`          |
+| 标题 1–6            | Ctrl+1 … Ctrl+6                         |
+| 普通段落            | Ctrl+0                                  |
+| 链接/图片           | Ctrl+K / Ctrl+Shift+I                   |
+| 缩放                | Ctrl+= / Ctrl+- / Ctrl+0                |
 
 最终键位以公开 Typora Windows 快捷键核对；冲突通过快捷键设置解决，不在组件中硬编码。
 

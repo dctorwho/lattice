@@ -35,20 +35,20 @@ M0-T01 已完成 Electron、React、TypeScript 最小骨架和可重复构建，
 
 `package.json` 建立以下稳定命令：
 
-| 命令 | M0-T02 的真实职责 | 是否进入 `check` |
-| --- | --- | --- |
-| `format` | 使用 Prettier 写入格式化结果 | 否 |
-| `format:check` | 检查受控源码、测试、脚本、JSON、Markdown 和配置文件格式 | 是 |
-| `lint` | 使用 ESLint 检查 TypeScript、React Hooks、React Refresh 和测试代码 | 是 |
-| `typecheck` | 分别执行 Node 与 renderer 严格 TypeScript 检查，不生成产物 | 是 |
-| `test` | 运行 Vitest 单元与组件 smoke，生成覆盖率 | 是 |
-| `test:integration` | 运行集成测试，包括 TC-M0-001 回归和 TC-M0-002 元测试 | 是 |
-| `test:e2e` | 使用 Playwright Electron 启动应用并验证最小窗口 smoke | 否，按任务显式运行 |
-| `test:security` | 使用真实 Electron 进程检查当前 renderer 最小权限边界 smoke | 否，按任务显式运行 |
-| `test:performance` | 验证性能测量器、统计聚合和阈值失败机制 | 否，按任务显式运行 |
-| `test:bootstrap:cold` | 在冷项目副本与空项目级 store 中执行允许联网的完整自举 | 否，只在 M0-T02 完成、CI 或 M0 门禁运行 |
-| `build` | 运行 electron-vite 生产构建 | 是 |
-| `check` | 顺序执行 `format:check`、`lint`、`typecheck`、`test`、`test:integration`、`build` | 主门禁 |
+| 命令                  | M0-T02 的真实职责                                                                 | 是否进入 `check`                        |
+| --------------------- | --------------------------------------------------------------------------------- | --------------------------------------- |
+| `format`              | 使用 Prettier 写入格式化结果                                                      | 否                                      |
+| `format:check`        | 检查受控源码、测试、脚本、JSON、Markdown 和配置文件格式                           | 是                                      |
+| `lint`                | 使用 ESLint 检查 TypeScript、React Hooks、React Refresh 和测试代码                | 是                                      |
+| `typecheck`           | 分别执行 Node 与 renderer 严格 TypeScript 检查，不生成产物                        | 是                                      |
+| `test`                | 运行 Vitest 单元与组件 smoke，生成覆盖率                                          | 是                                      |
+| `test:integration`    | 运行集成测试，包括 TC-M0-001 回归和 TC-M0-002 元测试                              | 是                                      |
+| `test:e2e`            | 使用 Playwright Electron 启动应用并验证最小窗口 smoke                             | 否，按任务显式运行                      |
+| `test:security`       | 使用真实 Electron 进程检查当前 renderer 最小权限边界 smoke                        | 否，按任务显式运行                      |
+| `test:performance`    | 验证性能测量器、统计聚合和阈值失败机制                                            | 否，按任务显式运行                      |
+| `test:bootstrap:cold` | 在冷项目副本与空项目级 store 中执行允许联网的完整自举                             | 否，只在 M0-T02 完成、CI 或 M0 门禁运行 |
+| `build`               | 运行 electron-vite 生产构建                                                       | 是                                      |
+| `check`               | 顺序执行 `format:check`、`lint`、`typecheck`、`test`、`test:integration`、`build` | 主门禁                                  |
 
 `check` 不包含 E2E、安全、性能和冷自举。这些命令仍是必需的真实门禁，但由任务或里程碑按风险显式运行，与 `docs/09-test-strategy.md` 的“按任务和里程碑显式运行”保持一致。
 
@@ -93,14 +93,14 @@ Vitest 集成配置在该环境变量存在时只排除 `quality-scripts.spec.ts
 
 元测试必须覆盖以下矩阵：
 
-| 注入 | 预期直接失败命令 | 预期 `pnpm check` |
-| --- | --- | --- |
-| Prettier 格式错误 | `format:check` | 非 0 |
-| ESLint 规则错误 | `lint` | 非 0 |
-| TypeScript 类型错误 | `typecheck` | 非 0 |
-| 单元测试断言错误 | `test` | 非 0 |
-| 集成测试断言错误 | `test:integration` | 非 0 |
-| 生产构建语法或入口错误 | `build` | 非 0 |
+| 注入                   | 预期直接失败命令   | 预期 `pnpm check` |
+| ---------------------- | ------------------ | ----------------- |
+| Prettier 格式错误      | `format:check`     | 非 0              |
+| ESLint 规则错误        | `lint`             | 非 0              |
+| TypeScript 类型错误    | `typecheck`        | 非 0              |
+| 单元测试断言错误       | `test`             | 非 0              |
+| 集成测试断言错误       | `test:integration` | 非 0              |
+| 生产构建语法或入口错误 | `build`            | 非 0              |
 
 正常副本中的全部约定脚本应按各自合同退出 0。`.skip`、`.only` 和空测试套件由专门守卫或配置禁止。
 
@@ -120,22 +120,22 @@ Vitest 集成配置在该环境变量存在时只排除 `quality-scripts.spec.ts
 
 M0-T02 在 `devDependencies` 中加入以下精确版本，并同步记录用途、许可证和边界：
 
-| 包 | 版本 | 用途 |
-| --- | --- | --- |
-| `eslint` | `10.7.0` | lint 引擎 |
-| `@eslint/js` | `10.0.1` | ESLint 官方基础规则 |
-| `typescript-eslint` | `8.64.0` | TypeScript parser 与规则 |
-| `globals` | `17.7.0` | Node、浏览器和测试全局定义 |
-| `eslint-plugin-react-hooks` | `7.1.1` | Hooks 规则 |
-| `eslint-plugin-react-refresh` | `0.5.3` | React Refresh 导出规则 |
-| `prettier` | `3.9.5` | 确定性格式化 |
-| `vitest` | `4.1.10` | 单元、组件和集成测试运行器 |
-| `@vitest/coverage-v8` | `4.1.10` | V8 覆盖率 |
-| `jsdom` | `29.1.1` | React 组件 DOM 环境 |
-| `@testing-library/dom` | `10.4.1` | DOM 查询和交互断言 |
-| `@testing-library/react` | `16.3.2` | React 组件测试 |
-| `@testing-library/jest-dom` | `6.9.1` | DOM 语义断言 |
-| `@playwright/test` | `1.61.1` | Electron E2E 运行器 |
+| 包                            | 版本     | 用途                       |
+| ----------------------------- | -------- | -------------------------- |
+| `eslint`                      | `10.7.0` | lint 引擎                  |
+| `@eslint/js`                  | `10.0.1` | ESLint 官方基础规则        |
+| `typescript-eslint`           | `8.64.0` | TypeScript parser 与规则   |
+| `globals`                     | `17.7.0` | Node、浏览器和测试全局定义 |
+| `eslint-plugin-react-hooks`   | `7.1.1`  | Hooks 规则                 |
+| `eslint-plugin-react-refresh` | `0.5.3`  | React Refresh 导出规则     |
+| `prettier`                    | `3.9.5`  | 确定性格式化               |
+| `vitest`                      | `4.1.10` | 单元、组件和集成测试运行器 |
+| `@vitest/coverage-v8`         | `4.1.10` | V8 覆盖率                  |
+| `jsdom`                       | `29.1.1` | React 组件 DOM 环境        |
+| `@testing-library/dom`        | `10.4.1` | DOM 查询和交互断言         |
+| `@testing-library/react`      | `16.3.2` | React 组件测试             |
+| `@testing-library/jest-dom`   | `6.9.1`  | DOM 语义断言               |
+| `@playwright/test`            | `1.61.1` | Electron E2E 运行器        |
 
 这些包仅用于开发，不进入 renderer 生产依赖。实施前在 `docs/04-technology-stack.md` 补齐直接依赖台账，安装后核对 lockfile 中的直接解析版本、peer 兼容性和许可证。不得使用 `latest`、范围版本或生成器隐式带入配置。
 

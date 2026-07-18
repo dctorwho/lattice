@@ -1,0 +1,9 @@
+node_modules
+out
+coverage
+playwright-report
+test-results
+.superpowers
+pnpm-lock.yaml
+tests/fixtures
+docs/evidence

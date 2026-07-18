@@ -13,9 +13,7 @@ interface AppError {
   requestId?: string
 }
 
-type Result<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: AppError }
+type Result<T> = { ok: true; value: T } | { ok: false; error: AppError }
 ```
 
 取消不是异常崩溃；对话框取消返回 `ok:true` 且 value 为 `null`，长任务取消使用稳定 `*_CANCELLED` code。
@@ -23,8 +21,13 @@ type Result<T> =
 ## 2. 文档变更
 
 ```ts
-interface SourceRange { from: number; to: number }
-interface SourceChange extends SourceRange { insert: string }
+interface SourceRange {
+  from: number
+  to: number
+}
+interface SourceChange extends SourceRange {
+  insert: string
+}
 
 interface SourcePatch {
   documentId: string
@@ -177,8 +180,8 @@ Command handler 返回 `Promise<CommandResult>`，失败使用 AppError；菜单
 ## 7. 导入与导出接口
 
 ```ts
-type ImportFormat = 'docx' | 'rtf' | 'epub' | 'latex' | 'rst' | 'org' |
-  'mediawiki' | 'dokuwiki' | 'textile' | 'opml'
+type ImportFormat =
+  'docx' | 'rtf' | 'epub' | 'latex' | 'rst' | 'org' | 'mediawiki' | 'dokuwiki' | 'textile' | 'opml'
 
 interface ImportRequest {
   sourcePath: string
@@ -216,15 +219,20 @@ interface ImportAdapter<TOptions> {
 `sourcePath` 必须来自当前窗口的选择器授权，主进程再次校验 sender、格式和路径。成功导入创建未命名会话，绝不覆盖源文件。提取资源使用受控 staging ID；首次保存通过 `ResourceTransaction` 提交到用户选择的目标旁，关闭/取消则清理，崩溃恢复期间保留。warning 只包含脱敏、限长的转换诊断。
 
 ```ts
-type ExportFormat = 'html' | 'html-plain' | 'pdf' | 'png' | 'jpeg' |
-  'docx' | 'odt' | 'rtf' | 'epub' | 'latex'
+type ExportFormat =
+  'html' | 'html-plain' | 'pdf' | 'png' | 'jpeg' | 'docx' | 'odt' | 'rtf' | 'epub' | 'latex'
 
 interface ExportAdapter<TOptions> {
   format: ExportFormat
   optionsSchemaVersion: number
   validate(options: unknown): Result<TOptions>
   checkAvailability(): Promise<Result<Availability>>
-  export(snapshot: RenderSnapshot, target: string, options: TOptions, signal: AbortSignal): Promise<Result<ExportArtifact>>
+  export(
+    snapshot: RenderSnapshot,
+    target: string,
+    options: TOptions,
+    signal: AbortSignal
+  ): Promise<Result<ExportArtifact>>
 }
 ```
 

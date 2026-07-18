@@ -11,18 +11,18 @@
 
 ## 2. 任务文件
 
-| 文件 | 内容 |
-| --- | --- |
-| [M0-foundation.md](M0-foundation.md) | 工程、质量、安全壳与基础契约 |
-| [M1-document-core.md](M1-document-core.md) | 无损文件、恢复与源码编辑器 |
-| [M2-hybrid-editor.md](M2-hybrid-editor.md) | 单栏混合编辑内核 |
-| [M3-workspace-shell.md](M3-workspace-shell.md) | 工作区、侧栏、菜单和搜索 |
-| [M4-advanced-markdown.md](M4-advanced-markdown.md) | 表格、公式、图表、YAML、HTML |
-| [M5-media-theme.md](M5-media-theme.md) | 图片、剪贴板、主题与写作模式 |
-| [M6-export.md](M6-export.md) | HTML、PDF、图片、打印和 Pandoc 导入导出 |
-| [M7-parity-hardening.md](M7-parity-hardening.md) | 设置、快捷键、i18n、a11y、性能与兼容收口 |
-| [M8-windows-release.md](M8-windows-release.md) | Windows 安装、关联、更新和发布 |
-| [TASK_TEMPLATE.md](TASK_TEMPLATE.md) | 新任务模板 |
+| 文件                                               | 内容                                     |
+| -------------------------------------------------- | ---------------------------------------- |
+| [M0-foundation.md](M0-foundation.md)               | 工程、质量、安全壳与基础契约             |
+| [M1-document-core.md](M1-document-core.md)         | 无损文件、恢复与源码编辑器               |
+| [M2-hybrid-editor.md](M2-hybrid-editor.md)         | 单栏混合编辑内核                         |
+| [M3-workspace-shell.md](M3-workspace-shell.md)     | 工作区、侧栏、菜单和搜索                 |
+| [M4-advanced-markdown.md](M4-advanced-markdown.md) | 表格、公式、图表、YAML、HTML             |
+| [M5-media-theme.md](M5-media-theme.md)             | 图片、剪贴板、主题与写作模式             |
+| [M6-export.md](M6-export.md)                       | HTML、PDF、图片、打印和 Pandoc 导入导出  |
+| [M7-parity-hardening.md](M7-parity-hardening.md)   | 设置、快捷键、i18n、a11y、性能与兼容收口 |
+| [M8-windows-release.md](M8-windows-release.md)     | Windows 安装、关联、更新和发布           |
+| [TASK_TEMPLATE.md](TASK_TEMPLATE.md)               | 新任务模板                               |
 
 ## 3. 任务提示词
 

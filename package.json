@@ -12,20 +12,45 @@
   "scripts": {
     "dev": "electron --version && electron-vite dev",
     "start": "electron-vite preview",
-    "build": "electron-vite build"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit --composite false --incremental false && tsc -p tsconfig.web.json --noEmit --composite false --incremental false && tsc -p tsconfig.test.json --noEmit --incremental false",
+    "test": "vitest run --config vitest.config.ts --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "pnpm build && playwright test --config playwright.config.ts",
+    "test:security": "pnpm build && playwright test --config playwright.security.config.ts",
+    "test:performance": "vitest run --config vitest.performance.config.ts",
+    "test:bootstrap:cold": "vitest run --config vitest.bootstrap.config.ts",
+    "build": "electron-vite build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build"
   },
   "dependencies": {
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.61.1",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
     "@types/node": "24.10.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
+    "@vitest/coverage-v8": "4.1.10",
     "electron": "43.1.1",
     "electron-vite": "5.0.0",
+    "eslint": "10.7.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-react-refresh": "0.5.3",
+    "globals": "17.7.0",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.5",
     "typescript": "5.9.3",
-    "vite": "7.2.6"
+    "typescript-eslint": "8.64.0",
+    "vite": "7.2.6",
+    "vitest": "4.1.10"
   }
 }

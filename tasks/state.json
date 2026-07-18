@@ -3,14 +3,7 @@
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
   "current_task": "M0-T02",
-  "allowed_statuses": [
-    "blocked",
-    "ready",
-    "in_progress",
-    "awaiting_manual",
-    "passed",
-    "failed"
-  ],
+  "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "tasks": [
     {
       "id": "M0-T01",
@@ -37,89 +30,545 @@
         }
       ]
     },
-    { "id": "M0-T02", "status": "in_progress", "depends_on": ["M0-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M0-T03", "status": "blocked", "depends_on": ["M0-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M0-T04", "status": "blocked", "depends_on": ["M0-T03"], "manual_gate": false, "evidence": [] },
-    { "id": "M0-T05", "status": "blocked", "depends_on": ["M0-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M0-T06", "status": "blocked", "depends_on": ["M0-T05"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M0-T02",
+      "status": "in_progress",
+      "depends_on": ["M0-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M0-T03",
+      "status": "blocked",
+      "depends_on": ["M0-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M0-T04",
+      "status": "blocked",
+      "depends_on": ["M0-T03"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M0-T05",
+      "status": "blocked",
+      "depends_on": ["M0-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M0-T06",
+      "status": "blocked",
+      "depends_on": ["M0-T05"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M1-T01", "status": "blocked", "depends_on": ["M0-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T02", "status": "blocked", "depends_on": ["M1-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T03", "status": "blocked", "depends_on": ["M1-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T04", "status": "blocked", "depends_on": ["M1-T03"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T05", "status": "blocked", "depends_on": ["M1-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T06", "status": "blocked", "depends_on": ["M1-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T07", "status": "blocked", "depends_on": ["M1-T05", "M1-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T08", "status": "blocked", "depends_on": ["M1-T07"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T09", "status": "blocked", "depends_on": ["M1-T06", "M1-T07"], "manual_gate": false, "evidence": [] },
-    { "id": "M1-T10", "status": "blocked", "depends_on": ["M1-T08", "M1-T09"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M1-T01",
+      "status": "blocked",
+      "depends_on": ["M0-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T02",
+      "status": "blocked",
+      "depends_on": ["M1-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T03",
+      "status": "blocked",
+      "depends_on": ["M1-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T04",
+      "status": "blocked",
+      "depends_on": ["M1-T03"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T05",
+      "status": "blocked",
+      "depends_on": ["M1-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T06",
+      "status": "blocked",
+      "depends_on": ["M1-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T07",
+      "status": "blocked",
+      "depends_on": ["M1-T05", "M1-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T08",
+      "status": "blocked",
+      "depends_on": ["M1-T07"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T09",
+      "status": "blocked",
+      "depends_on": ["M1-T06", "M1-T07"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M1-T10",
+      "status": "blocked",
+      "depends_on": ["M1-T08", "M1-T09"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M2-T01", "status": "blocked", "depends_on": ["M1-T10"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T02", "status": "blocked", "depends_on": ["M2-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T03", "status": "blocked", "depends_on": ["M2-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T04", "status": "blocked", "depends_on": ["M2-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T05", "status": "blocked", "depends_on": ["M2-T03"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T06", "status": "blocked", "depends_on": ["M2-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T07", "status": "blocked", "depends_on": ["M2-T03", "M2-T04", "M2-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T08", "status": "blocked", "depends_on": ["M2-T05", "M2-T07"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T09", "status": "blocked", "depends_on": ["M2-T08"], "manual_gate": false, "evidence": [] },
-    { "id": "M2-T10", "status": "blocked", "depends_on": ["M2-T09"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M2-T01",
+      "status": "blocked",
+      "depends_on": ["M1-T10"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T02",
+      "status": "blocked",
+      "depends_on": ["M2-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T03",
+      "status": "blocked",
+      "depends_on": ["M2-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T04",
+      "status": "blocked",
+      "depends_on": ["M2-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T05",
+      "status": "blocked",
+      "depends_on": ["M2-T03"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T06",
+      "status": "blocked",
+      "depends_on": ["M2-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T07",
+      "status": "blocked",
+      "depends_on": ["M2-T03", "M2-T04", "M2-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T08",
+      "status": "blocked",
+      "depends_on": ["M2-T05", "M2-T07"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T09",
+      "status": "blocked",
+      "depends_on": ["M2-T08"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M2-T10",
+      "status": "blocked",
+      "depends_on": ["M2-T09"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M3-T01", "status": "blocked", "depends_on": ["M2-T10"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T02", "status": "blocked", "depends_on": ["M3-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T03", "status": "blocked", "depends_on": ["M3-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T04", "status": "blocked", "depends_on": ["M3-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T05", "status": "blocked", "depends_on": ["M3-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T06", "status": "blocked", "depends_on": ["M3-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T07", "status": "blocked", "depends_on": ["M3-T03", "M3-T04", "M3-T05", "M3-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M3-T08", "status": "blocked", "depends_on": ["M3-T07"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M3-T01",
+      "status": "blocked",
+      "depends_on": ["M2-T10"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T02",
+      "status": "blocked",
+      "depends_on": ["M3-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T03",
+      "status": "blocked",
+      "depends_on": ["M3-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T04",
+      "status": "blocked",
+      "depends_on": ["M3-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T05",
+      "status": "blocked",
+      "depends_on": ["M3-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T06",
+      "status": "blocked",
+      "depends_on": ["M3-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T07",
+      "status": "blocked",
+      "depends_on": ["M3-T03", "M3-T04", "M3-T05", "M3-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M3-T08",
+      "status": "blocked",
+      "depends_on": ["M3-T07"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M4-T01", "status": "blocked", "depends_on": ["M3-T08"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T02", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T03", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T04", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T05", "status": "blocked", "depends_on": ["M4-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T06", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T07", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T08", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T09", "status": "blocked", "depends_on": ["M4-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M4-T10", "status": "blocked", "depends_on": ["M4-T02", "M4-T03", "M4-T05", "M4-T06", "M4-T07", "M4-T08", "M4-T09"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M4-T01",
+      "status": "blocked",
+      "depends_on": ["M3-T08"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T02",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T03",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T04",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T05",
+      "status": "blocked",
+      "depends_on": ["M4-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T06",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T07",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T08",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T09",
+      "status": "blocked",
+      "depends_on": ["M4-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M4-T10",
+      "status": "blocked",
+      "depends_on": ["M4-T02", "M4-T03", "M4-T05", "M4-T06", "M4-T07", "M4-T08", "M4-T09"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M5-T01", "status": "blocked", "depends_on": ["M4-T10"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T02", "status": "blocked", "depends_on": ["M5-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T03", "status": "blocked", "depends_on": ["M5-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T04", "status": "blocked", "depends_on": ["M5-T03"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T05", "status": "blocked", "depends_on": ["M5-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T06", "status": "blocked", "depends_on": ["M5-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T07", "status": "blocked", "depends_on": ["M5-T02", "M5-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M5-T08", "status": "blocked", "depends_on": ["M5-T05", "M5-T07"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M5-T01",
+      "status": "blocked",
+      "depends_on": ["M4-T10"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T02",
+      "status": "blocked",
+      "depends_on": ["M5-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T03",
+      "status": "blocked",
+      "depends_on": ["M5-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T04",
+      "status": "blocked",
+      "depends_on": ["M5-T03"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T05",
+      "status": "blocked",
+      "depends_on": ["M5-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T06",
+      "status": "blocked",
+      "depends_on": ["M5-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T07",
+      "status": "blocked",
+      "depends_on": ["M5-T02", "M5-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M5-T08",
+      "status": "blocked",
+      "depends_on": ["M5-T05", "M5-T07"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M6-T01", "status": "blocked", "depends_on": ["M5-T08"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T02", "status": "blocked", "depends_on": ["M6-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T03", "status": "blocked", "depends_on": ["M6-T01", "M6-T02"], "manual_gate": true, "evidence": [] },
-    { "id": "M6-T04", "status": "blocked", "depends_on": ["M6-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T05", "status": "blocked", "depends_on": ["M6-T02", "M6-T03", "M6-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T06", "status": "blocked", "depends_on": ["M6-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T07", "status": "blocked", "depends_on": ["M6-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T08", "status": "blocked", "depends_on": ["M6-T06"], "manual_gate": false, "evidence": [] },
-    { "id": "M6-T09", "status": "blocked", "depends_on": ["M6-T05", "M6-T07", "M6-T08"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M6-T01",
+      "status": "blocked",
+      "depends_on": ["M5-T08"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T02",
+      "status": "blocked",
+      "depends_on": ["M6-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T03",
+      "status": "blocked",
+      "depends_on": ["M6-T01", "M6-T02"],
+      "manual_gate": true,
+      "evidence": []
+    },
+    {
+      "id": "M6-T04",
+      "status": "blocked",
+      "depends_on": ["M6-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T05",
+      "status": "blocked",
+      "depends_on": ["M6-T02", "M6-T03", "M6-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T06",
+      "status": "blocked",
+      "depends_on": ["M6-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T07",
+      "status": "blocked",
+      "depends_on": ["M6-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T08",
+      "status": "blocked",
+      "depends_on": ["M6-T06"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M6-T09",
+      "status": "blocked",
+      "depends_on": ["M6-T05", "M6-T07", "M6-T08"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M7-T01", "status": "blocked", "depends_on": ["M6-T09"], "manual_gate": false, "evidence": [] },
-    { "id": "M7-T02", "status": "blocked", "depends_on": ["M7-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M7-T03", "status": "blocked", "depends_on": ["M7-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M7-T04", "status": "blocked", "depends_on": ["M7-T02", "M7-T03"], "manual_gate": true, "evidence": [] },
-    { "id": "M7-T05", "status": "blocked", "depends_on": ["M7-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M7-T06", "status": "blocked", "depends_on": ["M7-T05"], "manual_gate": false, "evidence": [] },
-    { "id": "M7-T07", "status": "blocked", "depends_on": ["M7-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M7-T08", "status": "blocked", "depends_on": ["M7-T04", "M7-T06", "M7-T07"], "manual_gate": true, "evidence": [] },
-    { "id": "M7-T09", "status": "blocked", "depends_on": ["M7-T08"], "manual_gate": true, "evidence": [] },
+    {
+      "id": "M7-T01",
+      "status": "blocked",
+      "depends_on": ["M6-T09"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M7-T02",
+      "status": "blocked",
+      "depends_on": ["M7-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M7-T03",
+      "status": "blocked",
+      "depends_on": ["M7-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M7-T04",
+      "status": "blocked",
+      "depends_on": ["M7-T02", "M7-T03"],
+      "manual_gate": true,
+      "evidence": []
+    },
+    {
+      "id": "M7-T05",
+      "status": "blocked",
+      "depends_on": ["M7-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M7-T06",
+      "status": "blocked",
+      "depends_on": ["M7-T05"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M7-T07",
+      "status": "blocked",
+      "depends_on": ["M7-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M7-T08",
+      "status": "blocked",
+      "depends_on": ["M7-T04", "M7-T06", "M7-T07"],
+      "manual_gate": true,
+      "evidence": []
+    },
+    {
+      "id": "M7-T09",
+      "status": "blocked",
+      "depends_on": ["M7-T08"],
+      "manual_gate": true,
+      "evidence": []
+    },
 
-    { "id": "M8-T01", "status": "blocked", "depends_on": ["M7-T09"], "manual_gate": false, "evidence": [] },
-    { "id": "M8-T02", "status": "blocked", "depends_on": ["M8-T01"], "manual_gate": false, "evidence": [] },
-    { "id": "M8-T03", "status": "blocked", "depends_on": ["M8-T02"], "manual_gate": false, "evidence": [] },
-    { "id": "M8-T04", "status": "blocked", "depends_on": ["M8-T03"], "manual_gate": false, "evidence": [] },
-    { "id": "M8-T05", "status": "blocked", "depends_on": ["M8-T04"], "manual_gate": false, "evidence": [] },
-    { "id": "M8-T06", "status": "blocked", "depends_on": ["M8-T05"], "manual_gate": true, "evidence": [] },
-    { "id": "M8-T07", "status": "blocked", "depends_on": ["M8-T06"], "manual_gate": true, "evidence": [] }
+    {
+      "id": "M8-T01",
+      "status": "blocked",
+      "depends_on": ["M7-T09"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M8-T02",
+      "status": "blocked",
+      "depends_on": ["M8-T01"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M8-T03",
+      "status": "blocked",
+      "depends_on": ["M8-T02"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M8-T04",
+      "status": "blocked",
+      "depends_on": ["M8-T03"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M8-T05",
+      "status": "blocked",
+      "depends_on": ["M8-T04"],
+      "manual_gate": false,
+      "evidence": []
+    },
+    {
+      "id": "M8-T06",
+      "status": "blocked",
+      "depends_on": ["M8-T05"],
+      "manual_gate": true,
+      "evidence": []
+    },
+    {
+      "id": "M8-T07",
+      "status": "blocked",
+      "depends_on": ["M8-T06"],
+      "manual_gate": true,
+      "evidence": []
+    }
   ]
 }

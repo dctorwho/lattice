@@ -41,16 +41,16 @@
 
 ## 5. 迭代索引
 
-| 迭代 | 测试规格 |
-| --- | --- |
-| M0 | [工程基础](M0-foundation.md) |
-| M1 | [无损文件与源码编辑](M1-document-core.md) |
-| M2 | [单栏混合编辑内核](M2-hybrid-editor.md) |
-| M3 | [工作区与桌面壳](M3-workspace-shell.md) |
-| M4 | [高级 Markdown](M4-advanced-markdown.md) |
-| M5 | [图片、剪贴板、主题与写作模式](M5-media-theme.md) |
-| M6 | [导入、导出与打印](M6-export.md) |
-| M7 | [设置、兼容与质量收口](M7-parity-hardening.md) |
-| M8 | [Windows 发布](M8-windows-release.md) |
+| 迭代 | 测试规格                                          |
+| ---- | ------------------------------------------------- |
+| M0   | [工程基础](M0-foundation.md)                      |
+| M1   | [无损文件与源码编辑](M1-document-core.md)         |
+| M2   | [单栏混合编辑内核](M2-hybrid-editor.md)           |
+| M3   | [工作区与桌面壳](M3-workspace-shell.md)           |
+| M4   | [高级 Markdown](M4-advanced-markdown.md)          |
+| M5   | [图片、剪贴板、主题与写作模式](M5-media-theme.md) |
+| M6   | [导入、导出与打印](M6-export.md)                  |
+| M7   | [设置、兼容与质量收口](M7-parity-hardening.md)    |
+| M8   | [Windows 发布](M8-windows-release.md)             |
 
 夹具和环境命名见[夹具目录](fixture-catalog.md)。
