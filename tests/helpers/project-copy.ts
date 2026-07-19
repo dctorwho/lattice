@@ -60,14 +60,10 @@ function delay(milliseconds: number): Promise<void> {
 }
 
 export async function listProjectFiles(source: string): Promise<readonly string[]> {
-  const result = await runCommand(
-    'git',
-    ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-    {
-      cwd: source,
-      timeoutMs: 5_000
-    }
-  )
+  const result = await runCommand('git', ['ls-files', '--cached', '-z'], {
+    cwd: source,
+    timeoutMs: 5_000
+  })
   if (result.exitCode !== 0) {
     throw new Error(
       `Unable to list project files: git exited with ${result.exitCode ?? 'no exit code'}.`

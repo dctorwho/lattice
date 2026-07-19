@@ -31,17 +31,20 @@ describe('project copy isolation', () => {
     await expect(access(join(target, 'node_modules/secret'))).rejects.toThrow()
   })
 
-  it('lists Git project files while excluding generated top-level paths', async () => {
+  it('lists only tracked Git project files while excluding generated top-level paths', async () => {
     const source = join(root, 'source')
     await mkdir(join(source, 'src'), { recursive: true })
     await mkdir(join(source, 'node_modules'), { recursive: true })
     await writeFile(join(source, 'src/index.ts'), 'export {}\n')
+    await writeFile(join(source, 'untracked-secret.txt'), 'do not copy')
     await writeFile(join(source, 'node_modules/secret'), 'excluded')
     await execFileAsync('git', ['init', '--quiet'], { cwd: source, windowsHide: true })
+    await execFileAsync('git', ['add', 'src/index.ts'], { cwd: source, windowsHide: true })
 
     const files = await listProjectFiles(source)
 
     expect(files).toContain('src/index.ts')
+    expect(files).not.toContain('untracked-secret.txt')
     expect(files).not.toContain('node_modules/secret')
   })
 

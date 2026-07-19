@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -27,6 +27,25 @@ const executableScripts = [
 ] as const
 
 const contractedScripts = ['format', ...executableScripts, 'test:bootstrap:cold'] as const
+
+type ContractedScript = (typeof contractedScripts)[number]
+
+const contractedScriptCommands: Readonly<Record<ContractedScript, string>> = {
+  format: 'prettier --write .',
+  'format:check': 'prettier --check .',
+  lint: 'eslint . --max-warnings=0',
+  typecheck:
+    'tsc -p tsconfig.node.json --noEmit --composite false --incremental false && tsc -p tsconfig.web.json --noEmit --composite false --incremental false && tsc -p tsconfig.test.json --noEmit --incremental false',
+  test: 'vitest run --config vitest.config.ts --coverage',
+  'test:integration': 'vitest run --config vitest.integration.config.ts',
+  'test:e2e': 'pnpm build && playwright test --config playwright.config.ts',
+  'test:security': 'pnpm build && playwright test --config playwright.security.config.ts',
+  'test:performance': 'vitest run --config vitest.performance.config.ts',
+  build: 'electron-vite build',
+  check:
+    'pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build',
+  'test:bootstrap:cold': 'vitest run --config vitest.bootstrap.config.ts'
+}
 
 const noOpScriptPatterns = [
   /\bexit\s+0\b/i,
@@ -177,12 +196,18 @@ async function installOffline(root: string, storeDirectory: string): Promise<voi
 }
 
 async function initializeTemporaryGitRepository(root: string): Promise<void> {
-  const result = await runCommand('git', ['init', '--quiet'], {
+  const initialization = await runCommand('git', ['init', '--quiet'], {
     cwd: root,
     env: childEnvironment,
     timeoutMs: commandTimeoutMs
   })
-  assertCommandSucceeded('git init --quiet', result)
+  assertCommandSucceeded('git init --quiet', initialization)
+  const staging = await runCommand('git', ['add', '--all'], {
+    cwd: root,
+    env: childEnvironment,
+    timeoutMs: commandTimeoutMs
+  })
+  assertCommandSucceeded('git add --all', staging)
 }
 
 function scriptsFromPackage(packageContents: string): PackageScripts {
@@ -197,18 +222,24 @@ function scriptsFromPackage(packageContents: string): PackageScripts {
   return scripts
 }
 
-async function assertQualityContracts(sourceRoot: string): Promise<void> {
-  const packageContents = await readFile(join(sourceRoot, 'package.json'), 'utf8')
-  const scripts = scriptsFromPackage(packageContents)
-
+function assertContractedScripts(scripts: PackageScripts): void {
   for (const scriptName of contractedScripts) {
     const command = scripts[scriptName]
     expect(command, `Missing package script: ${scriptName}`).toEqual(expect.any(String))
     expect(command?.trim(), `Empty package script: ${scriptName}`).not.toBe('')
+    expect(command, `Unexpected package script: ${scriptName}`).toBe(
+      contractedScriptCommands[scriptName]
+    )
     for (const pattern of noOpScriptPatterns) {
       expect(command, `No-op package script: ${scriptName}`).not.toMatch(pattern)
     }
   }
+}
+
+async function assertQualityContracts(sourceRoot: string): Promise<void> {
+  const packageContents = await readFile(join(sourceRoot, 'package.json'), 'utf8')
+  const scripts = scriptsFromPackage(packageContents)
+  assertContractedScripts(scripts)
 
   const testSources = (await listProjectFiles(sourceRoot)).filter((relativePath) =>
     /^tests\/.*\.(?:ts|tsx)$/.test(relativePath)
@@ -277,6 +308,36 @@ describe('TC-M0-002 quality script contracts', () => {
 
   it('rejects missing, no-op, focused, and skipped quality contracts', async () => {
     await assertQualityContracts(sourceRoot)
+  })
+
+  it.each([
+    ['format', 'pnpm --version'],
+    ['test:bootstrap:cold', 'node -e ""']
+  ] as const)('rejects a fixed-success replacement for %s', async (scriptName, replacement) => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-contract-'))
+    try {
+      const packageContents = await readFile(join(sourceRoot, 'package.json'), 'utf8')
+      const scripts = { ...scriptsFromPackage(packageContents) }
+      scripts[scriptName] = replacement
+      await writeFile(join(temporaryRoot, 'package.json'), JSON.stringify({ scripts }))
+      await mkdir(join(temporaryRoot, 'tests'))
+      const gitInitialization = await runCommand('git', ['init', '--quiet'], {
+        cwd: temporaryRoot,
+        timeoutMs: commandTimeoutMs
+      })
+      assertCommandSucceeded('git init --quiet', gitInitialization)
+      const gitAdd = await runCommand('git', ['add', 'package.json'], {
+        cwd: temporaryRoot,
+        timeoutMs: commandTimeoutMs
+      })
+      assertCommandSucceeded('git add package.json', gitAdd)
+
+      await expect(assertQualityContracts(temporaryRoot)).rejects.toThrow(
+        `Unexpected package script: ${scriptName}`
+      )
+    } finally {
+      await removeWithRetry(temporaryRoot)
+    }
   })
 
   it('runs every contracted quality command successfully in a clean offline copy', async () => {
