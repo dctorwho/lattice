@@ -1,0 +1,131 @@
+import { access, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { runCommand } from '../../helpers/command'
+import { requiredArtifacts } from '../../helpers/artifacts'
+import { verifyBootstrap } from '../../helpers/bootstrap-project'
+
+describe('verifyBootstrap', () => {
+  let root: string
+  let sourceRoot: string
+
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'lattice-bootstrap-unit-'))
+    sourceRoot = join(root, 'source')
+    await mkdir(sourceRoot)
+    await writeFile(join(sourceRoot, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
+  })
+
+  afterEach(async () => rm(root, { recursive: true, force: true }))
+
+  function fakeRunner(options?: {
+    failBuildNumber?: number
+    failInstall?: boolean
+    ignoredBuildPackage?: string
+  }) {
+    const calls: Array<{ readonly args: readonly string[]; readonly cwd: string }> = []
+    let buildNumber = 0
+    const run: typeof runCommand = async (_command, args, commandOptions) => {
+      calls.push({ args, cwd: commandOptions.cwd })
+      if (args.includes('install') && options?.failInstall) {
+        return { exitCode: 8, stdout: '', stderr: 'injected install failure', timedOut: false }
+      }
+      if (args.includes('ignored-builds')) {
+        return {
+          exitCode: 0,
+          stdout: `Automatically ignored builds during installation:\n  ${options?.ignoredBuildPackage ?? 'None'}\n`,
+          stderr: '',
+          timedOut: false
+        }
+      }
+      if (args.includes('build')) {
+        buildNumber += 1
+        if (buildNumber === options?.failBuildNumber) {
+          return { exitCode: 9, stdout: '', stderr: 'injected build failure', timedOut: false }
+        }
+        for (const relativePath of requiredArtifacts) {
+          const target = join(commandOptions.cwd, relativePath)
+          await mkdir(dirname(target), { recursive: true })
+          await writeFile(target, relativePath)
+        }
+      }
+      return { exitCode: 0, stdout: '', stderr: '', timedOut: false }
+    }
+    return { calls, run }
+  }
+
+  it('adds offline install flags and builds twice', async () => {
+    const fake = fakeRunner()
+    await verifyBootstrap({
+      sourceRoot,
+      tempParent: root,
+      mode: 'offline',
+      storeDirectory: join(root, 'store'),
+      relativePaths: ['pnpm-lock.yaml'],
+      run: fake.run
+    })
+    const install = fake.calls.find((call) => call.args.includes('install'))
+    expect(install?.args).toEqual(expect.arrayContaining(['--offline', '--frozen-lockfile']))
+    expect(fake.calls.filter((call) => call.args.includes('build'))).toHaveLength(2)
+  })
+
+  it('cleans the project copy after an injected second-build failure', async () => {
+    const fake = fakeRunner({ failBuildNumber: 2 })
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'cold',
+        storeDirectory: join(root, 'empty-store'),
+        relativePaths: ['pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow(/build.*9/)
+    const copiedRoot = fake.calls[0]?.cwd
+    expect(copiedRoot).toBeDefined()
+    await expect(access(copiedRoot as string)).rejects.toThrow()
+  })
+
+  it('omits offline mode for a cold install', async () => {
+    const fake = fakeRunner()
+    await verifyBootstrap({
+      sourceRoot,
+      tempParent: root,
+      mode: 'cold',
+      storeDirectory: join(root, 'empty-store'),
+      relativePaths: ['pnpm-lock.yaml'],
+      run: fake.run
+    })
+    const install = fake.calls.find((call) => call.args.includes('install'))
+    expect(install?.args).not.toContain('--offline')
+  })
+
+  it('reports an install-stage exit code', async () => {
+    const fake = fakeRunner({ failInstall: true })
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow(/install.*8/)
+  })
+
+  it('rejects a package with an ignored install build', async () => {
+    const fake = fakeRunner({ ignoredBuildPackage: 'esbuild' })
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow(/ignored builds.*esbuild/i)
+  })
+})
