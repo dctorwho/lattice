@@ -11,8 +11,16 @@ export interface RunCommandOptions {
   readonly cwd: string
   readonly env?: NodeJS.ProcessEnv
   readonly timeoutMs: number
-  readonly terminateTimedOutProcess?: (child: ChildProcess) => Promise<void>
+  readonly createTimeoutTerminationAttempt?: TimeoutTerminationAttemptFactory
 }
+
+export interface TimeoutTerminationAttempt {
+  readonly completion: Promise<void>
+  kill(): void
+  unref(): void
+}
+
+export type TimeoutTerminationAttemptFactory = (child: ChildProcess) => TimeoutTerminationAttempt
 
 const timeoutCleanupMs = 1_000
 
@@ -28,49 +36,87 @@ function killDirectChild(child: ChildProcess): void {
   }
 }
 
-function terminateTimedOutProcess(child: ChildProcess): Promise<void> {
+function createTimeoutTerminationAttempt(child: ChildProcess): TimeoutTerminationAttempt {
   if (process.platform !== 'win32' || child.pid === undefined) {
     killDirectChild(child)
-    return Promise.resolve()
+    return {
+      completion: Promise.resolve(),
+      kill: () => {},
+      unref: () => {}
+    }
   }
 
-  return new Promise((resolve, reject) => {
-    const terminator = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
-      shell: false,
-      windowsHide: true
-    })
-    terminator.once('error', (error: Error) => {
-      reject(new Error(`taskkill could not start: ${error.message}`))
-    })
-    terminator.once('close', (exitCode) => {
-      if (exitCode !== 0) {
-        reject(new Error(`taskkill exited with ${exitCode ?? 'no exit code'}.`))
-        return
-      }
-      resolve()
-    })
+  const terminator = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
+    shell: false,
+    windowsHide: true
   })
+  return {
+    completion: new Promise((resolve, reject) => {
+      terminator.once('error', (error: Error) => {
+        reject(new Error(`taskkill could not start: ${error.message}`))
+      })
+      terminator.once('close', (exitCode) => {
+        if (exitCode !== 0) {
+          reject(new Error(`taskkill exited with ${exitCode ?? 'no exit code'}.`))
+          return
+        }
+        resolve()
+      })
+    }),
+    kill: () => {
+      terminator.kill()
+    },
+    unref: () => {
+      terminator.unref()
+    }
+  }
 }
 
-function boundTimeoutCleanup(cleanup: Promise<void>, child: ChildProcess): Promise<void> {
+function stopTerminationAttempt(attempt: TimeoutTerminationAttempt): void {
+  try {
+    attempt.kill()
+  } catch {
+    // The attempt has already stopped or cannot be signaled.
+  }
+  attempt.unref()
+}
+
+function boundTimeoutCleanup(
+  attempt: TimeoutTerminationAttempt,
+  child: ChildProcess
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
+      stopTerminationAttempt(attempt)
       killDirectChild(child)
       reject(new Error(`Timed-out command cleanup did not finish within ${timeoutCleanupMs}ms.`))
     }, timeoutCleanupMs)
 
-    void cleanup.then(
+    void attempt.completion.then(
       () => {
         clearTimeout(timeout)
         resolve()
       },
       (error: unknown) => {
         clearTimeout(timeout)
+        stopTerminationAttempt(attempt)
         killDirectChild(child)
         reject(new Error(`Timed-out command cleanup failed: ${errorDetail(error)}`))
       }
     )
   })
+}
+
+function startTimeoutCleanup(
+  createAttempt: TimeoutTerminationAttemptFactory,
+  child: ChildProcess
+): Promise<void> {
+  try {
+    return boundTimeoutCleanup(createAttempt(child), child)
+  } catch (error) {
+    killDirectChild(child)
+    return Promise.reject(new Error(`Timed-out command cleanup failed: ${errorDetail(error)}`))
+  }
 }
 
 export function runCommand(
@@ -105,8 +151,9 @@ export function runCommand(
 
     const timeout = setTimeout(() => {
       timedOut = true
-      const terminate = options.terminateTimedOutProcess ?? terminateTimedOutProcess
-      timeoutCleanup = boundTimeoutCleanup(terminate(child), child)
+      const createAttempt =
+        options.createTimeoutTerminationAttempt ?? createTimeoutTerminationAttempt
+      timeoutCleanup = startTimeoutCleanup(createAttempt, child)
       void timeoutCleanup.catch((error: unknown) => {
         reject(error instanceof Error ? error : new Error(errorDetail(error)))
       })

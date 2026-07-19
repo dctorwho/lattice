@@ -74,6 +74,22 @@ describe('project copy isolation', () => {
     )
   })
 
+  it.each(['./node_modules/secret.txt', '.\\out\\result.js'])(
+    'rejects an excluded path with a dot prefix: %s',
+    async (relativePath) => {
+      const source = join(root, 'source')
+      const target = join(root, 'target')
+      await mkdir(join(source, 'node_modules'), { recursive: true })
+      await mkdir(join(source, 'out'), { recursive: true })
+      await writeFile(join(source, 'node_modules/secret.txt'), 'excluded')
+      await writeFile(join(source, 'out/result.js'), 'excluded')
+
+      await expect(copyProject(source, target, [relativePath])).rejects.toThrow(
+        'Unsafe relative path'
+      )
+    }
+  )
+
   it('rejects a copy target inside the source tree', async () => {
     const source = join(root, 'source')
     await mkdir(join(source, 'src'), { recursive: true })

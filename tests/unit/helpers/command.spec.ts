@@ -30,18 +30,30 @@ describe('runCommand', () => {
     expect(result.timedOut).toBe(true)
   })
 
-  it('rejects when timeout cleanup does not settle promptly', async () => {
+  it('kills and unreferences a hung timeout terminator before rejecting', async () => {
     const startedAt = Date.now()
+    let terminatorKilled = false
+    let terminatorUnreferenced = false
 
     await expect(
       runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
         cwd: process.cwd(),
         timeoutMs: 20,
-        terminateTimedOutProcess: () => new Promise<void>(() => {})
+        createTimeoutTerminationAttempt: () => ({
+          completion: new Promise<void>(() => {}),
+          kill: () => {
+            terminatorKilled = true
+          },
+          unref: () => {
+            terminatorUnreferenced = true
+          }
+        })
       })
     ).rejects.toThrow('Timed-out command cleanup did not finish')
 
     expect(Date.now() - startedAt).toBeLessThan(2_000)
+    expect(terminatorKilled).toBe(true)
+    expect(terminatorUnreferenced).toBe(true)
   })
 
   it('rejects when timeout cleanup reports a failure', async () => {
@@ -49,7 +61,11 @@ describe('runCommand', () => {
       runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
         cwd: process.cwd(),
         timeoutMs: 20,
-        terminateTimedOutProcess: () => Promise.reject(new Error('terminator exited with 7'))
+        createTimeoutTerminationAttempt: () => ({
+          completion: Promise.reject(new Error('terminator exited with 7')),
+          kill: () => {},
+          unref: () => {}
+        })
       })
     ).rejects.toThrow('Timed-out command cleanup failed: terminator exited with 7')
   })

@@ -19,7 +19,7 @@ function assertSafeRelativePath(relativePath: string): void {
     relativePath.length === 0 ||
     isAbsolute(relativePath) ||
     win32.parse(relativePath).root.length > 0 ||
-    segments.some((segment) => segment === '..')
+    segments.some((segment) => segment === '.' || segment === '..')
   ) {
     throw new Error(`Unsafe relative path: ${relativePath}`)
   }
