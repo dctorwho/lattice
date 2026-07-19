@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { assertSingleLockfile, hashArtifacts } from './artifacts'
+import { assertPackageManager, assertSingleLockfile, hashArtifacts } from './artifacts'
 import { pnpmCommand, runCommand, type CommandResult } from './command'
 import { copyProject, listProjectFiles, removeWithRetry } from './project-copy'
 
@@ -24,7 +24,7 @@ export interface BootstrapEvidence {
   readonly pendingBuilds: readonly string[]
 }
 
-const commandTimeoutMs = 120_000
+const commandTimeoutMs = 90_000
 const ignoredBuildsHeading = 'Automatically ignored builds during installation:'
 
 function commandFailure(stage: string, result: CommandResult): Error {
@@ -106,7 +106,8 @@ export async function verifyBootstrap(options: BootstrapOptions): Promise<Bootst
   try {
     const relativePaths = options.relativePaths ?? (await listProjectFiles(options.sourceRoot))
     await copyProject(options.sourceRoot, projectRoot, relativePaths)
-    await assertSingleLockfile(projectRoot)
+    await assertSingleLockfile(projectRoot, relativePaths)
+    await assertPackageManager(projectRoot)
 
     const installArguments = [
       'install',

@@ -53,6 +53,54 @@ function isMissingPathError(error: unknown): boolean {
   )
 }
 
+async function preflightDirectoryCreation(
+  directory: string,
+  realSource: string,
+  trustedLexicalRoot?: string,
+  trustedRealRoot?: string
+): Promise<void> {
+  let candidate = resolve(directory)
+  let nearestExistingDirectory: string | undefined
+
+  while (true) {
+    try {
+      const status = await lstat(candidate)
+      if (status.isSymbolicLink()) {
+        throw new Error(`Copy target ancestor is a symbolic link or reparse point: ${candidate}`)
+      }
+      if (!status.isDirectory()) {
+        throw new Error(`Copy target ancestor is not a directory: ${candidate}`)
+      }
+      if (nearestExistingDirectory === undefined) {
+        nearestExistingDirectory = await realpath(candidate)
+      }
+    } catch (error) {
+      if (!isMissingPathError(error)) {
+        throw error
+      }
+    }
+
+    if (trustedLexicalRoot !== undefined && candidate === trustedLexicalRoot) {
+      break
+    }
+    const parent = dirname(candidate)
+    if (parent === candidate) {
+      break
+    }
+    candidate = parent
+  }
+
+  if (nearestExistingDirectory === undefined) {
+    throw new Error(`Unable to find an existing target ancestor for ${directory}.`)
+  }
+  if (isPathInside(realSource, nearestExistingDirectory)) {
+    throw new Error(`Copy target ancestor resolves inside the source tree: ${directory}`)
+  }
+  if (trustedRealRoot !== undefined && !isPathInside(trustedRealRoot, nearestExistingDirectory)) {
+    throw new Error(`Copy target ancestor is outside the target tree: ${directory}`)
+  }
+}
+
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolveDelay) => {
     setTimeout(resolveDelay, milliseconds)
@@ -60,7 +108,19 @@ function delay(milliseconds: number): Promise<void> {
 }
 
 export async function listProjectFiles(source: string): Promise<readonly string[]> {
-  const result = await runCommand('git', ['ls-files', '--cached', '-z'], {
+  return listGitProjectFiles(source, ['--cached'])
+}
+
+export async function listOwnedTestSources(source: string): Promise<readonly string[]> {
+  const files = await listGitProjectFiles(source, ['--cached', '--others', '--exclude-standard'])
+  return files.filter((relativePath) => /^tests\/.+\.(?:ts|tsx)$/.test(relativePath))
+}
+
+async function listGitProjectFiles(
+  source: string,
+  listingArguments: readonly string[]
+): Promise<readonly string[]> {
+  const result = await runCommand('git', ['ls-files', ...listingArguments, '-z'], {
     cwd: source,
     timeoutMs: 5_000
   })
@@ -97,8 +157,12 @@ export async function copyProject(
     throw new Error(`Copy target is inside the source tree: ${target}`)
   }
   const realSource = await realpath(resolvedSource)
+  await preflightDirectoryCreation(resolvedTarget, realSource)
   await mkdir(resolvedTarget, { recursive: true })
   const realTarget = await realpath(resolvedTarget)
+  if (isPathInside(realSource, realTarget)) {
+    throw new Error(`Copy target root resolves inside the source tree: ${target}`)
+  }
 
   for (const relativePath of relativePaths) {
     assertIncludedProjectPath(relativePath)
@@ -109,9 +173,13 @@ export async function copyProject(
     }
     const targetPath = resolve(resolvedTarget, relativePath)
     const targetDirectory = dirname(targetPath)
+    await preflightDirectoryCreation(targetDirectory, realSource, resolvedTarget, realTarget)
     await mkdir(targetDirectory, { recursive: true })
     const realTargetDirectory = await realpath(targetDirectory)
-    if (!isPathInside(realTarget, realTargetDirectory)) {
+    if (
+      !isPathInside(realTarget, realTargetDirectory) ||
+      isPathInside(realSource, realTargetDirectory)
+    ) {
       throw new Error(`Copy target path is outside the target tree: ${relativePath}`)
     }
     try {

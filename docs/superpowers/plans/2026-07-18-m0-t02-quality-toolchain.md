@@ -313,6 +313,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    allowOnly: false,
     include: ['tests/unit/**/*.spec.{ts,tsx}'],
     setupFiles: ['tests/setup.ts'],
     coverage: {
@@ -335,8 +336,11 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/integration/**/*.spec.ts'],
     exclude: isMetaChild ? ['tests/integration/quality-scripts.spec.ts'] : [],
-    testTimeout: 180_000,
-    hookTimeout: 180_000,
+    allowOnly: false,
+    // The positive meta-test can run one 90 s install plus ten 90 s child commands.
+    // Its explicit per-test timeout is 1_020_000 ms, leaving cleanup headroom.
+    testTimeout: 1_020_000,
+    hookTimeout: 120_000,
     sequence: { concurrent: false }
   }
 })
@@ -350,11 +354,11 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
+    allowOnly: false,
     include: ['tests/bootstrap/**/*.spec.ts'],
     testTimeout: 600_000,
     hookTimeout: 600_000,
-    maxWorkers: 1,
-    minWorkers: 1
+    maxWorkers: 1
   }
 })
 ```
@@ -367,10 +371,10 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     environment: 'node',
+    allowOnly: false,
     include: ['tests/performance/**/*.spec.ts'],
     testTimeout: 60_000,
-    maxWorkers: 1,
-    minWorkers: 1
+    maxWorkers: 1
   }
 })
 ```
@@ -385,6 +389,7 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: 'tests/e2e',
   workers: 1,
+  forbidOnly: true,
   timeout: 60_000,
   retries: 0,
   reporter: [['list']]
@@ -399,6 +404,7 @@ import { defineConfig } from '@playwright/test'
 export default defineConfig({
   testDir: 'tests/security',
   workers: 1,
+  forbidOnly: true,
   timeout: 60_000,
   retries: 0,
   reporter: [['list']]
@@ -480,7 +486,7 @@ git commit -m "build(M0-T02): add frozen quality toolchain"
 
 **Interfaces:**
 
-- Produces: `runCommand`, `pnpmCommand`, `listProjectFiles`, `copyProject`, `removeWithRetry`, `assertSingleLockfile`, `hashArtifacts`, `summarizeSamples`, `assertWithinThreshold`
+- Produces: `runCommand`, `pnpmCommand`, `listProjectFiles`, `listOwnedTestSources`, `copyProject`, `removeWithRetry`, `assertSingleLockfile`, `assertPackageManager`, `hashArtifacts`, `summarizeSamples`, `assertWithinThreshold`
 
 - [ ] **Step 1: Write failing process-runner tests**
 
@@ -620,6 +626,7 @@ export const excludedTopLevelNames = new Set([
 ])
 
 export async function listProjectFiles(source: string): Promise<readonly string[]>
+export async function listOwnedTestSources(source: string): Promise<readonly string[]>
 export async function copyProject(
   source: string,
   target: string,
@@ -628,7 +635,9 @@ export async function copyProject(
 export async function removeWithRetry(target: string, attempts?: number): Promise<void>
 ```
 
-Implement `listProjectFiles` by running `git ls-files --cached --others --exclude-standard -z` with `shell: false`, splitting NUL-delimited relative paths, rejecting absolute/parent-traversal paths, and filtering `excludedTopLevelNames`. Implement `copyProject` by creating parent directories and using `copyFile` for only those paths; reject a target inside the source. Implement cleanup with `rm({ recursive: true, force: true })`, three attempts by default, and 100/250 ms backoff. Rethrow the last error with the exact target path.
+Implement `listProjectFiles` with tracked/cached `git ls-files --cached -z` only, because its result is the copy manifest. Implement `listOwnedTestSources` separately with `--cached --others --exclude-standard -z`, then retain only nonignored `tests/**/*.ts(x)` sources for the anti-cheat audit. Both listings use `shell: false`, split NUL-delimited relative paths, reject absolute/parent-traversal paths, and filter `excludedTopLevelNames`.
+
+Before **every** target `mkdir`, preflight every existing lexical ancestor from the requested directory to the trusted target root (or filesystem root while creating the target root). Reject symbolic-link, junction, or other reparse ancestors before mutation; resolve the nearest existing ancestor and reject it when it resolves inside the real source or, for child creation, outside the trusted real target. Re-run realpath containment validation after `mkdir`, then copy only the approved manifest paths. Regressions cover a target-root junction into source, a missing target root below a junction ancestor into source, and source/external child junctions requested through `linked/nested/index.ts`, each proving no directory or file is created on the linked side. Implement cleanup with `rm({ recursive: true, force: true })`, three attempts by default, and 100/250 ms backoff. Rethrow the last error with the exact target path.
 
 Run: `pnpm test -- tests/unit/helpers/project-copy.spec.ts`
 
@@ -643,13 +652,19 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { assertSingleLockfile, hashArtifacts, requiredArtifacts } from '../../helpers/artifacts'
+import {
+  assertPackageManager,
+  assertSingleLockfile,
+  hashArtifacts,
+  requiredArtifacts
+} from '../../helpers/artifacts'
 
 describe('bootstrap artifacts', () => {
   let root: string
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), 'lattice-artifacts-'))
     await writeFile(join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
+    await writeFile(join(root, 'package.json'), '{"packageManager":"pnpm@11.12.0"}\n')
   })
   afterEach(async () => rm(root, { recursive: true, force: true }))
 
@@ -699,11 +714,15 @@ export const requiredArtifacts = [
   'out/renderer/index.html'
 ] as const
 
-export async function assertSingleLockfile(root: string): Promise<void>
+export async function assertSingleLockfile(
+  root: string,
+  manifest?: readonly string[]
+): Promise<void>
+export async function assertPackageManager(root: string): Promise<void>
 export async function hashArtifacts(root: string): Promise<Readonly<Record<string, string>>>
 ```
 
-Use `createHash('sha256')`; throw messages that include the relative offending path, never a full environment dump.
+Use `createHash('sha256')`; throw messages that include the relative offending path, never a full environment dump. The copied `package.json#packageManager` must be exactly `pnpm@11.12.0`. When a tracked pre-install manifest is supplied, it must contain exactly one lockfile and that entry must be root `pnpm-lock.yaml`; reject nested `pnpm-lock.yaml` and npm, Yarn, or shrinkwrap lockfiles anywhere. Unit coverage includes missing/wrong package-manager and missing/nested/alternate manifest lockfile cases.
 
 Run: `pnpm test -- tests/unit/helpers/artifacts.spec.ts`
 
@@ -965,7 +984,7 @@ git commit -m "test(M0-T02): add executable smoke suites"
 
 **Interfaces:**
 
-- Consumes: `runCommand`, `pnpmCommand`, `listProjectFiles`, `copyProject`, `removeWithRetry`, `assertSingleLockfile`, `hashArtifacts`
+- Consumes: `runCommand`, `pnpmCommand`, `listProjectFiles`, `copyProject`, `removeWithRetry`, `assertSingleLockfile`, `assertPackageManager`, `hashArtifacts`
 - Produces: `verifyBootstrap(options): Promise<BootstrapEvidence>` shared by TC-M0-001 and TC-M0-008
 
 - [ ] **Step 1: Write failing bootstrap-workflow unit tests**
@@ -989,6 +1008,7 @@ describe('verifyBootstrap', () => {
     sourceRoot = join(root, 'source')
     await mkdir(sourceRoot)
     await writeFile(join(sourceRoot, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
+    await writeFile(join(sourceRoot, 'package.json'), '{"packageManager":"pnpm@11.12.0"}\n')
   })
   afterEach(async () => rm(root, { recursive: true, force: true }))
 
@@ -1023,7 +1043,7 @@ describe('verifyBootstrap', () => {
       tempParent: root,
       mode: 'offline',
       storeDirectory: join(root, 'store'),
-      relativePaths: ['pnpm-lock.yaml'],
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
       run: fake.run
     })
     const install = fake.calls.find((call) => call.args.includes('install'))
@@ -1039,7 +1059,7 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'cold',
         storeDirectory: join(root, 'empty-store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run
       })
     ).rejects.toThrow(/build.*9/)
@@ -1055,7 +1075,7 @@ describe('verifyBootstrap', () => {
       tempParent: root,
       mode: 'cold',
       storeDirectory: join(root, 'empty-store'),
-      relativePaths: ['pnpm-lock.yaml'],
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
       run: fake.run
     })
     const install = fake.calls.find((call) => call.args.includes('install'))
@@ -1070,7 +1090,7 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'offline',
         storeDirectory: join(root, 'store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run
       })
     ).rejects.toThrow(/install.*8/)
@@ -1080,7 +1100,7 @@ describe('verifyBootstrap', () => {
 
 Run: `pnpm test -- tests/unit/helpers/bootstrap-project.spec.ts`
 
-Expected: FAIL because `verifyBootstrap` does not exist.
+Expected: FAIL because `verifyBootstrap` does not exist. The red cases include missing and wrong `package.json#packageManager` values (both must reject before install); all supplied manifests include `package.json` plus `pnpm-lock.yaml`.
 
 - [ ] **Step 2: Implement the injected bootstrap workflow**
 
@@ -1108,13 +1128,13 @@ export interface BootstrapEvidence {
 export async function verifyBootstrap(options: BootstrapOptions): Promise<BootstrapEvidence>
 ```
 
-Use `relativePaths` when supplied by a unit test; otherwise call `listProjectFiles(sourceRoot)`. Copy only that manifest to a child directory named `Lattice 质量门禁 <randomUUID()>`. Run frozen install with `--store-dir`; add `--offline` only in offline mode. Run `pnpm ignored-builds`, require an empty parsed package list, run `pnpm build`, hash artifacts, remove `out`, run build again, and require identical maps. Always call `removeWithRetry` in `finally`.
+Use `relativePaths` when supplied by a unit test; otherwise call tracked-only `listProjectFiles(sourceRoot)`. Copy only that manifest to a child directory named `Lattice 质量门禁 <randomUUID()>`, validate the manifest's unique root lockfile and the copied exact `pnpm@11.12.0` package manager before install, then run frozen install with `--store-dir`; add `--offline` only in offline mode. Run `pnpm ignored-builds`, require an empty parsed package list, run `pnpm build`, hash artifacts, remove `out`, run build again, and require identical maps. Always call `removeWithRetry` in `finally`.
 
 - [ ] **Step 3: Run unit tests to green**
 
 Run: `pnpm test -- tests/unit/helpers/bootstrap-project.spec.ts`
 
-Expected: PASS for offline/cold argument selection, failures, and cleanup.
+Expected: PASS for offline/cold argument selection, stage/cleanup failures, and missing/wrong exact package-manager rejection. The companion artifact cases cover the tracked manifest's missing root lockfile, nested `pnpm-lock.yaml`, and nested npm/Yarn/shrinkwrap alternate lockfiles.
 
 - [ ] **Step 4: Add offline TC-M0-001 integration**
 
@@ -1227,7 +1247,7 @@ git commit -m "test(M0-T02): automate bootstrap acceptance"
 
 - [ ] **Step 1: Write the positive command-contract test**
 
-Create `tests/integration/quality-scripts.spec.ts` with a `runPnpm(root, script)` helper that uses `pnpmCommand`, a 5-minute timeout, and this child environment:
+Create `tests/integration/quality-scripts.spec.ts` with a `runPnpm(root, script)` helper that uses `pnpmCommand` and a measured 90-second child timeout. Give the positive loop an explicit 1,020-second outer timeout (one install plus ten child-command maxima and cleanup headroom), each two-command fault case a 300-second outer timeout (install plus direct/check maxima and cleanup), and retain a short bounded regression that proves an inner timeout cleans up before its outer timeout. This prevents Vitest from preempting `runCommand` cleanup while avoiding unbounded waits.
 
 ```ts
 const childEnvironment = {
@@ -1309,7 +1329,7 @@ For each fault, create a fresh copy, install offline, inject, run the direct scr
 
 - [ ] **Step 3: Add anti-cheat assertions**
 
-Read `package.json#scripts` and require each contracted script to exist, be non-empty, and not match `exit 0`, `process.exit(0)`, `echo success`, or a no-op command. Recursively scan owned test sources and fail on `.skip(` or `.only(`. Exclude documentation and third-party/generated directories.
+Read `package.json#scripts` and require each contracted script to exist, be non-empty, and not match `exit 0`, `process.exit(0)`, `echo success`, or a no-op command. Scan cached plus untracked nonignored owned test sources (while keeping the copy manifest cached-only) and reject a dot, optional whitespace, then `skip` or `only` member token at a word boundary regardless of what follows. This catches terminal, `each`, `concurrent`, `sequential`, and whitespace-chained forms for both untracked skipped and focused sources. Exclude documentation and third-party/generated directories.
 
 Run: `pnpm test:integration -- tests/integration/quality-scripts.spec.ts`
 

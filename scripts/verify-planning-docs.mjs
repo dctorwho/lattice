@@ -513,6 +513,53 @@ for (const id of compatibilitySet) {
     errors.push(`compatibility item ${id} is not referenced by a task`)
 }
 
+const technologyTableHeaderCells = [
+  '依赖',
+  '用途',
+  '许可证',
+  '原生二进制',
+  '安装脚本',
+  '替代方案',
+  '包体影响'
+]
+
+function hasExactMarkdownTableHeader(markdown, expectedCells) {
+  return markdown.split(/\r?\n/).some((line) => {
+    const rawCells = line.split('|')
+    if (
+      rawCells.length < 2 ||
+      rawCells[0].trim() !== '' ||
+      rawCells[rawCells.length - 1].trim() !== ''
+    ) {
+      return false
+    }
+    const cells = rawCells.slice(1, -1).map((cell) => cell.trim())
+    return (
+      cells.length === expectedCells.length &&
+      cells.every((cell, index) => cell === expectedCells[index])
+    )
+  })
+}
+
+const alignedTechnologyHeader =
+  '| 依赖                 | 用途 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 | 包体影响 |'
+const missingTechnologyHeaderCell = '| 依赖 | 用途 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 |'
+const reorderedTechnologyHeader =
+  '| 用途 | 依赖 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 | 包体影响 |'
+if (!hasExactMarkdownTableHeader(alignedTechnologyHeader, technologyTableHeaderCells)) {
+  errors.push('planning verifier self-check failed: aligned technology table header was rejected')
+}
+if (hasExactMarkdownTableHeader(missingTechnologyHeaderCell, technologyTableHeaderCells)) {
+  errors.push(
+    'planning verifier self-check failed: missing technology table header cell was accepted'
+  )
+}
+if (hasExactMarkdownTableHeader(reorderedTechnologyHeader, technologyTableHeaderCells)) {
+  errors.push(
+    'planning verifier self-check failed: reordered technology table header cells were accepted'
+  )
+}
+
 const requiredPlanningContracts = new Map([
   [
     'AGENTS.md',
@@ -530,10 +577,6 @@ const requiredPlanningContracts = new Map([
   [
     'docs/11-codex-cli-runbook.md',
     ['corepack install --global pnpm@11.12.0', 'M0-T01 使用', '占位脚本']
-  ],
-  [
-    'docs/04-technology-stack.md',
-    ['| 依赖 | 用途 | 许可证 | 原生二进制 | 安装脚本 | 替代方案 | 包体影响 |']
   ],
   ['docs/02-compatibility-matrix.md', ['EXP-005,007,009', 'IMP-001..030']],
   ['docs/03-architecture.md', ['Pandoc 导入是独立的只读源转换', '不创建部分会话']],
@@ -564,6 +607,12 @@ for (const [file, snippets] of requiredPlanningContracts) {
     if (!read(file).includes(snippet))
       errors.push(`${file} is missing required planning contract: ${snippet}`)
   }
+}
+
+if (!hasExactMarkdownTableHeader(read('docs/04-technology-stack.md'), technologyTableHeaderCells)) {
+  errors.push(
+    'docs/04-technology-stack.md is missing the required technology dependency table header'
+  )
 }
 
 const bootstrapSection = taskSections.get('M0-T01') ?? ''

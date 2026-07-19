@@ -2,7 +2,12 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { assertSingleLockfile, hashArtifacts, requiredArtifacts } from '../../helpers/artifacts'
+import {
+  assertPackageManager,
+  assertSingleLockfile,
+  hashArtifacts,
+  requiredArtifacts
+} from '../../helpers/artifacts'
 
 describe('bootstrap artifacts', () => {
   let root: string
@@ -10,6 +15,7 @@ describe('bootstrap artifacts', () => {
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), 'lattice-artifacts-'))
     await writeFile(join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
+    await writeFile(join(root, 'package.json'), '{"packageManager":"pnpm@11.12.0"}\n')
   })
 
   afterEach(async () => rm(root, { recursive: true, force: true }))
@@ -21,6 +27,32 @@ describe('bootstrap artifacts', () => {
       await expect(assertSingleLockfile(root)).rejects.toThrow(name)
     }
   )
+
+  it.each([
+    ['pnpm-lock.yaml', 'packages/example/pnpm-lock.yaml'],
+    ['pnpm-lock.yaml', 'packages/example/package-lock.json'],
+    ['pnpm-lock.yaml', 'packages/example/yarn.lock'],
+    ['pnpm-lock.yaml', 'packages/example/npm-shrinkwrap.json']
+  ])(
+    'rejects a tracked nested or alternate lockfile: %s and %s',
+    async (_rootLockfile, nestedLockfile) => {
+      await expect(
+        assertSingleLockfile(root, ['package.json', 'pnpm-lock.yaml', nestedLockfile])
+      ).rejects.toThrow(nestedLockfile)
+    }
+  )
+
+  it('rejects a manifest without the root pnpm lockfile', async () => {
+    await expect(assertSingleLockfile(root, ['package.json'])).rejects.toThrow('root lockfile')
+  })
+
+  it.each([
+    ['missing', '{}\n'],
+    ['wrong', '{"packageManager":"pnpm@10.0.0"}\n']
+  ])('rejects a %s package manager declaration', async (_name, contents) => {
+    await writeFile(join(root, 'package.json'), contents)
+    await expect(assertPackageManager(root)).rejects.toThrow('pnpm@11.12.0')
+  })
 
   it('hashes every required artifact deterministically', async () => {
     for (const relativePath of requiredArtifacts) {

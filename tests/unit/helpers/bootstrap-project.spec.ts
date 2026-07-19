@@ -16,6 +16,7 @@ describe('verifyBootstrap', () => {
     sourceRoot = join(root, 'source')
     await mkdir(sourceRoot)
     await writeFile(join(sourceRoot, 'pnpm-lock.yaml'), 'lockfileVersion: 9\n')
+    await writeFile(join(sourceRoot, 'package.json'), '{"packageManager":"pnpm@11.12.0"}\n')
   })
 
   afterEach(async () => rm(root, { recursive: true, force: true }))
@@ -70,7 +71,7 @@ describe('verifyBootstrap', () => {
       tempParent: root,
       mode: 'offline',
       storeDirectory: join(root, 'store'),
-      relativePaths: ['pnpm-lock.yaml'],
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
       run: fake.run
     })
     const install = fake.calls.find((call) => call.args.includes('install'))
@@ -86,7 +87,7 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'cold',
         storeDirectory: join(root, 'empty-store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run
       })
     ).rejects.toThrow(/build.*9/)
@@ -102,7 +103,7 @@ describe('verifyBootstrap', () => {
       tempParent: root,
       mode: 'cold',
       storeDirectory: join(root, 'empty-store'),
-      relativePaths: ['pnpm-lock.yaml'],
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
       run: fake.run
     })
     const install = fake.calls.find((call) => call.args.includes('install'))
@@ -117,7 +118,7 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'offline',
         storeDirectory: join(root, 'store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run
       })
     ).rejects.toThrow(/install.*8/)
@@ -131,7 +132,7 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'offline',
         storeDirectory: join(root, 'store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run
       })
     ).rejects.toThrow(/ignored builds.*esbuild/i)
@@ -145,7 +146,7 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'offline',
         storeDirectory: join(root, 'store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run
       })
     ).rejects.toThrow('different required artifact hashes')
@@ -165,7 +166,7 @@ describe('verifyBootstrap', () => {
       tempParent: root,
       mode: 'offline',
       storeDirectory: join(root, 'store'),
-      relativePaths: ['pnpm-lock.yaml'],
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
       run: fake.run,
       remove
     }).catch((error: unknown) => error)
@@ -196,10 +197,26 @@ describe('verifyBootstrap', () => {
         tempParent: root,
         mode: 'offline',
         storeDirectory: join(root, 'store'),
-        relativePaths: ['pnpm-lock.yaml'],
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
         run: fake.run,
         remove
       })
     ).rejects.toThrow('injected project cleanup failure')
+  })
+
+  it('rejects a copied package manager declaration that is not pnpm 11.12.0', async () => {
+    await writeFile(join(sourceRoot, 'package.json'), '{"packageManager":"pnpm@10.0.0"}\n')
+    const fake = fakeRunner()
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('pnpm@11.12.0')
   })
 })

@@ -1,11 +1,20 @@
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { pnpmCommand, runCommand, type CommandResult } from '../helpers/command'
-import { copyProject, listProjectFiles, removeWithRetry } from '../helpers/project-copy'
+import {
+  copyProject,
+  listOwnedTestSources,
+  listProjectFiles,
+  removeWithRetry
+} from '../helpers/project-copy'
 
-const commandTimeoutMs = 300_000
+const commandTimeoutMs = 90_000
+const contractTestTimeoutMs = 120_000
+const positiveCommandTestTimeoutMs = 1_020_000
+const faultCommandTestTimeoutMs = 300_000
+const timeoutCleanupRegressionTimeoutMs = 5_000
 const outputTailLength = 2_000
 
 const childEnvironment = {
@@ -241,13 +250,11 @@ async function assertQualityContracts(sourceRoot: string): Promise<void> {
   const scripts = scriptsFromPackage(packageContents)
   assertContractedScripts(scripts)
 
-  const testSources = (await listProjectFiles(sourceRoot)).filter((relativePath) =>
-    /^tests\/.*\.(?:ts|tsx)$/.test(relativePath)
-  )
+  const testSources = await listOwnedTestSources(sourceRoot)
   for (const relativePath of testSources) {
     const contents = await readFile(join(sourceRoot, relativePath), 'utf8')
     expect(contents, `Focused or skipped test source: ${relativePath}`).not.toMatch(
-      /\.(?:skip|only)\s*\(/
+      /\.\s*(?:skip|only)\b/
     )
   }
 }
@@ -306,68 +313,178 @@ describe('TC-M0-002 quality script contracts', () => {
     storeDirectory = await pnpmStorePath(sourceRoot)
   })
 
-  it('rejects missing, no-op, focused, and skipped quality contracts', async () => {
-    await assertQualityContracts(sourceRoot)
-  })
+  it(
+    'rejects missing, no-op, focused, and skipped quality contracts',
+    async () => {
+      await assertQualityContracts(sourceRoot)
+    },
+    contractTestTimeoutMs
+  )
 
   it.each([
     ['format', 'pnpm --version'],
     ['test:bootstrap:cold', 'node -e ""']
-  ] as const)('rejects a fixed-success replacement for %s', async (scriptName, replacement) => {
-    const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-contract-'))
-    try {
-      const packageContents = await readFile(join(sourceRoot, 'package.json'), 'utf8')
-      const scripts = { ...scriptsFromPackage(packageContents) }
-      scripts[scriptName] = replacement
-      await writeFile(join(temporaryRoot, 'package.json'), JSON.stringify({ scripts }))
-      await mkdir(join(temporaryRoot, 'tests'))
-      const gitInitialization = await runCommand('git', ['init', '--quiet'], {
-        cwd: temporaryRoot,
-        timeoutMs: commandTimeoutMs
-      })
-      assertCommandSucceeded('git init --quiet', gitInitialization)
-      const gitAdd = await runCommand('git', ['add', 'package.json'], {
-        cwd: temporaryRoot,
-        timeoutMs: commandTimeoutMs
-      })
-      assertCommandSucceeded('git add package.json', gitAdd)
+  ] as const)(
+    'rejects a fixed-success replacement for %s',
+    async (scriptName, replacement) => {
+      const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-contract-'))
+      try {
+        const packageContents = await readFile(join(sourceRoot, 'package.json'), 'utf8')
+        const scripts = { ...scriptsFromPackage(packageContents) }
+        scripts[scriptName] = replacement
+        await writeFile(join(temporaryRoot, 'package.json'), JSON.stringify({ scripts }))
+        await mkdir(join(temporaryRoot, 'tests'))
+        const gitInitialization = await runCommand('git', ['init', '--quiet'], {
+          cwd: temporaryRoot,
+          timeoutMs: commandTimeoutMs
+        })
+        assertCommandSucceeded('git init --quiet', gitInitialization)
+        const gitAdd = await runCommand('git', ['add', 'package.json'], {
+          cwd: temporaryRoot,
+          timeoutMs: commandTimeoutMs
+        })
+        assertCommandSucceeded('git add package.json', gitAdd)
 
-      await expect(assertQualityContracts(temporaryRoot)).rejects.toThrow(
-        `Unexpected package script: ${scriptName}`
-      )
-    } finally {
-      await removeWithRetry(temporaryRoot)
-    }
-  })
-
-  it('runs every contracted quality command successfully in a clean offline copy', async () => {
-    await withOfflineProjectCopy(
-      sourceRoot,
-      relativePaths,
-      storeDirectory,
-      'positive',
-      async (root) => {
-        for (const script of executableScripts) {
-          assertCommandSucceeded(script, await runPnpm(root, script, storeDirectory))
-        }
-      }
-    )
-  })
-
-  it.each(faults)('detects the $name fault directly and through check', async (fault) => {
-    await withOfflineProjectCopy(
-      sourceRoot,
-      relativePaths,
-      storeDirectory,
-      fault.name,
-      async (root) => {
-        await fault.inject(root)
-        assertCommandFailed(
-          fault.directScript,
-          await runPnpm(root, fault.directScript, storeDirectory)
+        await expect(assertQualityContracts(temporaryRoot)).rejects.toThrow(
+          `Unexpected package script: ${scriptName}`
         )
-        assertCommandFailed('check', await runPnpm(root, 'check', storeDirectory))
+      } finally {
+        await removeWithRetry(temporaryRoot)
       }
-    )
-  })
+    },
+    contractTestTimeoutMs
+  )
+
+  it(
+    'rejects an untracked formatted focused-each owned test source',
+    async () => {
+      const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-contract-'))
+      try {
+        await writeFile(
+          join(temporaryRoot, 'package.json'),
+          await readFile(join(sourceRoot, 'package.json'))
+        )
+        await mkdir(join(temporaryRoot, 'tests/unit'), { recursive: true })
+        const focusedMember = ['only', 'each'].join('.')
+        await writeFile(
+          join(temporaryRoot, 'tests/unit/untracked-focused.spec.ts'),
+          `import { it } from 'vitest'\n\nit.${focusedMember}([['example']])('%s', () => {})\n`
+        )
+        const gitInitialization = await runCommand('git', ['init', '--quiet'], {
+          cwd: temporaryRoot,
+          timeoutMs: commandTimeoutMs
+        })
+        assertCommandSucceeded('git init --quiet', gitInitialization)
+        const gitAdd = await runCommand('git', ['add', 'package.json'], {
+          cwd: temporaryRoot,
+          timeoutMs: commandTimeoutMs
+        })
+        assertCommandSucceeded('git add package.json', gitAdd)
+
+        await expect(assertQualityContracts(temporaryRoot)).rejects.toThrow(
+          'untracked-focused.spec.ts'
+        )
+      } finally {
+        await removeWithRetry(temporaryRoot)
+      }
+    },
+    contractTestTimeoutMs
+  )
+
+  it.each([
+    ['terminal only', ['only'], 'untracked-only.spec.ts'],
+    ['terminal skip with whitespace', ['skip'], 'untracked-skip.spec.ts'],
+    ['each chain', ['only', 'each'], 'untracked-each.spec.ts'],
+    ['concurrent chain', ['skip', 'concurrent'], 'untracked-concurrent.spec.ts'],
+    ['sequential chain', ['only', 'sequential'], 'untracked-sequential.spec.ts']
+  ] as const)(
+    'rejects an untracked %s member chain',
+    async (_name, memberParts, testFile) => {
+      const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-contract-'))
+      try {
+        await writeFile(
+          join(temporaryRoot, 'package.json'),
+          await readFile(join(sourceRoot, 'package.json'))
+        )
+        await mkdir(join(temporaryRoot, 'tests/unit'), { recursive: true })
+        const member = memberParts.join(' . ')
+        await writeFile(
+          join(temporaryRoot, 'tests/unit', testFile),
+          `import { it } from 'vitest'\n\nit . ${member}([['example']])('%s', () => {})\n`
+        )
+        const gitInitialization = await runCommand('git', ['init', '--quiet'], {
+          cwd: temporaryRoot,
+          timeoutMs: commandTimeoutMs
+        })
+        assertCommandSucceeded('git init --quiet', gitInitialization)
+        const gitAdd = await runCommand('git', ['add', 'package.json'], {
+          cwd: temporaryRoot,
+          timeoutMs: commandTimeoutMs
+        })
+        assertCommandSucceeded('git add package.json', gitAdd)
+
+        await expect(assertQualityContracts(temporaryRoot)).rejects.toThrow(testFile)
+      } finally {
+        await removeWithRetry(temporaryRoot)
+      }
+    },
+    contractTestTimeoutMs
+  )
+
+  it(
+    'runs every contracted quality command successfully in a clean offline copy',
+    async () => {
+      await withOfflineProjectCopy(
+        sourceRoot,
+        relativePaths,
+        storeDirectory,
+        'positive',
+        async (root) => {
+          for (const script of executableScripts) {
+            assertCommandSucceeded(script, await runPnpm(root, script, storeDirectory))
+          }
+        }
+      )
+    },
+    positiveCommandTestTimeoutMs
+  )
+
+  it.each(faults)(
+    'detects the $name fault directly and through check',
+    async (fault) => {
+      await withOfflineProjectCopy(
+        sourceRoot,
+        relativePaths,
+        storeDirectory,
+        fault.name,
+        async (root) => {
+          await fault.inject(root)
+          assertCommandFailed(
+            fault.directScript,
+            await runPnpm(root, fault.directScript, storeDirectory)
+          )
+          assertCommandFailed('check', await runPnpm(root, 'check', storeDirectory))
+        }
+      )
+    },
+    faultCommandTestTimeoutMs
+  )
+
+  it(
+    'allows an inner command timeout and cleanup to finish before the meta-test timeout',
+    async () => {
+      const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-timeout-'))
+      try {
+        const result = await runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+          cwd: temporaryRoot,
+          timeoutMs: 100
+        })
+        expect(result.timedOut).toBe(true)
+      } finally {
+        await removeWithRetry(temporaryRoot)
+      }
+      await expect(access(temporaryRoot)).rejects.toThrow()
+    },
+    timeoutCleanupRegressionTimeoutMs
+  )
 })

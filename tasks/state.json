@@ -2,7 +2,7 @@
   "schema_version": 1,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
-  "current_task": "M0-T02",
+  "current_task": null,
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "tasks": [
     {
@@ -32,14 +32,33 @@
     },
     {
       "id": "M0-T02",
-      "status": "in_progress",
+      "status": "passed",
       "depends_on": ["M0-T01"],
       "manual_gate": false,
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "command",
+          "summary": "pnpm 11.12.0; frozen offline install exit 0; two fresh pnpm check runs exit 0; E2E, scoped security, performance-harness, and cold-bootstrap gates exit 0",
+          "path": "docs/evidence/M0-T02-quality-toolchain-2026-07-18.md",
+          "recorded_at": "2026-07-19T09:36:12.9444607Z"
+        },
+        {
+          "kind": "test",
+          "summary": "TC-M0-001 offline bootstrap, TC-M0-002 quality fault matrix, and TC-M0-008 cold bootstrap passed; two production builds have matching required artifact hashes and process/temp cleanup scans are clean",
+          "path": "docs/evidence/M0-T02-quality-toolchain-2026-07-18.md",
+          "recorded_at": "2026-07-19T09:36:12.9444607Z"
+        },
+        {
+          "kind": "report",
+          "summary": "Fresh quality toolchain command, coverage, fault-injection, bootstrap, artifact, process, cleanup, and residual-risk evidence",
+          "path": "docs/evidence/M0-T02-quality-toolchain-2026-07-18.md",
+          "recorded_at": "2026-07-19T09:36:12.9444607Z"
+        }
+      ]
     },
     {
       "id": "M0-T03",
-      "status": "blocked",
+      "status": "ready",
       "depends_on": ["M0-T02"],
       "manual_gate": false,
       "evidence": []

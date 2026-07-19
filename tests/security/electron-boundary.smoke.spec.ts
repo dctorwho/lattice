@@ -1,7 +1,15 @@
 import { _electron as electron, expect, test } from '@playwright/test'
 
+function productionLaunchEnvironment(): Record<string, string> {
+  const environment = Object.fromEntries(
+    Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)
+  )
+  delete environment.ELECTRON_RENDERER_URL
+  return environment
+}
+
 test('M0-T02 preserves the current renderer privilege boundary', async () => {
-  const application = await electron.launch({ args: ['.'] })
+  const application = await electron.launch({ args: ['.'], env: productionLaunchEnvironment() })
   try {
     const page = await application.firstWindow()
     const preferences = await application.evaluate((electronApi) => {
@@ -46,6 +54,8 @@ test('M0-T02 preserves the current renderer privilege boundary', async () => {
       processType: typeof Reflect.get(globalThis, 'process'),
       electronType: typeof Reflect.get(globalThis, 'electron')
     }))
+
+    expect(new URL(page.url()).protocol).toBe('file:')
 
     expect(preferences).toEqual({
       sandbox: true,
