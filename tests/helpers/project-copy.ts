@@ -1,4 +1,4 @@
-import { copyFile, mkdir, realpath, rm } from 'node:fs/promises'
+import { copyFile, lstat, mkdir, realpath, rm } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, sep, win32 } from 'node:path'
 import { runCommand } from './command'
 
@@ -25,13 +25,31 @@ function assertSafeRelativePath(relativePath: string): void {
   }
 }
 
-function isTargetInsideSource(source: string, target: string): boolean {
-  const targetRelativeToSource = relative(source, target)
+function isPathInside(parent: string, candidate: string): boolean {
+  const targetRelativeToSource = relative(parent, candidate)
   return (
     targetRelativeToSource.length === 0 ||
     (!targetRelativeToSource.startsWith(`..${sep}`) &&
       targetRelativeToSource !== '..' &&
       !isAbsolute(targetRelativeToSource))
+  )
+}
+
+function assertIncludedProjectPath(relativePath: string): void {
+  assertSafeRelativePath(relativePath)
+  const topLevelName = relativePath.split(/[\\/]/)[0]
+  if (topLevelName !== undefined && excludedTopLevelNames.has(topLevelName)) {
+    throw new Error(`Excluded project path: ${relativePath}`)
+  }
+}
+
+function isMissingPathError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    error.code === 'ENOENT'
   )
 }
 
@@ -60,9 +78,15 @@ export async function listProjectFiles(source: string): Promise<readonly string[
     .split('\0')
     .filter((relativePath) => relativePath.length > 0)
     .filter((relativePath) => {
-      assertSafeRelativePath(relativePath)
-      const topLevelName = relativePath.split(/[\\/]/)[0]
-      return topLevelName === undefined || !excludedTopLevelNames.has(topLevelName)
+      try {
+        assertIncludedProjectPath(relativePath)
+        return true
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('Excluded project path:')) {
+          return false
+        }
+        throw error
+      }
     })
 }
 
@@ -73,20 +97,37 @@ export async function copyProject(
 ): Promise<void> {
   const resolvedSource = resolve(source)
   const resolvedTarget = resolve(target)
-  if (isTargetInsideSource(resolvedSource, resolvedTarget)) {
+  if (isPathInside(resolvedSource, resolvedTarget)) {
     throw new Error(`Copy target is inside the source tree: ${target}`)
   }
   const realSource = await realpath(resolvedSource)
+  await mkdir(resolvedTarget, { recursive: true })
+  const realTarget = await realpath(resolvedTarget)
 
   for (const relativePath of relativePaths) {
-    assertSafeRelativePath(relativePath)
+    assertIncludedProjectPath(relativePath)
     const sourcePath = resolve(resolvedSource, relativePath)
     const realSourcePath = await realpath(sourcePath)
-    if (!isTargetInsideSource(realSource, realSourcePath) || realSourcePath === realSource) {
+    if (!isPathInside(realSource, realSourcePath) || realSourcePath === realSource) {
       throw new Error(`Copy source path is outside the source tree: ${relativePath}`)
     }
     const targetPath = resolve(resolvedTarget, relativePath)
-    await mkdir(dirname(targetPath), { recursive: true })
+    const targetDirectory = dirname(targetPath)
+    await mkdir(targetDirectory, { recursive: true })
+    const realTargetDirectory = await realpath(targetDirectory)
+    if (!isPathInside(realTarget, realTargetDirectory)) {
+      throw new Error(`Copy target path is outside the target tree: ${relativePath}`)
+    }
+    try {
+      const targetStatus = await lstat(targetPath)
+      if (targetStatus.isSymbolicLink()) {
+        throw new Error(`Copy target path is a symbolic link: ${relativePath}`)
+      }
+    } catch (error) {
+      if (!isMissingPathError(error)) {
+        throw error
+      }
+    }
     await copyFile(realSourcePath, targetPath)
   }
 }

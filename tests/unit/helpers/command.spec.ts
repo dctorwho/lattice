@@ -30,6 +30,30 @@ describe('runCommand', () => {
     expect(result.timedOut).toBe(true)
   })
 
+  it('rejects when timeout cleanup does not settle promptly', async () => {
+    const startedAt = Date.now()
+
+    await expect(
+      runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+        cwd: process.cwd(),
+        timeoutMs: 20,
+        terminateTimedOutProcess: () => new Promise<void>(() => {})
+      })
+    ).rejects.toThrow('Timed-out command cleanup did not finish')
+
+    expect(Date.now() - startedAt).toBeLessThan(2_000)
+  })
+
+  it('rejects when timeout cleanup reports a failure', async () => {
+    await expect(
+      runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+        cwd: process.cwd(),
+        timeoutMs: 20,
+        terminateTimedOutProcess: () => Promise.reject(new Error('terminator exited with 7'))
+      })
+    ).rejects.toThrow('Timed-out command cleanup failed: terminator exited with 7')
+  })
+
   if (process.platform === 'win32') {
     it('terminates descendants of a timed-out command', async () => {
       const root = await mkdtemp(join(tmpdir(), 'lattice-command-'))
