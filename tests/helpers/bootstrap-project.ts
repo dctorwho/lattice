@@ -14,6 +14,7 @@ export interface BootstrapOptions {
   readonly storeDirectory: string
   readonly relativePaths?: readonly string[]
   readonly run?: typeof runCommand
+  readonly remove?: typeof removeWithRetry
 }
 
 export interface BootstrapEvidence {
@@ -42,6 +43,20 @@ function assertCommandSucceeded(stage: string, result: CommandResult): void {
   if (result.exitCode !== 0 || result.timedOut) {
     throw commandFailure(stage, result)
   }
+}
+
+function failureDetail(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function cleanupError(error: unknown): Error {
+  return new Error(`Bootstrap cleanup failed: ${failureDetail(error)}`, { cause: error })
+}
+
+function failureError(error: unknown): Error {
+  return error instanceof Error
+    ? error
+    : new Error(`Bootstrap failed: ${failureDetail(error)}`, { cause: error })
 }
 
 function parseIgnoredBuilds(output: string): readonly string[] {
@@ -83,6 +98,10 @@ async function runPnpm(
 export async function verifyBootstrap(options: BootstrapOptions): Promise<BootstrapEvidence> {
   const projectRoot = join(options.tempParent, `Lattice 质量门禁 ${randomUUID()}`)
   const run = options.run ?? runCommand
+  const remove = options.remove ?? removeWithRetry
+  let primaryFailure: unknown
+  let cleanupFailure: unknown
+  let evidence: BootstrapEvidence | undefined
 
   try {
     const relativePaths = options.relativePaths ?? (await listProjectFiles(options.sourceRoot))
@@ -107,7 +126,7 @@ export async function verifyBootstrap(options: BootstrapOptions): Promise<Bootst
     await runPnpm(run, projectRoot, ['build'], 'pnpm build')
     const firstBuildHashes = await hashArtifacts(projectRoot)
 
-    await removeWithRetry(join(projectRoot, 'out'))
+    await remove(join(projectRoot, 'out'))
     await runPnpm(run, projectRoot, ['build'], 'pnpm build')
     const secondBuildHashes = await hashArtifacts(projectRoot)
 
@@ -115,8 +134,32 @@ export async function verifyBootstrap(options: BootstrapOptions): Promise<Bootst
       throw new Error('Bootstrap builds produced different required artifact hashes.')
     }
 
-    return { mode: options.mode, firstBuildHashes, secondBuildHashes, pendingBuilds }
+    evidence = { mode: options.mode, firstBuildHashes, secondBuildHashes, pendingBuilds }
+  } catch (error) {
+    primaryFailure = error
   } finally {
-    await removeWithRetry(projectRoot)
+    try {
+      await remove(projectRoot)
+    } catch (error) {
+      cleanupFailure = error
+    }
   }
+
+  if (primaryFailure !== undefined && cleanupFailure !== undefined) {
+    throw new AggregateError(
+      [primaryFailure, cleanupFailure],
+      `Bootstrap failed: ${failureDetail(primaryFailure)}; cleanup failed: ${failureDetail(cleanupFailure)}`,
+      { cause: primaryFailure }
+    )
+  }
+  if (primaryFailure !== undefined) {
+    throw failureError(primaryFailure)
+  }
+  if (cleanupFailure !== undefined) {
+    throw cleanupError(cleanupFailure)
+  }
+  if (evidence === undefined) {
+    throw new Error('Bootstrap completed without evidence.')
+  }
+  return evidence
 }

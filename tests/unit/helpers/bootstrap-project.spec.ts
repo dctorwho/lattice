@@ -1,10 +1,11 @@
 import { access, mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { runCommand } from '../../helpers/command'
 import { requiredArtifacts } from '../../helpers/artifacts'
 import { verifyBootstrap } from '../../helpers/bootstrap-project'
+import type { removeWithRetry } from '../../helpers/project-copy'
 
 describe('verifyBootstrap', () => {
   let root: string
@@ -22,6 +23,7 @@ describe('verifyBootstrap', () => {
   function fakeRunner(options?: {
     failBuildNumber?: number
     failInstall?: boolean
+    changeSecondBuildArtifact?: boolean
     ignoredBuildPackage?: string
   }) {
     const calls: Array<{ readonly args: readonly string[]; readonly cwd: string }> = []
@@ -47,7 +49,13 @@ describe('verifyBootstrap', () => {
         for (const relativePath of requiredArtifacts) {
           const target = join(commandOptions.cwd, relativePath)
           await mkdir(dirname(target), { recursive: true })
-          await writeFile(target, relativePath)
+          const contents =
+            buildNumber === 2 &&
+            options?.changeSecondBuildArtifact === true &&
+            relativePath === 'out/main/index.js'
+              ? 'changed during second build'
+              : relativePath
+          await writeFile(target, contents)
         }
       }
       return { exitCode: 0, stdout: '', stderr: '', timedOut: false }
@@ -127,5 +135,71 @@ describe('verifyBootstrap', () => {
         run: fake.run
       })
     ).rejects.toThrow(/ignored builds.*esbuild/i)
+  })
+
+  it('rejects mismatched required artifact hashes from the second build', async () => {
+    const fake = fakeRunner({ changeSecondBuildArtifact: true })
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('different required artifact hashes')
+  })
+
+  it('retains the stage failure when project cleanup also fails', async () => {
+    const fake = fakeRunner({ failBuildNumber: 2 })
+    const remove: typeof removeWithRetry = (target) => {
+      if (basename(target) === 'out') {
+        return Promise.resolve()
+      }
+      return Promise.reject(new Error('injected project cleanup failure'))
+    }
+
+    const failure = await verifyBootstrap({
+      sourceRoot,
+      tempParent: root,
+      mode: 'offline',
+      storeDirectory: join(root, 'store'),
+      relativePaths: ['pnpm-lock.yaml'],
+      run: fake.run,
+      remove
+    }).catch((error: unknown) => error)
+
+    expect(failure).toBeInstanceOf(AggregateError)
+    if (!(failure instanceof AggregateError)) {
+      throw new Error('Expected an AggregateError.')
+    }
+    expect(failure.message).toMatch(/build.*9/i)
+    expect(failure.message).toMatch(/cleanup/i)
+    expect(failure.errors).toHaveLength(2)
+    expect(failure.errors[0]).toBeInstanceOf(Error)
+    expect(failure.errors[1]).toBeInstanceOf(Error)
+  })
+
+  it('surfaces a project cleanup failure after a successful bootstrap', async () => {
+    const fake = fakeRunner()
+    const remove: typeof removeWithRetry = (target) => {
+      if (basename(target) === 'out') {
+        return Promise.resolve()
+      }
+      return Promise.reject(new Error('injected project cleanup failure'))
+    }
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['pnpm-lock.yaml'],
+        run: fake.run,
+        remove
+      })
+    ).rejects.toThrow('injected project cleanup failure')
   })
 })
