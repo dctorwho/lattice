@@ -78,6 +78,22 @@
 - CSP 默认 `default-src 'self'`，按功能最小开放；生产环境不使用 `unsafe-eval`。
 - 不使用 `<webview>` 承载用户 HTML。
 
+### M0-T03 enforced Electron invariants
+
+- External-link input is limited to 2,081 UTF-16 code units. Leading or trailing
+  whitespace, control characters, parse failures, credentials, empty targets,
+  and protocols other than `https:` and `mailto:` are denied.
+- Renderer navigation, new-window requests, and webview attachment are
+  synchronously denied. Only a normalized URL that the main process has
+  confirmed may reach `shell.openExternal`.
+- Redirects are denied and do not inherit a confirmation made for the original
+  URL.
+- Production CSP uses `connect-src 'none'`; scripts and styles allow only
+  `'self'`; object, frame, form, and base-URI capabilities are denied.
+- Permission checks and permission requests deny by default.
+- A packaged application ignores a development renderer URL, and production
+  uses `devTools: false`.
+
 ## 9. 内容与进程隔离
 
 - DOMPurify 不是唯一边界；HTML 在无 Node、无 preload 的隔离 renderer 中预览。

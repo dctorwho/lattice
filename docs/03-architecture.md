@@ -32,6 +32,25 @@ flowchart LR
 - **Workers/utility process**：全局搜索、批量解析、Mermaid 和重型导出准备。
 - **Export renderer**：只加载本地模板和净化后的文档模型，无 Node 权限。
 
+### M0-T03 Electron security ownership
+
+The M0-T03 Electron shell keeps each security boundary owned by one main-process
+module:
+
+| Boundary              | Owner                                                                                               | Responsibility                                                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App bootstrap         | `src/main/bootstrap/compose-application.ts` and `src/main/bootstrap/resolve-main-window-options.ts` | Calls `app.enableSandbox()` before readiness and selects a packaged file load rather than a development URL.                                       |
+| Session policy        | `src/main/security/session-security-policy.ts` and `src/main/security/content-security-policy.ts`   | Installs CSP response headers and denies permission checks and permission requests.                                                                |
+| WebContents policy    | `src/main/security/web-contents-security-policy.ts`                                                 | Synchronously denies navigation, redirects, new windows, and webview attachment.                                                                   |
+| External URL policy   | `src/main/security/external-url-policy.ts`                                                          | Parses and bounds input, applies protocol, credential, and target allowlists, requests confirmation, then hands only the normalized URL to the OS. |
+| BrowserWindow factory | `src/main/bootstrap/create-main-window.ts`                                                          | Creates windows with the immutable production `webPreferences` security baseline.                                                                  |
+| Preload               | `src/preload/index.ts`                                                                              | Remains empty until M0-T04 creates a narrow typed preload contract.                                                                                |
+
+`src/main/index.ts` registers the WebContents policy through
+`web-contents-created` before readiness, so it also applies to future windows.
+That broad event coverage does not grant privileged capabilities: M0-T04 must
+still expose every needed capability through a narrow, typed preload contract.
+
 ## 3. 源码与会话模型
 
 ```ts
