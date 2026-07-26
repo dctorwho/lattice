@@ -20,6 +20,7 @@ const denied = [
   ['https://example.com\n', 'control-character'],
   ['https://user:secret@example.com', 'credentials'],
   ['https:///missing-host', 'target'],
+  ['https://\\example.com', 'target'],
   ['mailto:', 'target'],
   ['mailto:?subject=missing-recipient', 'target'],
   ['http://example.com', 'protocol'],

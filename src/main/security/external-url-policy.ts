@@ -51,7 +51,8 @@ export function decideExternalUrl(rawUrl: string): ExternalUrlDecision {
   if (
     parsed.protocol === 'https:' &&
     (rawUrl.slice('https:'.length, 'https:'.length + 2) !== '//' ||
-      rawUrl.charAt('https:'.length + 2) === '/')
+      rawUrl.charAt('https:'.length + 2) === '/' ||
+      rawUrl.charAt('https:'.length + 2) === '\\')
   ) {
     return { kind: 'deny', reason: 'target' }
   }
