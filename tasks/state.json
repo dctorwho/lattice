@@ -2,7 +2,7 @@
   "schema_version": 1,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
-  "current_task": "M0-T03",
+  "current_task": null,
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "tasks": [
     {
@@ -58,14 +58,33 @@
     },
     {
       "id": "M0-T03",
-      "status": "in_progress",
+      "status": "passed",
       "depends_on": ["M0-T02"],
       "manual_gate": false,
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "command",
+          "summary": "pnpm 11.12.0; frozen offline install exit 0; no ignored builds; full pnpm check exit 0 with 105 unit and 18 integration tests plus production build",
+          "path": "docs/evidence/M0-T03-secure-electron-shell-2026-07-25.md",
+          "recorded_at": "2026-07-26T11:00:28.5004194Z"
+        },
+        {
+          "kind": "test",
+          "summary": "TC-M0-003 and TC-M0-004 focused real-Electron gates passed 1/1 each; renderer privileges, hostile payloads, navigation, external links, CSP, permissions, and effective DevTools denial verified without residual Electron processes",
+          "path": "docs/evidence/M0-T03-secure-electron-shell-2026-07-25.md",
+          "recorded_at": "2026-07-26T11:00:28.5004194Z"
+        },
+        {
+          "kind": "report",
+          "summary": "Secure Electron bootstrap, BrowserWindow preferences, session/WebContents policy, external URL matrix, finite cleanup, review, and residual ownership evidence",
+          "path": "docs/evidence/M0-T03-secure-electron-shell-2026-07-25.md",
+          "recorded_at": "2026-07-26T11:00:28.5004194Z"
+        }
+      ]
     },
     {
       "id": "M0-T04",
-      "status": "blocked",
+      "status": "ready",
       "depends_on": ["M0-T03"],
       "manual_gate": false,
       "evidence": []
