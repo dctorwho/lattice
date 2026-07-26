@@ -475,7 +475,7 @@ describe('TC-M0-002 quality script contracts', () => {
     async () => {
       const temporaryRoot = await mkdtemp(join(tmpdir(), 'lattice-quality-timeout-'))
       try {
-        const result = await runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+        const result = await runCommand(process.execPath, ['-e', 'setTimeout(() => {}, 5_000)'], {
           cwd: temporaryRoot,
           timeoutMs: 100
         })

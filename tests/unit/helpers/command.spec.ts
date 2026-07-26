@@ -23,7 +23,7 @@ describe('runCommand', () => {
   })
 
   it('terminates a timed-out command', async () => {
-    const result = await runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+    const result = await runCommand(process.execPath, ['-e', 'setTimeout(() => {}, 5_000)'], {
       cwd: process.cwd(),
       timeoutMs: 100
     })
@@ -36,11 +36,13 @@ describe('runCommand', () => {
     let terminatorUnreferenced = false
 
     await expect(
-      runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+      runCommand(process.execPath, ['-e', 'setTimeout(() => {}, 5_000)'], {
         cwd: process.cwd(),
         timeoutMs: 20,
         createTimeoutTerminationAttempt: () => ({
-          completion: new Promise<void>(() => {}),
+          completion: new Promise<void>((resolve) => {
+            setTimeout(resolve, 5_000)
+          }),
           kill: () => {
             terminatorKilled = true
           },
@@ -58,7 +60,7 @@ describe('runCommand', () => {
 
   it('rejects when timeout cleanup reports a failure', async () => {
     await expect(
-      runCommand(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
+      runCommand(process.execPath, ['-e', 'setTimeout(() => {}, 5_000)'], {
         cwd: process.cwd(),
         timeoutMs: 20,
         createTimeoutTerminationAttempt: () => ({
@@ -77,10 +79,10 @@ describe('runCommand', () => {
       const script = [
         "const { spawn } = require('node:child_process')",
         "const { writeFileSync } = require('node:fs')",
-        "const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], { detached: true, stdio: 'ignore' })",
+        "const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 5_000)'], { detached: true, stdio: 'ignore' })",
         'child.unref()',
         `writeFileSync(${JSON.stringify(childPidPath)}, String(child.pid))`,
-        'setInterval(() => {}, 1_000)'
+        'setTimeout(() => {}, 5_000)'
       ].join('; ')
 
       let childPid: number | undefined
