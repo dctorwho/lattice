@@ -1,16 +1,31 @@
-import type { WebContents } from 'electron'
+import { BrowserWindow } from 'electron'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ExternalOpenPort } from '../../../src/main/security/external-url-policy'
-import { installWebContentsSecurityPolicy } from '../../../src/main/security/web-contents-security-policy'
+import {
+  installWebContentsSecurityPolicyHandlers,
+  type AttachWebviewEvent,
+  type AttachWebviewListener,
+  type FrameNavigationEvent,
+  type FrameNavigationListener,
+  type RedirectEvent,
+  type RedirectListener,
+  type WebContentsSecurityPolicyTarget,
+  type WindowOpenHandler
+} from '../../../src/main/security/web-contents-security-policy'
 
-const electronState = vi.hoisted(() => ({
-  parentWindow: null as { isDestroyed: () => boolean } | null
-}))
+const electronState = vi.hoisted(
+  (): { parentWindow: BrowserWindow | null; destroyedWindows: WeakSet<object> } => ({
+    parentWindow: null,
+    destroyedWindows: new WeakSet()
+  })
+)
 
 vi.mock('electron', () => ({
-  BrowserWindow: {
-    fromWebContents: vi.fn(() => electronState.parentWindow)
+  BrowserWindow: class BrowserWindow {
+    isDestroyed(): boolean {
+      return electronState.destroyedWindows.has(this)
+    }
   },
   dialog: {
     showMessageBox: vi.fn()
@@ -20,27 +35,13 @@ vi.mock('electron', () => ({
   }
 }))
 
-interface PreventableEvent {
-  preventDefault(): void
-}
-
-interface NavigationDetails extends PreventableEvent {
-  readonly isMainFrame: boolean
-  readonly url: string
-}
-
-type FrameNavigationListener = (details: NavigationDetails) => void
-type RedirectListener = (event: PreventableEvent) => void
-type AttachWebviewListener = (event: PreventableEvent) => void
-type WindowOpenHandler = (details: { readonly url: string }) => { readonly action: 'deny' }
-
 function requireValue<T>(value: T | undefined, name: string): T {
   if (value === undefined) throw new Error(`${name} was not registered`)
   return value
 }
 
 function createContentsHarness(): {
-  readonly contents: WebContents
+  readonly target: WebContentsSecurityPolicyTarget
   readonly getFrameNavigationListener: () => FrameNavigationListener | undefined
   readonly getRedirectListener: () => RedirectListener | undefined
   readonly getAttachWebviewListener: () => AttachWebviewListener | undefined
@@ -51,28 +52,72 @@ function createContentsHarness(): {
   let attachWebviewListener: AttachWebviewListener | undefined
   let windowOpenHandler: WindowOpenHandler | undefined
 
-  const target = {
-    on: (eventName: string, listener: unknown) => {
-      if (eventName === 'will-frame-navigate') {
-        frameNavigationListener = listener as FrameNavigationListener
-      } else if (eventName === 'will-redirect') {
-        redirectListener = listener as RedirectListener
-      } else if (eventName === 'will-attach-webview') {
-        attachWebviewListener = listener as AttachWebviewListener
-      }
-      return target
-    },
-    setWindowOpenHandler: (handler: WindowOpenHandler) => {
-      windowOpenHandler = handler
-    }
-  }
-
   return {
-    contents: target as unknown as WebContents,
+    target: {
+      onFrameNavigation: (listener) => {
+        frameNavigationListener = listener
+      },
+      onRedirect: (listener) => {
+        redirectListener = listener
+      },
+      onAttachWebview: (listener) => {
+        attachWebviewListener = listener
+      },
+      setWindowOpenHandler: (handler) => {
+        windowOpenHandler = handler
+      },
+      getParentWindow: () => electronState.parentWindow
+    },
     getFrameNavigationListener: () => frameNavigationListener,
     getRedirectListener: () => redirectListener,
     getAttachWebviewListener: () => attachWebviewListener,
     getWindowOpenHandler: () => windowOpenHandler
+  }
+}
+
+function createFrameNavigationEvent(
+  url: string,
+  isMainFrame: boolean,
+  preventDefault: () => void
+): FrameNavigationEvent {
+  return {
+    preventDefault,
+    defaultPrevented: false,
+    url,
+    isSameDocument: false,
+    isMainFrame,
+    frame: null
+  }
+}
+
+function createRedirectEvent(preventDefault: () => void): RedirectEvent {
+  return {
+    preventDefault,
+    defaultPrevented: false,
+    url: 'https://redirect.example/',
+    isSameDocument: false,
+    isMainFrame: true,
+    frame: null
+  }
+}
+
+function createAttachWebviewEvent(preventDefault: () => void): AttachWebviewEvent {
+  return {
+    preventDefault,
+    defaultPrevented: false
+  }
+}
+
+function createWindowOpenDetails(url: string): Parameters<WindowOpenHandler>[0] {
+  return {
+    url,
+    frameName: '',
+    features: '',
+    disposition: 'default',
+    referrer: {
+      policy: 'no-referrer',
+      url: ''
+    }
   }
 }
 
@@ -89,29 +134,22 @@ function createExternalOpenPort(): {
 describe('web contents security policy', () => {
   beforeEach(() => {
     electronState.parentWindow = null
+    electronState.destroyedWindows = new WeakSet()
   })
 
   it('SEC-004 synchronously denies frame navigation and only sends main-frame URLs for confirmation', () => {
     const harness = createContentsHarness()
     const external = createExternalOpenPort()
-    installWebContentsSecurityPolicy(harness.contents, external.port)
+    installWebContentsSecurityPolicyHandlers(harness.target, external.port)
     const listener = requireValue(harness.getFrameNavigationListener(), 'frame navigation listener')
-    const mainFrameEvent = { preventDefault: vi.fn() }
-    const subFrameEvent = { preventDefault: vi.fn() }
+    const mainFramePreventDefault = vi.fn()
+    const subFramePreventDefault = vi.fn()
 
-    listener({
-      preventDefault: mainFrameEvent.preventDefault,
-      isMainFrame: true,
-      url: 'https://example.com/main'
-    })
-    listener({
-      preventDefault: subFrameEvent.preventDefault,
-      isMainFrame: false,
-      url: 'https://example.com/frame'
-    })
+    listener(createFrameNavigationEvent('https://example.com/main', true, mainFramePreventDefault))
+    listener(createFrameNavigationEvent('https://example.com/frame', false, subFramePreventDefault))
 
-    expect(mainFrameEvent.preventDefault).toHaveBeenCalledOnce()
-    expect(subFrameEvent.preventDefault).toHaveBeenCalledOnce()
+    expect(mainFramePreventDefault).toHaveBeenCalledOnce()
+    expect(subFramePreventDefault).toHaveBeenCalledOnce()
     expect(external.confirm).toHaveBeenCalledOnce()
     expect(external.confirm).toHaveBeenCalledWith(null, 'https://example.com/main')
   })
@@ -119,15 +157,21 @@ describe('web contents security policy', () => {
   it('SEC-004 synchronously denies redirects and webview attachment without opening a URL', () => {
     const harness = createContentsHarness()
     const external = createExternalOpenPort()
-    installWebContentsSecurityPolicy(harness.contents, external.port)
-    const redirectEvent = { preventDefault: vi.fn() }
-    const webviewEvent = { preventDefault: vi.fn() }
+    installWebContentsSecurityPolicyHandlers(harness.target, external.port)
+    const redirectPreventDefault = vi.fn()
+    const webviewPreventDefault = vi.fn()
 
-    requireValue(harness.getRedirectListener(), 'redirect listener')(redirectEvent)
-    requireValue(harness.getAttachWebviewListener(), 'webview listener')(webviewEvent)
+    requireValue(
+      harness.getRedirectListener(),
+      'redirect listener'
+    )(createRedirectEvent(redirectPreventDefault))
+    requireValue(
+      harness.getAttachWebviewListener(),
+      'webview listener'
+    )(createAttachWebviewEvent(webviewPreventDefault))
 
-    expect(redirectEvent.preventDefault).toHaveBeenCalledOnce()
-    expect(webviewEvent.preventDefault).toHaveBeenCalledOnce()
+    expect(redirectPreventDefault).toHaveBeenCalledOnce()
+    expect(webviewPreventDefault).toHaveBeenCalledOnce()
     expect(external.confirm).not.toHaveBeenCalled()
     expect(external.open).not.toHaveBeenCalled()
   })
@@ -135,48 +179,44 @@ describe('web contents security policy', () => {
   it('SEC-004 synchronously denies new windows while sending the requested URL for confirmation', () => {
     const harness = createContentsHarness()
     const external = createExternalOpenPort()
-    installWebContentsSecurityPolicy(harness.contents, external.port)
+    installWebContentsSecurityPolicyHandlers(harness.target, external.port)
 
     const result = requireValue(
       harness.getWindowOpenHandler(),
       'window open handler'
-    )({
-      url: 'mailto:editor@example.com'
-    })
+    )(createWindowOpenDetails('mailto:editor@example.com'))
 
     expect(result).toEqual({ action: 'deny' })
     expect(external.confirm).toHaveBeenCalledWith(null, 'mailto:editor@example.com')
   })
 
   it('SEC-004 uses a live owner window as the external-link dialog parent', () => {
-    const liveParent = { isDestroyed: () => false }
+    const liveParent = new BrowserWindow()
     electronState.parentWindow = liveParent
     const harness = createContentsHarness()
     const external = createExternalOpenPort()
-    installWebContentsSecurityPolicy(harness.contents, external.port)
+    installWebContentsSecurityPolicyHandlers(harness.target, external.port)
 
     requireValue(
       harness.getWindowOpenHandler(),
       'window open handler'
-    )({
-      url: 'https://example.com/'
-    })
+    )(createWindowOpenDetails('https://example.com/'))
 
     expect(external.confirm).toHaveBeenCalledWith(liveParent, 'https://example.com/')
   })
 
   it('SEC-004 removes a destroyed owner window from the confirmation boundary', () => {
-    electronState.parentWindow = { isDestroyed: () => true }
+    const destroyedParent = new BrowserWindow()
+    electronState.destroyedWindows.add(destroyedParent)
+    electronState.parentWindow = destroyedParent
     const harness = createContentsHarness()
     const external = createExternalOpenPort()
-    installWebContentsSecurityPolicy(harness.contents, external.port)
+    installWebContentsSecurityPolicyHandlers(harness.target, external.port)
 
     requireValue(
       harness.getWindowOpenHandler(),
       'window open handler'
-    )({
-      url: 'https://example.com/'
-    })
+    )(createWindowOpenDetails('https://example.com/'))
 
     expect(external.confirm).toHaveBeenCalledWith(null, 'https://example.com/')
   })
