@@ -44,6 +44,13 @@
 - 交付：Zod 契约目录、`Result<T,AppError>`、稳定错误 code、request ID、sender 校验框架、最小 preload 方法示例；错误日志脱敏接口。
 - 非目标：真实文件或导出方法。
 - 验证：非法参数、未知 channel、错误 sender 和不可序列化结果测试；preload 表面快照仅含批准方法。
+- 设计决策：renderer 只获得固定 `app.getInfo()`；request ID 由 preload 生成，窗口/WebContents/会话上下文由 main 派生；固定频道路由依次执行 sender、预算、Zod、handler、response schema 和可序列化性校验；日志只接收固定脱敏字段。
+- 预期文件：`src/shared/contracts/`、`src/shared/errors/`、`src/main/ipc/`、`src/preload/api/`、TC-M0-005、更新后的 Electron preload 安全断言、同步文档和 M0-T04 证据。
+- 非目标：真实文件、对话框、工作区、设置、导入、导出、通用 IPC、命令注册表、窗口 UI、CI/SBOM。
+- 自动验证：`pnpm test -- tests/unit/shared/contracts.spec.ts tests/unit/main/ipc-value-budget.spec.ts tests/unit/main/authorized-window-registry.spec.ts tests/unit/main/validate-ipc-sender.spec.ts tests/unit/main/ipc-router.spec.ts tests/unit/preload/app-api.spec.ts`、`pnpm test:security -- tests/security/electron-boundary.spec.ts`、`pnpm check`。
+- 人工验证：不适用（`manual_gate:false`）；真实 preload 表面和 invoke 链路由 Electron 安全测试证明。
+- 失败回退：保持任务 `in_progress`，增加回归测试并修复 sender/schema/序列化/日志根因；不得暴露通用 IPC、弱化 schema 或记录敏感输入。
+- 完成：TC-M0-005 和质量/安全门禁通过，证据完整；状态设为 `passed` 并只解锁 M0-T05。
 
 ## M0-T05 Command Registry 与窗口骨架
 
