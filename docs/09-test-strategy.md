@@ -81,6 +81,9 @@
 - CSP、导航、新窗口、权限请求、外链协议和自定义 URL。
 - HTML/SVG/Math/Mermaid 载荷、超时、内存预算和远程资源阻断。
 - Pandoc/上传器使用参数数组并验证 `shell:false`。
+- M0-T03 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
+- `test:e2e` 验证导航、窗口、权限、CSP 与生产 DevTools；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
+- M0-T03 不伪造 IPC handler；无 IPC 表面是本任务的通过条件。M0-T04 创建第一个契约后再验证 request ID、sender 和参数拒绝。
 
 ## 9. 性能测试
 

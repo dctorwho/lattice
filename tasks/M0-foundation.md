@@ -28,9 +28,14 @@
 
 - 依赖：M0-T02
 - 需求：UI-001、NFR-007；风险 R-008
-- 交付：`app.enableSandbox()`、sandbox/context isolation/nodeIntegration 设置、CSP、导航/新窗口/权限处理、HTTPS/mailto 外链校验；生产禁用 DevTools 和开发 URL。
-- 非目标：文件 API、用户 HTML 预览。
-- 验证：SEC-001..008 E2E，证明 renderer 无 `require`/Node/裸 IPC，恶意协议与导航被拒绝；`pnpm check`、`pnpm test:e2e`、`pnpm test:security`。
+- 设计决策：同步调用 `app.enableSandbox()`；主窗口显式关闭 Node、开发工具、webview 和不安全内容；应用级策略覆盖每个 `WebContents`；默认 session 统一下发 CSP 并拒绝权限；renderer 外链先同步拒绝窗口内打开，再由 main 校验、确认并交给系统。
+- 交付：安全主窗口工厂、CSP/权限/session 策略、导航/重定向/新窗口/webview 策略，以及只允许经确认的无凭据 `https:` 和非空 `mailto:` 外链策略。
+- 预期文件：`src/main/bootstrap/`、`src/main/security/`、TC-M0-003、TC-M0-004、同步架构/安全/测试文档和 M0-T03 证据。
+- 非目标：IPC 契约、sender/参数 schema、文件 API、用户 HTML 预览、命令注册表、CI/SBOM。
+- 自动验证：SEC-001..008；`pnpm check`、`pnpm test:e2e -- tests/e2e/navigation-policy.spec.ts`、`pnpm test:security -- tests/security/electron-boundary.spec.ts`。
+- 人工验证：不适用（`manual_gate:false`）；外部程序调用通过 main-process stub 自动证明，不真的启动默认浏览器或邮件客户端。
+- 失败回退：保持任务 `in_progress`；修复策略或测试根因并重新运行完整安全门禁；不得删除恶意协议、CSP、权限、生产 DevTools 或 renderer 权限用例。
+- 完成：SEC-001..008 和质量门禁通过，策略与文档一致，证据完整；状态设为 `passed` 并只解锁 M0-T04。
 
 ## M0-T04 共享契约与错误
 
