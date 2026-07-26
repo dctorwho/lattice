@@ -19,21 +19,26 @@ M0-T01 自举执行说明：TC-M0-001 的“自动化”列固定其最终回归
 
 ### M0-T03 external-link acceptance detail
 
-`TC-M0-004` covers the following independently observable requirements:
+M0-T03 evidence is allocated by test layer:
 
-- A maximum of 2,081 UTF-16 code units and rejection of leading/trailing
-  whitespace, control characters, parse failures, credentials, empty targets,
-  and non-`https:`/`mailto:` protocols.
-- Synchronous denial of renderer navigation, redirects, new windows, and
-  webview attachment. Redirects never inherit the original URL's confirmation.
-- A main-process confirmation double and `shell.openExternal` double establish
-  that only a confirmed normalized URL reaches the OS handoff; no real browser
-  or mail client is launched.
-- CSP restrictions (`connect-src 'none'`, script/style `'self'`, and denied
-  object/frame/form/base capabilities), default permission denial, and
-  `devTools: false` from a no-development-URL launch. The M0-T03
-  `resolve-main-window-options` factory/unit test separately proves packaged
-  development-URL rejection; M0-T06 supplies final packaged-artifact coverage.
+- `external-url-policy.spec.ts` unit coverage rejects inputs over 2,081 UTF-16
+  code units, leading/trailing whitespace, control characters, parse failures,
+  credentials, empty targets, and non-`https:`/`mailto:` protocols. The policy
+  maximum is 2,081 code units, but an exact-boundary acceptance case is not yet
+  covered.
+- `web-contents-security-policy.spec.ts` unit coverage proves synchronous
+  navigation, redirect, new-window, and webview denial.
+- `content-security-policy.spec.ts` unit coverage asserts the exact CSP
+  directive string. `resolve-main-window-options.spec.ts` separately proves
+  packaged development-URL rejection; M0-T06 supplies final packaged-artifact
+  coverage.
+- `TC-M0-004` runtime E2E uses main-process confirmation and
+  `shell.openExternal` doubles to prove confirmed and cancelled
+  `https:`/`mailto:` handoff without launching a real browser or mail client.
+  It also proves runtime denial of disallowed protocols and credentials; no
+  navigation, new-window, or redirect request; inline-script and `connect-src`
+  behavioral blocking; permission denial; and effective DevTools denial from a
+  no-development-URL launch.
 
 ## 参数矩阵
 

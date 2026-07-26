@@ -85,20 +85,24 @@
 - `test:e2e` 验证导航、窗口、权限、CSP 与生产 DevTools；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
 - M0-T03 不伪造 IPC handler；无 IPC 表面是本任务的通过条件。M0-T04 创建第一个契约后再验证 request ID、sender 和参数拒绝。
 
-M0-T03 security coverage also proves the precise external-link boundary:
+M0-T03 security evidence separates pure-policy assertions from runtime behavior:
 
-- Inputs at and beyond the 2,081 UTF-16-code-unit boundary; leading/trailing
-  whitespace, controls, invalid URLs, credentials, empty targets, and all
-  non-`https:`/`mailto:` protocols are denied.
-- Navigation, redirect, new-window, and webview paths are synchronously denied;
-  a redirect receives no confirmation inherited from its original URL.
-- Main-process dialog and OS-handoff doubles prove that only a confirmed,
-  normalized eligible URL reaches `shell.openExternal`.
-- The M0-T03 E2E asserts CSP `connect-src 'none'`, script/style `'self'`,
-  object/frame/form/base restrictions, default permission denial, and disabled
-  DevTools from a no-development-URL launch. The
-  `resolve-main-window-options` factory/unit test proves that a packaged app
-  ignores a development URL; M0-T06 provides final packaged-artifact coverage.
+- `external-url-policy` unit coverage rejects inputs over 2,081 UTF-16 code
+  units, plus leading/trailing whitespace, control characters, parse failures,
+  credentials, empty targets, and non-`https:`/`mailto:` protocols. The
+  invariant's maximum remains 2,081 code units; there is not yet a unit test
+  that accepts an input exactly at that boundary.
+- `web-contents-security-policy` unit coverage proves synchronous denial of
+  navigation, redirects, new windows, and webview attachment.
+- `content-security-policy` unit coverage asserts the exact CSP directive
+  string. The `resolve-main-window-options` factory/unit test proves that a
+  packaged app ignores a development URL. M0-T06 provides final
+  packaged-artifact coverage.
+- The M0-T03 E2E covers confirmed and cancelled `https:`/`mailto:` handoff,
+  runtime denial of disallowed protocols and credentials, no navigation/new
+  window/redirect request, inline-script and `connect-src` behavioral blocking,
+  permission denial, and effective DevTools denial from a no-development-URL
+  launch.
 
 ## 9. 性能测试
 
