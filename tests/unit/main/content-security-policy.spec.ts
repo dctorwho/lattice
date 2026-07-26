@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import type { Session } from 'electron'
 import type { SessionSecurityPolicyTarget } from '../../../src/main/security/session-security-policy'
 import { installSessionSecurityPolicy } from '../../../src/main/security/session-security-policy'
 
@@ -22,29 +23,36 @@ const productionPolicy = [
   "style-src 'self'"
 ].join('; ')
 
+type PermissionCheckHandler = Parameters<Session['setPermissionCheckHandler']>[0]
+type PermissionRequestHandler = Parameters<Session['setPermissionRequestHandler']>[0]
+type HeadersReceivedHandler = Parameters<Session['webRequest']['onHeadersReceived']>[0]
+type ElectronSessionSecurityPolicyTarget = Pick<
+  Session,
+  'setPermissionCheckHandler' | 'setPermissionRequestHandler'
+> & {
+  readonly webRequest: Pick<Session['webRequest'], 'onHeadersReceived'>
+}
+
+function isRegistered<T>(handler: T): handler is NonNullable<T> {
+  return handler !== null && handler !== undefined
+}
+
+function requireHandler<T>(handler: T, name: string): NonNullable<T> {
+  if (!isRegistered(handler)) {
+    throw new Error(`${name} was not registered`)
+  }
+  return handler
+}
+
 function createSessionTarget(): {
   readonly target: SessionSecurityPolicyTarget
-  readonly getPermissionCheckHandler: () => (() => boolean) | undefined
-  readonly getPermissionRequestHandler: () =>
-    | ((_webContents: unknown, _permission: string, callback: (granted: boolean) => void) => void)
-    | undefined
-  readonly getHeadersReceivedHandler: () =>
-    | ((
-        details: { readonly responseHeaders?: Readonly<Record<string, readonly string[]>> },
-        callback: (response: { readonly responseHeaders: Record<string, string[]> }) => void
-      ) => void)
-    | undefined
+  readonly getPermissionCheckHandler: () => PermissionCheckHandler
+  readonly getPermissionRequestHandler: () => PermissionRequestHandler
+  readonly getHeadersReceivedHandler: () => HeadersReceivedHandler
 } {
-  let permissionCheckHandler: (() => boolean) | undefined
-  let permissionRequestHandler:
-    | ((_webContents: unknown, _permission: string, callback: (granted: boolean) => void) => void)
-    | undefined
-  let headersReceivedHandler:
-    | ((
-        details: { readonly responseHeaders?: Readonly<Record<string, readonly string[]>> },
-        callback: (response: { readonly responseHeaders: Record<string, string[]> }) => void
-      ) => void)
-    | undefined
+  let permissionCheckHandler: PermissionCheckHandler = null
+  let permissionRequestHandler: PermissionRequestHandler = null
+  let headersReceivedHandler: HeadersReceivedHandler = null
 
   return {
     target: {
@@ -56,7 +64,9 @@ function createSessionTarget(): {
       },
       webRequest: {
         onHeadersReceived: (handler) => {
-          headersReceivedHandler = handler
+          if (typeof handler === 'function' || handler === null) {
+            headersReceivedHandler = handler
+          }
         }
       }
     },
@@ -67,6 +77,10 @@ function createSessionTarget(): {
 }
 
 describe('content security policy', () => {
+  it('SEC-003 derives the session target from Electron session APIs', () => {
+    expectTypeOf<SessionSecurityPolicyTarget>().toEqualTypeOf<ElectronSessionSecurityPolicyTarget>()
+  })
+
   it('SEC-003 returns the exact production policy that blocks remote content', () => {
     expect(buildContentSecurityPolicy(false)).toBe(productionPolicy)
   })
@@ -97,21 +111,37 @@ describe('content security policy', () => {
     const session = createSessionTarget()
     installSessionSecurityPolicy(session.target, false)
 
-    expect(session.getPermissionCheckHandler()!()).toBe(false)
+    const permissionCheckHandler = requireHandler(
+      session.getPermissionCheckHandler(),
+      'permission check handler'
+    )
+    expect(Reflect.apply(permissionCheckHandler, undefined, [])).toBe(false)
 
     const requestedPermissions: boolean[] = []
-    session.getPermissionRequestHandler()!(null, 'geolocation', (granted) => {
-      requestedPermissions.push(granted)
-    })
+    const permissionRequestHandler = requireHandler(
+      session.getPermissionRequestHandler(),
+      'permission request handler'
+    )
+    Reflect.apply(permissionRequestHandler, undefined, [
+      null,
+      'geolocation',
+      (granted: boolean) => {
+        requestedPermissions.push(granted)
+      }
+    ])
     expect(requestedPermissions).toEqual([false])
 
     let responseHeaders: Record<string, string[]> | undefined
-    session.getHeadersReceivedHandler()!(
+    const headersReceivedHandler = requireHandler(
+      session.getHeadersReceivedHandler(),
+      'headers received handler'
+    )
+    Reflect.apply(headersReceivedHandler, undefined, [
       { responseHeaders: { 'X-Content-Type-Options': ['nosniff'] } },
-      (response) => {
+      (response: { readonly responseHeaders: Record<string, string[]> }) => {
         responseHeaders = response.responseHeaders
       }
-    )
+    ])
     expect(responseHeaders).toEqual({
       'X-Content-Type-Options': ['nosniff'],
       'Content-Security-Policy': [productionPolicy]
