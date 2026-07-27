@@ -51,7 +51,14 @@ export function validateIpcSender<TSender extends object, TFrame extends object>
     return rejected('missing_sender_frame', requestId)
   }
 
-  if (event.isSenderDestroyed()) {
+  let senderDestroyed: boolean
+  try {
+    senderDestroyed = event.isSenderDestroyed()
+  } catch {
+    return rejected('sender_destroyed', requestId)
+  }
+
+  if (senderDestroyed) {
     return rejected('sender_destroyed', requestId)
   }
 
@@ -68,7 +75,14 @@ export function validateIpcSender<TSender extends object, TFrame extends object>
     return rejected('sender_identity_mismatch', requestId)
   }
 
-  if (registeredWindow.isWindowDestroyed()) {
+  let windowDestroyed: boolean
+  try {
+    windowDestroyed = registeredWindow.isWindowDestroyed()
+  } catch {
+    return rejected('window_destroyed', requestId)
+  }
+
+  if (windowDestroyed) {
     return rejected('window_destroyed', requestId)
   }
 

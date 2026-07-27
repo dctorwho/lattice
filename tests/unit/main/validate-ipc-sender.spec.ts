@@ -86,6 +86,31 @@ describe('IPC sender validation', () => {
     expect(validateIpcSender(event, registry, requestId)).toEqual(expectedFailure(reason))
   })
 
+  it('fails closed when the sender destruction callback throws', () => {
+    const registry = new AuthorizedWindowRegistry<FakeSender>()
+    const event = createEvent({
+      isSenderDestroyed: () => {
+        throw new Error('sender callback failed')
+      }
+    })
+
+    expect(validateIpcSender(event, registry, requestId)).toEqual(
+      expectedFailure('sender_destroyed')
+    )
+  })
+
+  it('prioritizes sender destruction over a subframe sender', () => {
+    const registry = new AuthorizedWindowRegistry<FakeSender>()
+    const event = createEvent({
+      senderFrame: { label: 'subframe' },
+      isSenderDestroyed: () => true
+    })
+
+    expect(validateIpcSender(event, registry, requestId)).toEqual(
+      expectedFailure('sender_destroyed')
+    )
+  })
+
   it('rejects a registered ID whose sender object differs', () => {
     const registry = new AuthorizedWindowRegistry<FakeSender>()
     const event = createEvent()
@@ -108,6 +133,33 @@ describe('IPC sender validation', () => {
 
     expect(validateIpcSender(event, registry, requestId)).toEqual(
       expectedFailure('window_destroyed')
+    )
+  })
+
+  it('fails closed when the owning-window destruction callback throws', () => {
+    const registry = new AuthorizedWindowRegistry<FakeSender>()
+    const event = createEvent()
+    registerEventSender(registry, event, () => {
+      throw new Error('window callback failed')
+    })
+
+    expect(validateIpcSender(event, registry, requestId)).toEqual(
+      expectedFailure('window_destroyed')
+    )
+  })
+
+  it('prioritizes sender identity mismatch over window destruction', () => {
+    const registry = new AuthorizedWindowRegistry<FakeSender>()
+    const event = createEvent()
+    registry.register({
+      windowId: 7,
+      webContentsId: 11,
+      sender: { label: 'other sender' },
+      isWindowDestroyed: () => true
+    })
+
+    expect(validateIpcSender(event, registry, requestId)).toEqual(
+      expectedFailure('sender_identity_mismatch')
     )
   })
 })

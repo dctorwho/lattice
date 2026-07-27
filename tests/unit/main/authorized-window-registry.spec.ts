@@ -27,11 +27,33 @@ describe('authorized window registry', () => {
 
   it('rejects duplicate WebContents registration instead of replacing ownership', () => {
     const registry = new AuthorizedWindowRegistry<object>()
-    registry.register({ windowId: 7, webContentsId: 11, sender: {}, isWindowDestroyed: () => false })
+    const originalSender = {}
+    registry.register({
+      windowId: 7,
+      webContentsId: 11,
+      sender: originalSender,
+      isWindowDestroyed: () => false
+    })
 
     expect(() =>
       registry.register({ windowId: 8, webContentsId: 11, sender: {}, isWindowDestroyed: () => false })
     ).toThrow('WebContents 11 is already registered')
+    expect(registry.find(11)?.sender).toBe(originalSender)
+  })
+
+  it('allows cleanup to be called repeatedly', () => {
+    const registry = new AuthorizedWindowRegistry<object>()
+    const cleanup = registry.register({
+      windowId: 7,
+      webContentsId: 11,
+      sender: {},
+      isWindowDestroyed: () => false
+    })
+
+    cleanup()
+    cleanup()
+
+    expect(registry.find(11)).toBeUndefined()
   })
 
   it('does not allow an old cleanup closure to delete a newer registration', () => {
@@ -60,9 +82,11 @@ describe('authorized window registry', () => {
     { windowId: -1, webContentsId: 11 },
     { windowId: 0, webContentsId: 11 },
     { windowId: 1.5, webContentsId: 11 },
+    { windowId: Number.MAX_SAFE_INTEGER + 1, webContentsId: 11 },
     { windowId: 7, webContentsId: -1 },
     { windowId: 7, webContentsId: 0 },
-    { windowId: 7, webContentsId: 11.5 }
+    { windowId: 7, webContentsId: 11.5 },
+    { windowId: 7, webContentsId: Number.MAX_SAFE_INTEGER + 1 }
   ])('rejects invalid positive integer IDs: %o', ({ windowId, webContentsId }) => {
     const registry = new AuthorizedWindowRegistry<object>()
 
