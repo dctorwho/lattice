@@ -58,6 +58,7 @@ describe('TC-M0-005 shared contracts', () => {
     { contractVersion: 1, name: '', version: '0.0.0', platform: 'win32' },
     { contractVersion: 1, name: 'A'.repeat(65), version: '0.0.0', platform: 'win32' },
     { contractVersion: 1, name: 'Lat\u0000tice', version: '0.0.0', platform: 'win32' },
+    { contractVersion: 1, name: 'Lat\u007ftice', version: '0.0.0', platform: 'win32' },
     { contractVersion: 1, name: 'Lattice', version: '', platform: 'win32' },
     { contractVersion: 1, name: 'Lattice', version: '0.0.0', platform: 'android' }
   ])('rejects invalid AppInfo: %o', (value) => {

@@ -4,11 +4,22 @@ import { createResultSchema } from '../errors'
 import { IPC_CONTRACT_VERSION } from './contract-version'
 import { createIpcRequestEnvelopeSchema, emptyPayloadSchema } from './ipc-request'
 
+function containsControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const characterCode = value.charCodeAt(index)
+    if (characterCode <= 0x1f || characterCode === 0x7f) {
+      return true
+    }
+  }
+
+  return false
+}
+
 const boundedPrintableTextSchema = z
   .string()
   .min(1)
   .max(64)
-  .refine((value) => !/[\u0000-\u001f\u007f]/u.test(value))
+  .refine((value) => !containsControlCharacter(value))
 
 export const appInfoSchema = z
   .object({
