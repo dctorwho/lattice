@@ -118,6 +118,10 @@ export function validateIpcValue(value: unknown, limits?: IpcValueLimits): IpcVa
       }
 
       if (Array.isArray(candidate)) {
+        if (prototype !== Array.prototype) {
+          return rejected('non_plain_object')
+        }
+
         const lengthDescriptor = descriptors.length
         if (lengthDescriptor === undefined || isAccessor(lengthDescriptor)) {
           return rejected('accessor')

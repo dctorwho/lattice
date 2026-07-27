@@ -148,6 +148,22 @@ describe('TC-M0-005 IPC value budget', () => {
     expect(validateIpcValue(value)).toEqual({ ok: false, reason: 'non_plain_object' })
   })
 
+  it.each([
+    [new (class UnsafeArray extends Array<unknown> {})()],
+    [(() => {
+      const value: unknown[] = []
+      Object.setPrototypeOf(value, { unsafe: true })
+      return value
+    })()],
+    [(() => {
+      const value: unknown[] = []
+      Object.setPrototypeOf(value, null)
+      return value
+    })()]
+  ])('rejects an array with a non-standard prototype: %o', (value) => {
+    expect(validateIpcValue(value)).toEqual({ ok: false, reason: 'non_plain_object' })
+  })
+
   it('allows shared references that are not ancestors', () => {
     const shared = { title: 'Lattice' }
 
