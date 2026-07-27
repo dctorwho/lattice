@@ -72,5 +72,5 @@ export function createAppError(
     retryable: false,
     requestId
   } as const
-  return safeDetails === undefined ? base : { ...base, safeDetails }
+  return appErrorSchema.parse(safeDetails === undefined ? base : { ...base, safeDetails })
 }

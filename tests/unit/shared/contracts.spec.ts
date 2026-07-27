@@ -102,6 +102,19 @@ describe('TC-M0-005 shared contracts', () => {
     })
   })
 
+  it('rejects a safe-details variable carrying an extra path field', () => {
+    const unsafeDetails = {
+      reason: 'schema_invalid' as const,
+      path: 'D:\\private\\draft.md'
+    }
+
+    expect(() => createAppError('IPC_INVALID_REQUEST', requestId, unsafeDetails)).toThrow()
+  })
+
+  it('rejects an invalid request ID when building an AppError', () => {
+    expect(() => createAppError('IPC_INVALID_REQUEST', 'not-a-uuid')).toThrow()
+  })
+
   it.each([
     { code: 'IPC_INVALID_REQUEST', messageKey: 'raw message', retryable: false },
     {
