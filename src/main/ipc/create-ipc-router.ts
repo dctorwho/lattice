@@ -1,7 +1,6 @@
 import { type z } from 'zod'
 
 import {
-  approvedIpcChannelSchema,
   IPC_CONTRACT_VERSION,
   requestIdSchema,
   type ApprovedIpcChannel
@@ -22,6 +21,10 @@ import {
   type IpcSenderEvent,
   type ValidatedIpcContext
 } from './validate-ipc-sender'
+
+// Last-resort schema-valid correlation ID used only when the injected UUID
+// source throws or violates its contract.
+const DIAGNOSTIC_REQUEST_ID_SENTINEL = '00000000-0000-4000-8000-000000000000'
 
 export interface IpcRoute<TRequest, TValue> {
   readonly channel: ApprovedIpcChannel
@@ -115,9 +118,13 @@ function extractMismatchedContractVersion(input: unknown): number | undefined {
   }
 }
 
-function safeChannel(channel: string): ApprovedIpcChannel | 'unknown' {
-  const parsed = approvedIpcChannelSchema.safeParse(channel)
-  return parsed.success ? parsed.data : 'unknown'
+function createDiagnosticRequestId(source: () => string): string {
+  try {
+    const parsed = requestIdSchema.safeParse(source())
+    return parsed.success ? parsed.data : DIAGNOSTIC_REQUEST_ID_SENTINEL
+  } catch {
+    return DIAGNOSTIC_REQUEST_ID_SENTINEL
+  }
 }
 
 function safeLog(log: (event: IpcErrorLogEvent) => void, event: IpcErrorLogEvent): void {
@@ -174,14 +181,14 @@ export function createIpcRouter<TSender extends object, TFrame extends object>(
 ): IpcRouter<TSender, TFrame> {
   return {
     dispatch: async (channel, event, input) => {
-      const requestId = extractRequestId(input) ?? options.createRequestId()
-      const loggedChannel = safeChannel(channel)
+      const requestId =
+        extractRequestId(input) ?? createDiagnosticRequestId(options.createRequestId)
       const sender = validateIpcSender(event, options.registry, requestId)
       if (!sender.ok) {
         return createFailure(options.log, {
           code: sender.error.code,
           requestId,
-          channel: loggedChannel,
+          channel: 'unknown',
           reason: sender.reason
         })
       }
@@ -191,7 +198,7 @@ export function createIpcRouter<TSender extends object, TFrame extends object>(
         return createFailure(options.log, {
           code: 'IPC_INVALID_REQUEST',
           requestId,
-          channel: loggedChannel,
+          channel: 'unknown',
           reason: inputBudget.reason,
           context: sender.context
         })

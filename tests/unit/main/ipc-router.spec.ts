@@ -68,6 +68,7 @@ interface RouterHarnessOptions {
   readonly isWindowDestroyed?: () => boolean
   readonly handle?: AppInfoHandler
   readonly responseSchema?: z.ZodType<AppGetInfoResult>
+  readonly createRequestId?: () => string
   readonly log?: (event: IpcErrorLogEvent) => void
 }
 
@@ -100,7 +101,7 @@ function createRouterHarness(options: RouterHarnessOptions = {}) {
   const router = createIpcRouter<Sender, Frame>({
     registry,
     routes: [route],
-    createRequestId: () => diagnosticRequestId,
+    createRequestId: options.createRequestId ?? (() => diagnosticRequestId),
     log: options.log ?? ((logEvent) => logs.push(logEvent))
   })
 
@@ -459,9 +460,52 @@ describe('TC-M0-005 fixed IPC router', () => {
       code: 'IPC_INVALID_REQUEST',
       messageKey: 'errors.ipc.invalidRequest',
       reason: 'accessor',
-      effectiveRequestId: diagnosticRequestId
+      effectiveRequestId: diagnosticRequestId,
+      channel: 'unknown'
     })
     expect(accessed).toBe(false)
+    expect(harness.getHandlerCalls()).toBe(0)
+  })
+
+  it.each(['invalid output', 'throwing source'] as const)(
+    'uses the stable diagnostic sentinel for a $label from the UUID source',
+    async (failure) => {
+      let sourceCalls = 0
+      const harness = createRouterHarness({
+        createRequestId: () => {
+          sourceCalls += 1
+          if (failure === 'throwing source') {
+            throw new Error('UUID source unavailable')
+          }
+          return 'not-a-uuid'
+        }
+      })
+      const result = await harness.router.dispatch(APP_GET_INFO_CHANNEL, harness.event, {
+        contractVersion: 1,
+        payload: {}
+      })
+
+      expectFailure(result, harness.logs, {
+        code: 'IPC_INVALID_REQUEST',
+        messageKey: 'errors.ipc.invalidRequest',
+        reason: 'schema_invalid',
+        effectiveRequestId: '00000000-0000-4000-8000-000000000000'
+      })
+      expect(sourceCalls).toBe(1)
+      expect(harness.getHandlerCalls()).toBe(0)
+    }
+  )
+
+  it('rejects the sender before classifying an otherwise approved channel', async () => {
+    const harness = createRouterHarness({ registration: 'none' })
+    const result = await harness.router.dispatch(APP_GET_INFO_CHANNEL, harness.event, validRequest)
+
+    expectFailure(result, harness.logs, {
+      code: 'IPC_UNAUTHORIZED_SENDER',
+      messageKey: 'errors.ipc.unauthorizedSender',
+      reason: 'window_not_registered',
+      channel: 'unknown'
+    })
     expect(harness.getHandlerCalls()).toBe(0)
   })
 
@@ -777,6 +821,24 @@ describe('TC-M0-005 safe IPC error logger', () => {
     expect(stack?.every((frame) => frame.length <= 256)).toBe(true)
     expect(stack?.[0]).toBe('frame0 (file0.ts:1:1)')
     expect(stack?.[7]).toBe('frame7 (file7.ts:8:1)')
+  })
+
+  it('does not inspect a valid frame beyond the bounded stack line window', () => {
+    const error = new Error('raw message')
+    error.stack = [
+      'Error: raw message',
+      ...Array.from({ length: 1_000 }, (_, index) => `invalid line ${index}`),
+      '    at dispatch (C:\\private\\ipc-router.ts:42:7)'
+    ].join('\n')
+
+    expect(createSafeStack(error)).toBeUndefined()
+  })
+
+  it('discards a single overlong stack line instead of parsing its valid suffix', () => {
+    const error = new Error('raw message')
+    error.stack = `    at dispatch (C:\\${'private\\'.repeat(10_000)}ipc-router.ts:42:7)`
+
+    expect(createSafeStack(error)).toBeUndefined()
   })
 
   it.each(['raw string', { stack: 'at fake (C:\\private\\fake.ts:1:1)' }, null, undefined])(

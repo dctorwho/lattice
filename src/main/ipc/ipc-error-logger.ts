@@ -3,6 +3,9 @@ import { type ErrorCode, type IpcSafeReason } from '../../shared/errors'
 
 const MAX_SAFE_STACK_FRAMES = 8
 const MAX_SAFE_STACK_FRAME_LENGTH = 256
+const MAX_SAFE_STACK_INSPECTED_CHARACTERS = 16_384
+const MAX_SAFE_STACK_INSPECTED_LINES = 64
+const MAX_SAFE_STACK_INPUT_LINE_LENGTH = 1_024
 
 export interface IpcErrorLogEvent {
   readonly level: 'warning' | 'error'
@@ -62,7 +65,27 @@ export function createSafeStack(value: unknown): readonly string[] | undefined {
     return frames.length === MAX_SAFE_STACK_FRAMES
   }
 
-  for (const line of stack.split('\n')) {
+  const stackWasTruncated = stack.length > MAX_SAFE_STACK_INSPECTED_CHARACTERS
+  const inspectedStack = stack.slice(0, MAX_SAFE_STACK_INSPECTED_CHARACTERS)
+  let cursor = 0
+  let inspectedLines = 0
+
+  while (cursor < inspectedStack.length && inspectedLines < MAX_SAFE_STACK_INSPECTED_LINES) {
+    const lineStart = cursor
+    const newlineIndex = inspectedStack.indexOf('\n', cursor)
+    if (newlineIndex === -1 && stackWasTruncated) {
+      break
+    }
+
+    const lineEnd = newlineIndex === -1 ? inspectedStack.length : newlineIndex
+    const lineLength = lineEnd - lineStart
+    inspectedLines += 1
+    cursor = lineEnd + 1
+    if (lineLength > MAX_SAFE_STACK_INPUT_LINE_LENGTH) {
+      continue
+    }
+
+    const line = inspectedStack.slice(lineStart, lineEnd)
     const nodeFrame =
       /^\s*at process\.processTicksAndRejections \(node:internal\/process\/task_queues:(\d+):(\d+)\)\s*$/u.exec(
         line
