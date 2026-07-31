@@ -71,15 +71,7 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
     })
 
     const globals = await page.evaluate(() => {
-      const names = [
-        'require',
-        'process',
-        'electron',
-        'ipcRenderer',
-        'fs',
-        'shell',
-        'lattice'
-      ] as const
+      const names = ['require', 'process', 'electron', 'ipcRenderer', 'fs', 'shell'] as const
       return Object.fromEntries(names.map((name) => [name, typeof Reflect.get(globalThis, name)]))
     })
 
@@ -89,8 +81,56 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
       electron: 'undefined',
       ipcRenderer: 'undefined',
       fs: 'undefined',
-      shell: 'undefined',
-      lattice: 'undefined'
+      shell: 'undefined'
+    })
+
+    const preloadSurface = await page.evaluate(async () => {
+      const lattice: unknown = Reflect.get(globalThis, 'lattice')
+      if (typeof lattice !== 'object' || lattice === null) {
+        throw new Error('Expected the approved lattice preload surface')
+      }
+      const app: unknown = Reflect.get(lattice, 'app')
+      if (typeof app !== 'object' || app === null) {
+        throw new Error('Expected the approved app preload surface')
+      }
+      const getInfo: unknown = Reflect.get(app, 'getInfo')
+      if (typeof getInfo !== 'function') {
+        throw new Error('Expected app.getInfo')
+      }
+      const result: unknown = await Reflect.apply(getInfo, app, [])
+      return {
+        latticeKeys: Object.keys(lattice),
+        appKeys: Object.keys(app),
+        result,
+        absent: {
+          invoke: typeof Reflect.get(lattice, 'invoke'),
+          send: typeof Reflect.get(lattice, 'send'),
+          files: typeof Reflect.get(lattice, 'files'),
+          exports: typeof Reflect.get(lattice, 'exports'),
+          openExternal: typeof Reflect.get(app, 'openExternal')
+        }
+      }
+    })
+
+    expect(preloadSurface).toEqual({
+      latticeKeys: ['app'],
+      appKeys: ['getInfo'],
+      result: {
+        ok: true,
+        value: {
+          contractVersion: 1,
+          name: 'Lattice',
+          version: '0.0.0',
+          platform: 'win32'
+        }
+      },
+      absent: {
+        invoke: 'undefined',
+        send: 'undefined',
+        files: 'undefined',
+        exports: 'undefined',
+        openExternal: 'undefined'
+      }
     })
 
     const fakeWindowResult = await application.evaluate(async (electronApi) => {

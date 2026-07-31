@@ -15,6 +15,9 @@ export default defineConfig({
   },
   preload: {
     build: {
+      externalizeDeps: {
+        exclude: ['zod']
+      },
       rollupOptions: {
         input: resolve(rootDirectory, 'src/preload/index.ts'),
         output: {
