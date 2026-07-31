@@ -77,6 +77,61 @@ describe('TC-M0-005 preload app API', () => {
     await expect(app.getInfo()).resolves.toEqual(mainFailure)
   })
 
+  it('rejects a main failure Result that is missing the local request ID', async () => {
+    const app = createAppApi({
+      createRequestId: () => requestIdOne,
+      invoke: () =>
+        Promise.resolve({
+          ok: false,
+          error: {
+            code: 'IPC_INVALID_REQUEST',
+            messageKey: 'errors.ipc.invalidRequest',
+            retryable: false,
+            safeDetails: { reason: 'schema_invalid' }
+          }
+        })
+    })
+
+    await expect(app.getInfo()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'INTERNAL_UNEXPECTED',
+        messageKey: 'errors.internal.unexpected',
+        retryable: false,
+        safeDetails: { reason: 'response_schema_invalid' },
+        requestId: requestIdOne
+      }
+    })
+  })
+
+  it('rejects a main failure Result with a request ID from another request', async () => {
+    const app = createAppApi({
+      createRequestId: () => requestIdOne,
+      invoke: () =>
+        Promise.resolve({
+          ok: false,
+          error: {
+            code: 'IPC_INVALID_REQUEST',
+            messageKey: 'errors.ipc.invalidRequest',
+            retryable: false,
+            safeDetails: { reason: 'schema_invalid' },
+            requestId: requestIdTwo
+          }
+        })
+    })
+
+    await expect(app.getInfo()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: 'INTERNAL_UNEXPECTED',
+        messageKey: 'errors.internal.unexpected',
+        retryable: false,
+        safeDetails: { reason: 'response_schema_invalid' },
+        requestId: requestIdOne
+      }
+    })
+  })
+
   it.each([
     {
       label: 'invalid UUID',

@@ -65,6 +65,10 @@ export function createAppApi(
         return createLocalFailure('response_schema_invalid', requestId)
       }
 
+      if (!responseResult.data.ok && responseResult.data.error.requestId !== requestId) {
+        return createLocalFailure('response_schema_invalid', requestId)
+      }
+
       return responseResult.data
     }
   }
