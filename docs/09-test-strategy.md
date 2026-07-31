@@ -83,7 +83,7 @@
 - Pandoc/上传器使用参数数组并验证 `shell:false`。
 - M0-T03 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
 - `test:e2e` 验证导航、窗口、权限、CSP 与生产 DevTools；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
-- M0-T03 不伪造 IPC handler；无 IPC 表面是本任务的通过条件。M0-T04 创建第一个契约后再验证 request ID、sender 和参数拒绝。
+- M0-T03 不伪造 IPC handler；其完成时的空 preload 表面是该任务的历史通过条件。M0-T03 持续拥有 Node/Electron/裸 IPC 不可得和 sandbox 断言；M0-T04 拥有当前仅含 `window.lattice.app.getInfo()` 的批准 preload 快照、真实 invoke 链路、request ID、sender 和参数拒绝。
 
 M0-T03 security evidence separates pure-policy assertions from runtime behavior:
 
@@ -103,6 +103,24 @@ M0-T03 security evidence separates pure-policy assertions from runtime behavior:
   window/redirect request, inline-script and `connect-src` behavioral blocking,
   permission denial, and effective DevTools denial from a no-development-URL
   launch.
+
+M0-T04 evidence is separated by layer:
+
+- TC-M0-005 unit tests cover strict contract version 1 schemas, the four stable
+  error codes/message keys, request-ID correlation, six sender rejection
+  reasons, fail-closed destroyed-state callbacks, the 65,536-character /
+  depth-8 / 256-entry value budget, JSON-like serialization, fixed routing,
+  bounded safe-stack redaction, and local preload response validation.
+- `tests/unit/preload/app-api.spec.ts` proves the testable preload factory uses
+  only the approved channel and exposes only `getInfo`; it does not substitute
+  for an Electron boundary test.
+- `tests/security/electron-boundary.spec.ts` launches real production Electron
+  and proves the frozen `{ app: { getInfo } }` surface, absence of raw
+  Electron/Node and generic/file/export methods, and a real schema-valid
+  `AppInfo` Result. `zod` must be inline in the sandbox preload bundle for this
+  proof; an external `require("zod")` is a failed preload boundary.
+- `tests/e2e/navigation-policy.spec.ts` remains M0-T03 navigation/external-link
+  ownership and is rerun to prove the M0-T04 composition did not regress it.
 
 ## 9. 性能测试
 

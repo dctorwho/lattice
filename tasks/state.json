@@ -2,7 +2,7 @@
   "schema_version": 1,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
-  "current_task": "M0-T04",
+  "current_task": null,
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "tasks": [
     {
@@ -84,14 +84,33 @@
     },
     {
       "id": "M0-T04",
-      "status": "in_progress",
+      "status": "passed",
       "depends_on": ["M0-T03"],
       "manual_gate": false,
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "command",
+          "summary": "pnpm 11.12.0; frozen offline install exit 0; full pnpm check exit 0 with 259 unit and 18 integration tests plus production build; focused real-Electron security and E2E gates exit 0 with 2/2 tests each",
+          "path": "docs/evidence/M0-T04-shared-contracts-2026-07-26.md",
+          "recorded_at": "2026-07-31T14:15:26.1169046Z"
+        },
+        {
+          "kind": "test",
+          "summary": "TC-M0-005 passed strict shared schemas, stable errors, sender/window ownership, bounded JSON-like serialization, redacted logging, frozen preload API, and request-response correlation proofs",
+          "path": "docs/evidence/M0-T04-shared-contracts-2026-07-26.md",
+          "recorded_at": "2026-07-31T14:15:26.1169046Z"
+        },
+        {
+          "kind": "report",
+          "summary": "Independent reviews accepted the IPC architecture and security boundaries after evidence/state completion and wording correction; M0-T05 owns command consumption and M0-T06 owns dependency, license, SBOM, CI, and packaged-artifact gates",
+          "path": "docs/evidence/M0-T04-shared-contracts-2026-07-26.md",
+          "recorded_at": "2026-07-31T14:15:26.1169046Z"
+        }
+      ]
     },
     {
       "id": "M0-T05",
-      "status": "blocked",
+      "status": "ready",
       "depends_on": ["M0-T04"],
       "manual_gate": false,
       "evidence": []

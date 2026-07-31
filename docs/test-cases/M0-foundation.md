@@ -4,16 +4,16 @@
 
 ## 自动化与半自动用例
 
-| ID        | 任务   | 层级/级别        | 数据/环境                                                              | 步骤                                                                                                                | 预期                                                                                           | 自动化                                                                 |
-| --------- | ------ | ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| TC-M0-001 | M0-T01 | integration/P1   | ENV-M0-A with validated store and offline install; automated by M0-T02 | frozen offline install and two builds in a Chinese-and-space path                                                   | unique lockfile, no pending builds, stable artifact hashes, cleanup                            | `pnpm test:integration -- tests/integration/project-bootstrap.spec.ts` |
-| TC-M0-002 | M0-T02 | integration/P1   | isolated temporary copies                                              | run normal scripts; inject format, lint, type, unit, integration, and build faults                                  | direct commands and guarded nested `check` fail correctly without recursion                    | `pnpm test:integration -- tests/integration/quality-scripts.spec.ts`   |
-| TC-M0-008 | M0-T02 | integration/P1   | Chinese-and-space path, empty project store, network allowed           | frozen install and two builds                                                                                       | unique lockfile, no pending builds, stable artifacts, cleanup                                  | `pnpm test:bootstrap:cold`                                             |
-| TC-M0-003 | M0-T03 | security/P0      | SEC-M0-A                                                               | 启动生产配置，探测主窗口/伪造窗口/已销毁窗口、Node/Electron/裸 IPC/preload 表面，并投递污染对象和超大 renderer 消息 | `require/process/ipcRenderer/fs/shell` 不可得；preload 表面为空；无消息进入 main；窗口保持存活 | `pnpm test:security -- tests/security/electron-boundary.spec.ts`       |
-| TC-M0-004 | M0-T03 | e2e-security/P0  | SEC-M0-B                                                               | 触发 http/file/javascript/data/自定义协议、导航、新窗口和权限请求                                                   | 仅经确认的 https/mailto 外链交给系统；其余拒绝；主窗口不导航；无 DevTools 后门                 | `pnpm test:e2e -- tests/e2e/navigation-policy.spec.ts`                 |
-| TC-M0-005 | M0-T04 | unit-security/P1 | CONTRACT-M0                                                            | 对每个 Zod 请求/响应运行有效值、缺字段、未知字段、超限值、错误 sender 和不可序列化结果                              | 返回稳定 `Result`/错误码/request ID；日志脱敏；未知 channel 不可调用                           | `pnpm test -- tests/unit/shared/contracts.spec.ts`                     |
-| TC-M0-006 | M0-T05 | component/P1     | COMMAND-M0                                                             | 从菜单、按钮、右键和快捷键调用同一命令；切换可见/启用/选中上下文                                                    | 四入口使用同一 command ID 和状态；禁用命令不执行；焦点回到合理控件                             | `pnpm test -- tests/unit/component/command-registry.spec.ts`           |
-| TC-M0-007 | M0-T06 | integration/P1   | ENV-M0-A                                                               | 在干净 checkout 运行 CI 等价命令、许可证审计、SBOM 和构建制品检查                                                   | CI 命令与文档一致；制品可启动；依赖有版本/许可证；SBOM 可解析且覆盖生产依赖                    | `pnpm test:integration -- tests/integration/m0-gate.spec.ts`           |
+| ID        | 任务   | 层级/级别        | 数据/环境                                                              | 步骤                                                                                                                                         | 预期                                                                                                                                                    | 自动化                                                                 |
+| --------- | ------ | ---------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| TC-M0-001 | M0-T01 | integration/P1   | ENV-M0-A with validated store and offline install; automated by M0-T02 | frozen offline install and two builds in a Chinese-and-space path                                                                            | unique lockfile, no pending builds, stable artifact hashes, cleanup                                                                                     | `pnpm test:integration -- tests/integration/project-bootstrap.spec.ts` |
+| TC-M0-002 | M0-T02 | integration/P1   | isolated temporary copies                                              | run normal scripts; inject format, lint, type, unit, integration, and build faults                                                           | direct commands and guarded nested `check` fail correctly without recursion                                                                             | `pnpm test:integration -- tests/integration/quality-scripts.spec.ts`   |
+| TC-M0-008 | M0-T02 | integration/P1   | Chinese-and-space path, empty project store, network allowed           | frozen install and two builds                                                                                                                | unique lockfile, no pending builds, stable artifacts, cleanup                                                                                           | `pnpm test:bootstrap:cold`                                             |
+| TC-M0-003 | M0-T03 | security/P0      | SEC-M0-A                                                               | 启动生产配置，探测主窗口/伪造窗口/已销毁窗口、Node/Electron/裸 IPC，并投递污染对象和超大 renderer 消息                                       | `require/process/ipcRenderer/fs/shell` 不可得；sandbox 和窗口策略保持生效；窗口保持存活。M0-T03 完成时的空 preload 是历史证据，当前批准表面归 TC-M0-005 | `pnpm test:security -- tests/security/electron-boundary.spec.ts`       |
+| TC-M0-004 | M0-T03 | e2e-security/P0  | SEC-M0-B                                                               | 触发 http/file/javascript/data/自定义协议、导航、新窗口和权限请求                                                                            | 仅经确认的 https/mailto 外链交给系统；其余拒绝；主窗口不导航；无 DevTools 后门                                                                          | `pnpm test:e2e -- tests/e2e/navigation-policy.spec.ts`                 |
+| TC-M0-005 | M0-T04 | unit-security/P1 | CONTRACT-M0                                                            | 覆盖严格 Zod 请求/响应、预算、六类 sender 拒绝、固定路由、不可序列化结果、脱敏日志、preload 本地校验，并用真实 Electron 调用 `app.getInfo()` | 返回稳定且关联当前 request ID 的 `Result`；未知 channel 不可调用；批准表面精确为冻结的 `{ app: { getInfo } }`                                           | `pnpm test -- tests/unit/shared/contracts.spec.ts`                     |
+| TC-M0-006 | M0-T05 | component/P1     | COMMAND-M0                                                             | 从菜单、按钮、右键和快捷键调用同一命令；切换可见/启用/选中上下文                                                                             | 四入口使用同一 command ID 和状态；禁用命令不执行；焦点回到合理控件                                                                                      | `pnpm test -- tests/unit/component/command-registry.spec.ts`           |
+| TC-M0-007 | M0-T06 | integration/P1   | ENV-M0-A                                                               | 在干净 checkout 运行 CI 等价命令、许可证审计、SBOM 和构建制品检查                                                                            | CI 命令与文档一致；制品可启动；依赖有版本/许可证；SBOM 可解析且覆盖生产依赖                                                                             | `pnpm test:integration -- tests/integration/m0-gate.spec.ts`           |
 
 M0-T01 自举执行说明：TC-M0-001 的“自动化”列固定其最终回归目标，但该文件和 `test:integration` 脚本在 M0-T01 尚不存在。M0-T01 按 AGENTS/测试策略运行等价命令并以退出码取证即可完成；M0-T02 必须创建该测试文件、让同一检查进入 `pnpm test:integration` 并重新通过。此例外不适用于其他 TC。
 
@@ -39,6 +39,33 @@ M0-T03 evidence is allocated by test layer:
   navigation, new-window, or redirect request; inline-script and `connect-src`
   behavioral blocking; permission denial; and effective DevTools denial from a
   no-development-URL launch.
+
+### M0-T04 shared-contract acceptance detail
+
+TC-M0-005 splits evidence rather than treating a unit double as an Electron
+boundary proof:
+
+- Unit: `contracts.spec.ts`, `ipc-value-budget.spec.ts`,
+  `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`,
+  `ipc-router.spec.ts`, and `app-api.spec.ts` prove contract version 1,
+  success/error Result schemas, current request-ID correlation, and exact
+  fixed-channel routing.
+- Sender matrix: `missing_sender_frame`, `sender_destroyed`,
+  `subframe_sender`, `window_not_registered`, `sender_identity_mismatch`, and
+  `window_destroyed`. Destroyed-state callback exceptions fail closed. Trusted
+  window/WebContents IDs come from main and `sessionId` is `null`.
+- Value matrix: JSON-like null/boolean/string/finite-number/standard-array/
+  plain-object values only; 65,536 UTF-16 characters, depth 8, and 256 total
+  entries. Unsupported types, non-finite numbers, non-standard objects/arrays,
+  symbols, accessors, cycles, and every exceeded budget are rejected.
+- Logging matrix: only fixed safe fields and recognized basename-only frames;
+  at most 16,384 input characters, 64 lines, 1,024 characters per input line,
+  8 emitted frames, and 256 characters per emitted frame.
+- Real Electron: `electron-boundary.spec.ts` proves the production sandbox
+  loads the `zod`-inlined preload, exposes only frozen
+  `window.lattice.app.getInfo`, returns a real schema-valid `AppInfo`, and still
+  denies raw Electron/Node and generic/file/export methods. M0-T03 retains
+  ownership of sandbox/Node denial and historical empty-preload evidence.
 
 ## 参数矩阵
 

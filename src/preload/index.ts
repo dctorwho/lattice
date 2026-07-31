@@ -6,10 +6,7 @@ import { createAppApi } from './api/create-app-api'
 const app = Object.freeze(
   createAppApi({
     createRequestId: () => crypto.randomUUID(),
-    invoke: async (
-      channel: ApprovedIpcChannel,
-      request: unknown
-    ): Promise<unknown> => {
+    invoke: async (channel: ApprovedIpcChannel, request: unknown): Promise<unknown> => {
       const response: unknown = await ipcRenderer.invoke(channel, request)
       return response
     }

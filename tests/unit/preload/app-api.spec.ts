@@ -143,33 +143,34 @@ describe('TC-M0-005 preload app API', () => {
         throw new Error('secret UUID provider failure')
       }
     }
-  ])('returns a schema-valid local failure for a $label without invoking main', async ({
-    createRequestId
-  }) => {
-    let invokeCalls = 0
-    const app = createAppApi({
-      createRequestId,
-      invoke: () => {
-        invokeCalls += 1
-        return Promise.resolve({ ok: true, value: validValue })
-      }
-    })
+  ])(
+    'returns a schema-valid local failure for a $label without invoking main',
+    async ({ createRequestId }) => {
+      let invokeCalls = 0
+      const app = createAppApi({
+        createRequestId,
+        invoke: () => {
+          invokeCalls += 1
+          return Promise.resolve({ ok: true, value: validValue })
+        }
+      })
 
-    const result = await app.getInfo()
+      const result = await app.getInfo()
 
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        code: 'INTERNAL_UNEXPECTED',
-        messageKey: 'errors.internal.unexpected',
-        retryable: false,
-        safeDetails: { reason: 'schema_invalid' }
-      }
-    })
-    expectSchemaValidFailure(result)
-    expect(invokeCalls).toBe(0)
-    expect(JSON.stringify(result)).not.toContain('secret')
-  })
+      expect(result).toEqual({
+        ok: false,
+        error: {
+          code: 'INTERNAL_UNEXPECTED',
+          messageKey: 'errors.internal.unexpected',
+          retryable: false,
+          safeDetails: { reason: 'schema_invalid' }
+        }
+      })
+      expectSchemaValidFailure(result)
+      expect(invokeCalls).toBe(0)
+      expect(JSON.stringify(result)).not.toContain('secret')
+    }
+  )
 
   it('converts invoke rejection to a schema-valid local failure without raw leakage', async () => {
     const app = createAppApi({

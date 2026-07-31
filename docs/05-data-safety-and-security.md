@@ -94,6 +94,35 @@
 - A packaged application ignores a development renderer URL, and production
   uses `devTools: false`.
 
+### M0-T04 enforced IPC invariants
+
+- The renderer receives only frozen `window.lattice.app.getInfo()`; neither the
+  root nor `app` object exposes generic `invoke`/`send`, Electron objects, file,
+  external-open, settings, workspace, import, or export methods.
+- Preload generates each request UUID. Main derives `windowId` and
+  `webContentsId` from its authorized-window registry and sets `sessionId` to
+  `null`; renderer input cannot provide trusted context.
+- Sender validation rejects exactly: missing sender frame, destroyed sender,
+  subframe sender, unregistered window, mismatched sender identity, and
+  destroyed window. Exceptions from sender/window destroyed-state callbacks
+  fail closed as the corresponding destroyed condition.
+- Input and handler-output validation allows only JSON-like `null`, booleans, strings,
+  finite numbers, standard arrays, and plain or null-prototype objects. It
+  rejects unsupported values, non-finite numbers, non-standard prototypes,
+  symbol keys, accessors, cycles, non-canonical array properties, and values
+  over 65,536 UTF-16 characters, depth 8, or 256 entries. Object-key characters
+  count toward the character budget.
+- The fixed route validates sender, input value budget, approved channel,
+  contract version, Zod request, handler Result, Zod response, and handler-result
+  serializability in that order. Router-generated stable failures are constructed
+  from the strict `AppError`/`Result` schemas rather than passed through the value
+  walker. Preload validates every Result again and requires every failure
+  `error.requestId` to equal its local request ID.
+- `zod` is bundled into `out/preload/index.cjs`. Leaving it external produced a
+  sandbox preload `require("zod")` that Electron could not load; the build
+  excludes only `zod` from preload dependency externalization and does not
+  weaken sandbox or BrowserWindow preferences.
+
 ## 9. 内容与进程隔离
 
 - DOMPurify 不是唯一边界；HTML 在无 Node、无 preload 的隔离 renderer 中预览。
@@ -110,6 +139,14 @@
 - 日志使用路径哈希或根目录相对路径；不记录文档、剪贴板、搜索词、YAML 值和导出自定义内容。
 - 用户可从设置打开日志目录并一键清理。
 - 错误报告在未来加入时必须预览待发送内容并显式同意。
+- M0-T04 IPC logs contain only level, stable code, request ID, approved channel
+  or `unknown`, safe reason, optional main-derived window/WebContents IDs, and
+  an optional sanitized stack. Raw payloads, errors, document text, and full
+  paths are excluded. Stack processing inspects at most 16,384 characters, 64
+  lines, and 1,024 input characters per line, emits at most 8 frames of 256
+  characters, and keeps only recognized application basenames or the bounded
+  Node task-queue frame. Diagnostic sink failures cannot replace the stable IPC
+  response.
 
 ## 11. 安全测试门禁
 

@@ -5,16 +5,36 @@
 ## 1. 通用结果
 
 ```ts
+type ErrorCode =
+  'IPC_INVALID_REQUEST' | 'IPC_UNAUTHORIZED_SENDER' | 'APP_VERSION_MISMATCH' | 'INTERNAL_UNEXPECTED'
+
+interface SafeDetails {
+  reason?: IpcSafeReason
+  expectedVersion?: 1
+  receivedVersion?: number // integer, 0..1000
+}
+
 interface AppError {
   code: ErrorCode
-  messageKey: string
+  messageKey:
+    | 'errors.ipc.invalidRequest'
+    | 'errors.ipc.unauthorizedSender'
+    | 'errors.app.versionMismatch'
+    | 'errors.internal.unexpected'
   retryable: boolean
-  safeDetails?: Record<string, string | number | boolean>
+  safeDetails?: SafeDetails
   requestId?: string
 }
 
-type Result<T> = { ok: true; value: T } | { ok: false; error: AppError }
+type Result<T, E extends AppError = AppError> =
+  { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E }
 ```
+
+M0-T04 的四个 active code 与 message key 一一对应，全部
+`retryable:false`。main 产生的错误必须携带当前 UUID request ID；preload
+拒绝缺失或错配 request ID 的失败 Result。本地 UUID 生成本身失败时尚无可信
+request ID，因此该本地 `INTERNAL_UNEXPECTED` 可不带 ID。`safeDetails` 只接受
+固定 reason 和受限版本字段，不能加入正文、路径或原始异常。
 
 取消不是异常崩溃；对话框取消返回 `ok:true` 且 value 为 `null`，长任务取消使用稳定 `*_CANCELLED` code。
 
@@ -86,12 +106,38 @@ interface SavedFile {
 
 renderer 不提供“忽略冲突”布尔值。覆盖冲突使用单独 `files.confirmedOverwrite()`，携带主进程生成的一次性 conflict token。
 
-## 4. Preload API
+## 4. 当前 Preload API（M0-T04 已实现）
 
 ```ts
+interface AppInfo {
+  readonly contractVersion: 1
+  readonly name: string // 1..64，无控制字符
+  readonly version: string // 1..64，无控制字符
+  readonly platform: 'win32' | 'darwin' | 'linux'
+}
+
 interface LatticeDesktopApi {
+  readonly app: {
+    readonly getInfo: () => Promise<Result<AppInfo, AppError>>
+  }
+}
+```
+
+当前 renderer 公共表面精确为冻结的
+`window.lattice.app.getInfo()`。它发送契约版本 1、preload 生成的 UUID 和空
+payload；频道 `lattice:app:get-info` 仅是 main/preload 内部映射。root 和
+`app` 均不含 `invoke`、`send` 或其他能力。
+
+### 后续任务目标表面（当前不可调用）
+
+下列接口继续约束未来设计，但不属于 M0-T04 的运行时
+`LatticeDesktopApi`。外链/对话框、文件、workspace、recovery、settings、
+import 和 export 必须由对应后续能力任务逐项授权、实现和测试后才能加入。
+
+```ts
+interface TargetLatticeDesktopApi {
   app: {
-    getInfo(): Promise<Result<AppInfo>>
+    getInfo(): Promise<Result<AppInfo, AppError>>
     openExternal(url: string): Promise<Result<void>>
   }
   dialogs: {
@@ -138,7 +184,7 @@ interface LatticeDesktopApi {
 }
 ```
 
-禁止添加 `invoke(channel,args)`、`send`、`execute`、`readAnyPath` 或 `spawn` 等通用方法。事件订阅必须返回 unsubscribe，窗口销毁时主进程释放监听。
+当前和未来都禁止添加 `invoke(channel,args)`、`send`、`execute`、`readAnyPath` 或 `spawn` 等通用方法。未来事件订阅必须返回 unsubscribe，窗口销毁时主进程释放监听。
 
 ## 5. 工作区和搜索
 

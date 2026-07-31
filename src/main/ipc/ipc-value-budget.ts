@@ -22,8 +22,7 @@ export type IpcValueRejectionReason =
   | 'cycle'
 
 export type IpcValueValidation =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly reason: IpcValueRejectionReason }
+  { readonly ok: true } | { readonly ok: false; readonly reason: IpcValueRejectionReason }
 
 const valid: IpcValueValidation = { ok: true }
 
@@ -37,9 +36,18 @@ function boundedLimit(value: number, fallback: number): number {
 
 function normalizedLimits(limits: IpcValueLimits | undefined): IpcValueLimits {
   return {
-    maxCharacters: boundedLimit(limits?.maxCharacters ?? DEFAULT_IPC_VALUE_LIMITS.maxCharacters, DEFAULT_IPC_VALUE_LIMITS.maxCharacters),
-    maxDepth: boundedLimit(limits?.maxDepth ?? DEFAULT_IPC_VALUE_LIMITS.maxDepth, DEFAULT_IPC_VALUE_LIMITS.maxDepth),
-    maxEntries: boundedLimit(limits?.maxEntries ?? DEFAULT_IPC_VALUE_LIMITS.maxEntries, DEFAULT_IPC_VALUE_LIMITS.maxEntries)
+    maxCharacters: boundedLimit(
+      limits?.maxCharacters ?? DEFAULT_IPC_VALUE_LIMITS.maxCharacters,
+      DEFAULT_IPC_VALUE_LIMITS.maxCharacters
+    ),
+    maxDepth: boundedLimit(
+      limits?.maxDepth ?? DEFAULT_IPC_VALUE_LIMITS.maxDepth,
+      DEFAULT_IPC_VALUE_LIMITS.maxDepth
+    ),
+    maxEntries: boundedLimit(
+      limits?.maxEntries ?? DEFAULT_IPC_VALUE_LIMITS.maxEntries,
+      DEFAULT_IPC_VALUE_LIMITS.maxEntries
+    )
   }
 }
 

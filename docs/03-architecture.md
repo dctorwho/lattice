@@ -44,12 +44,13 @@ module:
 | WebContents policy    | `src/main/security/web-contents-security-policy.ts`                                                                                                                   | Synchronously denies navigation, redirects, new windows, and webview attachment.                                                                                                                                                                                                    |
 | External URL policy   | `src/main/security/external-url-policy.ts`                                                                                                                            | Parses and bounds input, applies protocol, credential, and target allowlists, requests confirmation, then hands only the normalized URL to the OS.                                                                                                                                  |
 | BrowserWindow factory | `src/main/bootstrap/create-main-window.ts`                                                                                                                            | Creates windows with the immutable production `webPreferences` security baseline.                                                                                                                                                                                                   |
-| Preload               | `src/preload/index.ts`                                                                                                                                                | Remains empty until M0-T04 creates a narrow typed preload contract.                                                                                                                                                                                                                 |
+| Preload               | `src/preload/index.ts` and `src/preload/api/create-app-api.ts`                                                                                                        | M0-T03 completed with an empty surface. M0-T04 now exposes only the frozen typed `window.lattice.app.getInfo()` capability; generic IPC and future product capabilities remain absent.                                                                                              |
 
 `src/main/index.ts` registers the WebContents policy through
 `web-contents-created` before readiness, so it also applies to future windows.
-That broad event coverage does not grant privileged capabilities: M0-T04 must
-still expose every needed capability through a narrow, typed preload contract.
+That broad event coverage does not grant privileged capabilities. M0-T04 adds
+only one narrow typed method; every later capability still requires its own
+contract, authorization, implementation, and tests.
 
 ## 3. 源码与会话模型
 
@@ -142,10 +143,31 @@ interface AppCommand {
 ## 7. IPC 契约
 
 - 契约位于 `src/shared/contracts/`，TypeScript 类型由 Zod schema 推导。
-- 每个请求携带窗口、会话和 request ID；主进程校验 sender、路径权限和参数。
+- renderer 请求只携带契约版本、preload 生成的 request ID 和方法 payload；窗口、WebContents 和会话上下文不能由 renderer 声明，必须由 main 从已登记窗口派生。
 - 文件路径仅来自用户选择、已授权工作区或既有会话；不接受渲染器随意扩大访问范围。
 - 结果使用 `Result<T, AppError>` 形状，错误包含稳定 code、可本地化 message key 和安全 details。
 - 长任务支持进度、取消和超时；取消必须终止子进程或 worker。
+
+### M0-T04 implemented IPC flow
+
+```text
+renderer window.lattice.app.getInfo()
+→ frozen preload method
+→ fixed lattice:app:get-info channel
+→ preload request ID + main-derived window identity
+→ 65,536-character / depth-8 / 256-entry budget + Zod request
+→ injected AppInfo handler
+→ Zod Result + JSON-like serializability validation
+→ preload response schema and request-ID correlation
+→ renderer
+```
+
+M0-T04 derives `windowId` and `webContentsId` from the application-owned
+registry. Its `sessionId` is explicitly `null`; no renderer-controlled window
+or session context crosses the boundary. The current handler returns only
+contract version 1 application name, version, and `win32 | darwin | linux`
+platform metadata. File, workspace, settings, import, and export capabilities
+are later-task contracts and are not callable in M0-T04.
 
 ## 8. 工作区与搜索
 

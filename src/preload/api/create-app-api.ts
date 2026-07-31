@@ -14,10 +14,7 @@ export interface AppApiDependencies {
   readonly invoke: (channel: ApprovedIpcChannel, request: unknown) => Promise<unknown>
 }
 
-function createLocalFailure(
-  reason: IpcSafeReason,
-  requestId?: string
-): AppGetInfoResult {
+function createLocalFailure(reason: IpcSafeReason, requestId?: string): AppGetInfoResult {
   return appGetInfoResultSchema.parse({
     ok: false,
     error: {
@@ -30,9 +27,7 @@ function createLocalFailure(
   })
 }
 
-export function createAppApi(
-  dependencies: AppApiDependencies
-): LatticeDesktopApi['app'] {
+export function createAppApi(dependencies: AppApiDependencies): LatticeDesktopApi['app'] {
   return {
     getInfo: async (): Promise<AppGetInfoResult> => {
       let requestIdCandidate: string

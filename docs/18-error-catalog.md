@@ -81,7 +81,26 @@
 | UPDATE_FAILED            | 下载/安装失败                    | 保持当前版本，稍后重试                   |
 | INTERNAL_UNEXPECTED      | 未知异常                         | 提供 request ID、保存/恢复建议和打开日志 |
 
-## 8. 呈现规则
+## 8. M0-T04 active IPC errors
+
+M0-T04 当前可执行契约只启用以下四项；目录中其他 code 是后续能力的目标错误，
+不表示当前 preload 可以调用对应功能。
+
+| Code                      | 固定 message key                | 当前触发                                                               | retryable |
+| ------------------------- | ------------------------------- | ---------------------------------------------------------------------- | --------- |
+| `IPC_INVALID_REQUEST`     | `errors.ipc.invalidRequest`     | 未知频道、value budget/序列化拒绝或请求 schema 非法                    | `false`   |
+| `IPC_UNAUTHORIZED_SENDER` | `errors.ipc.unauthorizedSender` | sender frame、销毁状态、主 frame、窗口登记、对象身份或窗口存活校验失败 | `false`   |
+| `APP_VERSION_MISMATCH`    | `errors.app.versionMismatch`    | 接收的有界整数 contract version 不是 1                                 | `false`   |
+| `INTERNAL_UNEXPECTED`     | `errors.internal.unexpected`    | handler 抛出、响应 schema/序列化失败或 preload 本地边界失败            | `false`   |
+
+main 返回的每个错误都使用当前 request ID；preload 对失败 Result 再次要求
+`error.requestId` 与其本地 UUID 相等，不相等时返回本地
+`response_schema_invalid`。只有 UUID 源抛出或产生非法 UUID 时，本地失败因为
+尚无可信 ID 而省略 `requestId`。日志只记录固定 code/ID/channel/reason、可选
+main-derived 窗口标识及最多 8 个 basename-only 脱敏堆栈帧，不记录 payload、
+正文、绝对路径或原始异常。
+
+## 9. 呈现规则
 
 - 取消和 stale patch 通常不弹阻断对话框。
 - 数据风险使用持久 banner/对话框，直到用户完成安全动作。

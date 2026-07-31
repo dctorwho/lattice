@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import { AuthorizedWindowRegistry } from '../../../src/main/ipc/authorized-window-registry'
-import {
-  validateIpcSender,
-  type IpcSenderEvent
-} from '../../../src/main/ipc/validate-ipc-sender'
+import { validateIpcSender, type IpcSenderEvent } from '../../../src/main/ipc/validate-ipc-sender'
 
 type FakeSender = { readonly label: string }
 type FakeFrame = { readonly label: string }
 
 const requestId = '00000000-0000-4000-8000-000000000001'
 
-function createEvent(overrides: Partial<IpcSenderEvent<FakeSender, FakeFrame>> = {}): IpcSenderEvent<FakeSender, FakeFrame> {
+function createEvent(
+  overrides: Partial<IpcSenderEvent<FakeSender, FakeFrame>> = {}
+): IpcSenderEvent<FakeSender, FakeFrame> {
   const sender: FakeSender = { label: 'sender' }
   const mainFrame: FakeFrame = { label: 'main' }
 
@@ -75,10 +74,7 @@ describe('IPC sender validation', () => {
 
   it.each([
     [createEvent({ isSenderDestroyed: () => true }), 'sender_destroyed'],
-    [
-      createEvent({ senderFrame: { label: 'subframe' } }),
-      'subframe_sender'
-    ],
+    [createEvent({ senderFrame: { label: 'subframe' } }), 'subframe_sender'],
     [createEvent(), 'window_not_registered']
   ] as const)('rejects an unregistered event as %s', (event, reason) => {
     const registry = new AuthorizedWindowRegistry<FakeSender>()

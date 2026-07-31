@@ -1,8 +1,4 @@
-import {
-  createAppError,
-  type AppError,
-  type IpcSafeReason
-} from '../../shared/errors'
+import { createAppError, type AppError, type IpcSafeReason } from '../../shared/errors'
 
 import { type AuthorizedWindowRegistry } from './authorized-window-registry'
 

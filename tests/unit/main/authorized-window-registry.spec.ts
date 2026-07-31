@@ -36,7 +36,12 @@ describe('authorized window registry', () => {
     })
 
     expect(() =>
-      registry.register({ windowId: 8, webContentsId: 11, sender: {}, isWindowDestroyed: () => false })
+      registry.register({
+        windowId: 8,
+        webContentsId: 11,
+        sender: {},
+        isWindowDestroyed: () => false
+      })
     ).toThrow('WebContents 11 is already registered')
     expect(registry.find(11)?.sender).toBe(originalSender)
   })
