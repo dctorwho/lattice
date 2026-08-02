@@ -62,6 +62,9 @@ function createCompositionHarness(
       installSessionSecurityPolicy: (development) => {
         calls.push(`secure-session:${development ? 'development' : 'production'}`)
       },
+      installApplicationMenu: () => {
+        calls.push('install-application-menu')
+      },
       createMainWindow: (mainWindowOptions) => {
         calls.push(
           mainWindowOptions.developmentRendererUrl === undefined
@@ -116,8 +119,9 @@ describe('application composition', () => {
     harness.ready.resolve()
     await harness.ready.promise
 
-    expect(harness.calls.slice(-3)).toEqual([
+    expect(harness.calls.slice(-4)).toEqual([
       'secure-session:production',
+      'install-application-menu',
       'create-window:C:\\application\\out\\main:production',
       'register-activate'
     ])

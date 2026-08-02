@@ -7,6 +7,7 @@ export interface ApplicationCompositionDependencies<TContents> {
   readonly whenReady: () => Promise<void>
   readonly installWebContentsSecurityPolicy: (contents: TContents) => void
   readonly installSessionSecurityPolicy: (development: boolean) => void
+  readonly installApplicationMenu: () => void
   readonly createMainWindow: (options: CreateMainWindowOptions) => void
   readonly registerActivate: (listener: () => void) => void
   readonly hasOpenWindows: () => boolean
@@ -28,6 +29,7 @@ export function composeApplication<TContents>(
     dependencies.installSessionSecurityPolicy(
       mainWindowOptions.developmentRendererUrl !== undefined
     )
+    dependencies.installApplicationMenu()
     dependencies.createMainWindow(mainWindowOptions)
 
     dependencies.registerActivate(() => {
