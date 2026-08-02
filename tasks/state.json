@@ -2,7 +2,7 @@
   "schema_version": 1,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
-  "current_task": null,
+  "current_task": "M0-T05",
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "tasks": [
     {
@@ -110,7 +110,7 @@
     },
     {
       "id": "M0-T05",
-      "status": "ready",
+      "status": "in_progress",
       "depends_on": ["M0-T04"],
       "manual_gate": false,
       "evidence": []

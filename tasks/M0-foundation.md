@@ -57,8 +57,15 @@
 - 依赖：M0-T04
 - 需求：UI-001、UI-002
 - 交付：Command 接口、registry、React 窗口骨架、标题栏/侧栏占位/编辑区/状态栏布局；只有可工作的开发/关于命令，不放产品假按钮。
+- 设计决策：renderer 纯 TypeScript `CommandRegistry` 是命令定义、状态派生和执行的唯一权威；原生菜单、按钮、右键菜单和快捷键只投递稳定 command ID。main 只把当前授权窗口验证后的状态快照投影到固定原生菜单，不执行 renderer 命令或接受 renderer 提供的窗口标识。
+- 当前命令：只实现 `view.toggleSidebar` 与 `app.about`。About 复用 `window.lattice.app.getInfo()`；侧栏关闭、右键菜单关闭和 About 关闭都必须确定性恢复焦点。
+- 预期文件：`src/domain/commands/`、严格 command IPC/preload 契约、`src/main/commands/`、renderer 本地化窗口骨架、TC-M0-006、同步文档和 M0-T05 证据。
 - 非目标：文件、编辑和工作区命令。
-- 验证：可见/启用/选中派生测试；菜单和按钮调用同一 command ID；键盘焦点 smoke。
+- 依赖：不新增生产或开发依赖。
+- 自动验证：`pnpm test -- tests/unit/domain/command-registry.spec.ts tests/unit/component/command-registry.spec.tsx tests/unit/main/application-menu.spec.ts tests/unit/preload/command-api.spec.ts`、`pnpm check`、`pnpm test:e2e`、`pnpm test:security`、`node scripts/verify-planning-docs.mjs`。
+- 人工验证：不适用（`manual_gate:false`）；真实 Electron 菜单、快捷键、窗口骨架、About 和 preload 表面由 E2E/安全测试证明。
+- 失败回退：保持任务 `in_progress`，增加回归测试并修复命令状态、sender/窗口归属、焦点或 preload 边界根因；不得增加通用 IPC、复制命令实现、弱化 schema 或放入未实现控件。
+- 完成：TC-M0-006、质量、E2E、安全和独立审查全部通过并记录证据；状态设为 `passed`，只解锁 M0-T06，随后 fast-forward 合入本地 `main` 并更新 GitHub `main`。
 
 ## M0-T06 CI、依赖与里程碑审计
 
