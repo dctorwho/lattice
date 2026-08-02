@@ -141,18 +141,21 @@ M0-T01 已建立可构建 Electron/React/TypeScript 骨架，M0-T02 已建立严
 - 默认分支：`main`
 - Git 协议：沿用当前 GitHub CLI 的 HTTPS 配置
 
-仓库创建和远端写入只在 M0-T06 实施。M0-T03 至 M0-T05 保持经过本地验证的完整 Git 历史，M0-T06 再受控上传。
+原计划由 M0-T06 创建仓库并首次上传。用户在 M0-T04 完成本地合并后明确授权
+提前创建公开 `dctorwho/lattice`，当前 `origin/main` 已存在。M0-T05 完成后
+保持远端 main 与本地已验证 main 同步；M0-T06 不重建仓库，而是先验证 owner、
+可见性、默认分支、remote URL 和提交一致性，再部署工作流与 ruleset。
 
 ### 4.2 首次引导顺序
 
-1. 完成并本地验证 M0-T06 工作流与审计脚本。
-2. 创建空的公开 `dctorwho/lattice`，不初始化额外 README、license 或 `.gitignore`。
-3. 配置唯一 `origin`，核对 URL 和仓库所有者。
-4. 上传现有 `main` 完整历史。
-5. 等待首次 GitHub Actions、CodeQL 和依赖审查运行。
-6. 核对每个检查的稳定名称、来源和结论。
-7. 仅在真实成功检查存在后启用 required checks 和 `main` ruleset。
-8. 创建测试 PR，验证直接推送被拒绝、检查失败无法合并、检查成功可合并。
+1. 核对现有公开 `dctorwho/lattice`、唯一 `origin`、默认 `main` 和提交一致性。
+2. 完成并本地验证 M0-T06 工作流与审计脚本。
+3. 通过现有远端引导首次工作流运行，不重建或覆盖仓库。
+4. 用 M0-T06 bootstrap PR 产生首次 GitHub Actions、CodeQL 和 Dependency
+   Review 检查，成功后合入 main 并等待 main push 检查。
+5. 核对每个检查的稳定名称、来源和结论。
+6. 仅在真实成功检查存在后启用 required checks 和 `main` ruleset。
+7. 创建测试 PR，验证直接推送被拒绝、检查失败无法合并、检查成功可合并。
 
 如果首次工作流失败，ruleset 保持未激活；先在功能分支修复根因并重新运行，不能把不存在或失败的检查设为 required。
 
