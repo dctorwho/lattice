@@ -249,7 +249,14 @@ const preloadMocks = vi.hoisted(() => {
       }
     },
     ipcRenderer: {
-      invoke: (): Promise<unknown> => Promise.resolve({ ok: true, value: validValue })
+      invoke: (channel: string): Promise<unknown> =>
+        Promise.resolve(
+          channel === 'lattice:app:get-info'
+            ? { ok: true, value: validValue }
+            : { ok: true, value: { contractVersion: 1, applied: true } }
+        ),
+      on: (): void => {},
+      removeListener: (): void => {}
     },
     readExposed: () => exposed
   }
@@ -260,8 +267,8 @@ vi.mock('electron', () => ({
   ipcRenderer: preloadMocks.ipcRenderer
 }))
 
-describe('M0-T04 production preload surface', () => {
-  it('exposes only frozen lattice.app.getInfo through the context bridge', async () => {
+describe('M0-T05 production preload surface', () => {
+  it('exposes only frozen lattice app and command capabilities through the context bridge', async () => {
     await import('../../../src/preload/index')
 
     const exposed = preloadMocks.readExposed()
@@ -272,7 +279,7 @@ describe('M0-T04 production preload surface', () => {
     }
 
     const rootApi = exposed.value
-    expect(Object.keys(rootApi)).toEqual(['app'])
+    expect(Object.keys(rootApi)).toEqual(['app', 'commands'])
     expect(Object.isFrozen(rootApi)).toBe(true)
     if (!('app' in rootApi)) {
       throw new Error('Expected the app preload API property')
@@ -285,9 +292,22 @@ describe('M0-T04 production preload surface', () => {
 
     expect(Object.keys(app)).toEqual(['getInfo'])
     expect(Object.isFrozen(app)).toBe(true)
+    if (!('commands' in rootApi)) {
+      throw new Error('Expected the command preload API property')
+    }
+    const commands = rootApi.commands
+    expect(commands).toBeTypeOf('object')
+    if (typeof commands !== 'object' || commands === null) {
+      throw new Error('Expected the command preload API')
+    }
+    expect(Object.keys(commands)).toEqual(['onInvoke', 'updateStates'])
+    expect(Object.isFrozen(commands)).toBe(true)
     expect(Reflect.has(rootApi, 'invoke')).toBe(false)
     expect(Reflect.has(rootApi, 'send')).toBe(false)
     expect(Reflect.has(app, 'invoke')).toBe(false)
     expect(Reflect.has(app, 'send')).toBe(false)
+    expect(Reflect.has(commands, 'invoke')).toBe(false)
+    expect(Reflect.has(commands, 'send')).toBe(false)
+    expect(Reflect.has(commands, 'on')).toBe(false)
   })
 })
