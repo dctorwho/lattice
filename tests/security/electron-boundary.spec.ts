@@ -97,24 +97,60 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
       if (typeof getInfo !== 'function') {
         throw new Error('Expected app.getInfo')
       }
+      const commands: unknown = Reflect.get(lattice, 'commands')
+      if (typeof commands !== 'object' || commands === null) {
+        throw new Error('Expected the approved command preload surface')
+      }
+      const onInvoke: unknown = Reflect.get(commands, 'onInvoke')
+      const updateStates: unknown = Reflect.get(commands, 'updateStates')
+      if (typeof onInvoke !== 'function' || typeof updateStates !== 'function') {
+        throw new Error('Expected approved command methods')
+      }
       const result: unknown = await Reflect.apply(getInfo, app, [])
+      const stateResult: unknown = await Reflect.apply(updateStates, commands, [
+        [
+          { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
+          { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
+        ]
+      ])
+      const unsubscribe: unknown = Reflect.apply(onInvoke, commands, [() => {}])
+      if (typeof unsubscribe !== 'function') {
+        throw new Error('Expected command unsubscribe function')
+      }
+      Reflect.apply(unsubscribe, undefined, [])
       return {
         latticeKeys: Object.keys(lattice),
         appKeys: Object.keys(app),
+        commandKeys: Object.keys(commands),
+        frozen: {
+          lattice: Object.isFrozen(lattice),
+          app: Object.isFrozen(app),
+          commands: Object.isFrozen(commands)
+        },
         result,
+        stateResult,
         absent: {
           invoke: typeof Reflect.get(lattice, 'invoke'),
           send: typeof Reflect.get(lattice, 'send'),
           files: typeof Reflect.get(lattice, 'files'),
           exports: typeof Reflect.get(lattice, 'exports'),
-          openExternal: typeof Reflect.get(app, 'openExternal')
+          openExternal: typeof Reflect.get(app, 'openExternal'),
+          commandInvoke: typeof Reflect.get(commands, 'invoke'),
+          commandSend: typeof Reflect.get(commands, 'send'),
+          commandOn: typeof Reflect.get(commands, 'on')
         }
       }
     })
 
     expect(preloadSurface).toEqual({
-      latticeKeys: ['app'],
+      latticeKeys: ['app', 'commands'],
       appKeys: ['getInfo'],
+      commandKeys: ['onInvoke', 'updateStates'],
+      frozen: {
+        lattice: true,
+        app: true,
+        commands: true
+      },
       result: {
         ok: true,
         value: {
@@ -124,14 +160,63 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
           platform: 'win32'
         }
       },
+      stateResult: {
+        ok: true,
+        value: {
+          contractVersion: 1,
+          applied: true
+        }
+      },
       absent: {
         invoke: 'undefined',
         send: 'undefined',
         files: 'undefined',
         exports: 'undefined',
-        openExternal: 'undefined'
+        openExternal: 'undefined',
+        commandInvoke: 'undefined',
+        commandSend: 'undefined',
+        commandOn: 'undefined'
       }
     })
+
+    await page.evaluate(() => {
+      const lattice: unknown = Reflect.get(globalThis, 'lattice')
+      if (typeof lattice !== 'object' || lattice === null) {
+        throw new Error('Expected the lattice preload surface')
+      }
+      const commands: unknown = Reflect.get(lattice, 'commands')
+      if (typeof commands !== 'object' || commands === null) {
+        throw new Error('Expected the command preload surface')
+      }
+      const onInvoke: unknown = Reflect.get(commands, 'onInvoke')
+      if (typeof onInvoke !== 'function') throw new Error('Expected commands.onInvoke')
+      const received: string[] = []
+      const unsubscribe: unknown = Reflect.apply(onInvoke, commands, [
+        (id: string) => received.push(id)
+      ])
+      Reflect.set(globalThis, '__latticeInvalidCommandProbe', { received, unsubscribe })
+    })
+    await application.evaluate((electronApi) => {
+      const windows = electronApi.BrowserWindow.getAllWindows()
+      const mainWindow = windows[0]
+      if (mainWindow === undefined) throw new Error('Expected the main window')
+      mainWindow.webContents.send('lattice:commands:invoked', {
+        contractVersion: 1,
+        id: 'files.open',
+        rawPath: 'D:\\private\\draft.md'
+      })
+    })
+    await page.waitForTimeout(50)
+    const invalidEventProbe = await page.evaluate(() => {
+      const probe: unknown = Reflect.get(globalThis, '__latticeInvalidCommandProbe')
+      if (typeof probe !== 'object' || probe === null) return ['invalid-probe-shape']
+      const received: unknown = Reflect.get(probe, 'received')
+      const unsubscribe: unknown = Reflect.get(probe, 'unsubscribe')
+      if (typeof unsubscribe === 'function') Reflect.apply(unsubscribe, undefined, [])
+      Reflect.deleteProperty(globalThis, '__latticeInvalidCommandProbe')
+      return Array.isArray(received) ? received.length : -1
+    })
+    expect(invalidEventProbe).toBe(0)
 
     const fakeWindowResult = await application.evaluate(async (electronApi) => {
       function readProperty(target: unknown, property: string): unknown {
