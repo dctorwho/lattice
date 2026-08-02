@@ -59,6 +59,7 @@ export function useCommandController({
   mainRef,
   sidebarRef
 }: CommandControllerRefs): CommandController {
+  const desktopApi = useMemo(() => window.lattice, [])
   const registry = useMemo(() => new CommandRegistry(createFoundationCommands()), [])
   const aboutTriggerRef = useRef<HTMLElement | null>(null)
   const aboutRequestGenerationRef = useRef(0)
@@ -106,7 +107,7 @@ export function useCommandController({
       aboutRequestGenerationRef.current = requestGeneration
       setAboutState({ status: 'loading' })
       try {
-        const result = await window.lattice.app.getInfo()
+        const result = await desktopApi.app.getInfo()
         if (aboutRequestGenerationRef.current !== requestGeneration) return
         setAboutState(
           result.ok
@@ -118,7 +119,7 @@ export function useCommandController({
         setAboutState({ status: 'error', messageKey: 'errors.internal.unexpected' })
       }
     },
-    [mainRef]
+    [desktopApi, mainRef]
   )
 
   const execute = useCallback(
@@ -153,13 +154,13 @@ export function useCommandController({
   }, [execute])
 
   useEffect(() => {
-    const unsubscribe = window.lattice.commands.onInvoke((id) => executeRef.current(id))
+    const unsubscribe = desktopApi.commands.onInvoke((id) => executeRef.current(id))
     return unsubscribe
-  }, [])
+  }, [desktopApi])
 
   useEffect(() => {
     let active = true
-    void window.lattice.commands
+    void desktopApi.commands
       .updateStates(commandStates)
       .then((result) => {
         if (active && !result.ok) setStatusKey('status.menuSyncFailed')
@@ -170,7 +171,7 @@ export function useCommandController({
     return () => {
       active = false
     }
-  }, [commandStates])
+  }, [commandStates, desktopApi])
 
   useEffect(() => {
     const handleFocus = (): void => setWindowFocused(true)

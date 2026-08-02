@@ -283,4 +283,17 @@ describe('TC-M0-006 command shell', () => {
       { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
     ])
   })
+
+  it('keeps the mounted frozen preload API stable across later global replacement', async () => {
+    const harness = createPreloadHarness()
+    installPreload(harness)
+    render(<App />)
+    await waitFor(() => expect(harness.updateStates).toHaveBeenCalled())
+
+    Reflect.deleteProperty(window, 'lattice')
+    fireEvent.click(screen.getByRole('button', { name: '切换侧栏' }))
+
+    await waitFor(() => expect(sidebar()).not.toBeInTheDocument())
+    expect(harness.updateStates).toHaveBeenCalledTimes(2)
+  })
 })
