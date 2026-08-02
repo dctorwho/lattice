@@ -9,6 +9,7 @@ import {
   type CommandState
 } from '../../../domain/commands'
 import type { AppInfo } from '../../../shared/contracts'
+import { foundationCommandMetadata, type FoundationCommandShortcut } from '../../../shared/commands'
 import type { MessageKey } from '../i18n/messages'
 
 export type AboutState =
@@ -49,12 +50,18 @@ function currentElement(): HTMLElement | undefined {
   return document.activeElement instanceof HTMLElement ? document.activeElement : undefined
 }
 
+function matchesShortcut(event: KeyboardEvent, shortcut: FoundationCommandShortcut): boolean {
+  if (shortcut === 'F1') return event.key === 'F1'
+  return event.code === 'KeyL' && event.shiftKey && (event.ctrlKey || event.metaKey)
+}
+
 export function useCommandController({
   mainRef,
   sidebarRef
 }: CommandControllerRefs): CommandController {
   const registry = useMemo(() => new CommandRegistry(createFoundationCommands()), [])
   const aboutTriggerRef = useRef<HTMLElement | null>(null)
+  const aboutRequestGenerationRef = useRef(0)
   const [isSidebarVisible, setSidebarVisible] = useState(true)
   const [aboutState, setAboutState] = useState<AboutState>({ status: 'closed' })
   const [contextMenu, setContextMenu] = useState<ContextMenuState>()
@@ -75,38 +82,52 @@ export function useCommandController({
   )
   const commandStates = useMemo(() => registry.getStates(context), [context, registry])
 
-  const toggleSidebar = useCallback((): void => {
-    setSidebarVisible((visible) => {
-      if (visible && sidebarRef.current?.contains(document.activeElement)) {
-        focusElement(mainRef.current)
-      }
-      return !visible
-    })
-  }, [mainRef, sidebarRef])
+  const toggleSidebar = useCallback(
+    (invocationTrigger: HTMLElement | null): void => {
+      setSidebarVisible((visible) => {
+        const sidebar = sidebarRef.current
+        if (
+          visible &&
+          (sidebar?.contains(invocationTrigger ?? null) === true ||
+            sidebar?.contains(document.activeElement) === true)
+        ) {
+          focusElement(mainRef.current)
+        }
+        return !visible
+      })
+    },
+    [mainRef, sidebarRef]
+  )
 
-  const openAbout = useCallback(async (): Promise<void> => {
-    setAboutState({ status: 'loading' })
-    try {
-      const result = await window.lattice.app.getInfo()
-      setAboutState(
-        result.ok
-          ? { status: 'ready', info: result.value }
-          : { status: 'error', messageKey: result.error.messageKey }
-      )
-    } catch {
-      setAboutState({ status: 'error', messageKey: 'errors.internal.unexpected' })
-    }
-  }, [])
+  const openAbout = useCallback(
+    async (invocationTrigger: HTMLElement | null): Promise<void> => {
+      aboutTriggerRef.current = invocationTrigger ?? mainRef.current
+      const requestGeneration = aboutRequestGenerationRef.current + 1
+      aboutRequestGenerationRef.current = requestGeneration
+      setAboutState({ status: 'loading' })
+      try {
+        const result = await window.lattice.app.getInfo()
+        if (aboutRequestGenerationRef.current !== requestGeneration) return
+        setAboutState(
+          result.ok
+            ? { status: 'ready', info: result.value }
+            : { status: 'error', messageKey: result.error.messageKey }
+        )
+      } catch {
+        if (aboutRequestGenerationRef.current !== requestGeneration) return
+        setAboutState({ status: 'error', messageKey: 'errors.internal.unexpected' })
+      }
+    },
+    [mainRef]
+  )
 
   const execute = useCallback(
     (id: CommandId, trigger?: HTMLElement): void => {
-      if (id === 'app.about') {
-        aboutTriggerRef.current = trigger ?? currentElement() ?? mainRef.current
-      }
+      const invocationTrigger = trigger ?? currentElement() ?? null
       const executionContext: CommandExecutionContext = {
         ...context,
-        toggleSidebar,
-        openAbout
+        toggleSidebar: () => toggleSidebar(invocationTrigger),
+        openAbout: () => openAbout(invocationTrigger)
       }
       void registry.execute(id, executionContext).then((result) => {
         switch (result.status) {
@@ -124,7 +145,7 @@ export function useCommandController({
         }
       })
     },
-    [context, mainRef, openAbout, registry, toggleSidebar]
+    [context, openAbout, registry, toggleSidebar]
   )
   const executeRef = useRef(execute)
   useEffect(() => {
@@ -165,12 +186,12 @@ export function useCommandController({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (!isWindowFocused) return
-      const sidebarShortcut =
-        event.code === 'KeyL' && event.shiftKey && (event.ctrlKey || event.metaKey)
-      const aboutShortcut = event.key === 'F1'
-      if (!sidebarShortcut && !aboutShortcut) return
+      const command = Object.values(foundationCommandMetadata).find((metadata) =>
+        matchesShortcut(event, metadata.defaultShortcut)
+      )
+      if (command === undefined) return
       event.preventDefault()
-      executeRef.current(sidebarShortcut ? 'view.toggleSidebar' : 'app.about', currentElement())
+      executeRef.current(command.id, currentElement())
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -195,6 +216,7 @@ export function useCommandController({
   )
 
   const closeAbout = useCallback((): void => {
+    aboutRequestGenerationRef.current += 1
     setAboutState({ status: 'closed' })
     const target = aboutTriggerRef.current ?? mainRef.current
     aboutTriggerRef.current = null

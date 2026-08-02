@@ -37,6 +37,7 @@ function createCommand(id: CommandId, state: CommandState, run: AppCommand['run'
   return {
     id,
     labelKey: id === 'app.about' ? 'commands.app.about' : 'commands.view.toggleSidebar',
+    defaultShortcut: id === 'app.about' ? 'F1' : 'CommandOrControl+Shift+L',
     getState: () => state,
     run
   }

@@ -1,4 +1,5 @@
 import type { AppCommand, CommandState } from './command-types'
+import { foundationCommandMetadata } from '../../shared/commands'
 
 function sidebarState(
   isSidebarVisible: boolean,
@@ -14,11 +15,13 @@ function sidebarState(
 }
 
 export function createFoundationCommands(): readonly AppCommand[] {
+  const toggleMetadata = foundationCommandMetadata['view.toggleSidebar']
+  const aboutMetadata = foundationCommandMetadata['app.about']
   return [
     {
-      id: 'view.toggleSidebar',
-      labelKey: 'commands.view.toggleSidebar',
-      defaultShortcut: 'CommandOrControl+Shift+L',
+      id: toggleMetadata.id,
+      labelKey: toggleMetadata.labelKey,
+      defaultShortcut: toggleMetadata.defaultShortcut,
       getState: (context) =>
         sidebarState(context.isSidebarVisible, context.isWindowFocused, context.isDialogOpen),
       run: (context) => {
@@ -27,9 +30,9 @@ export function createFoundationCommands(): readonly AppCommand[] {
       }
     },
     {
-      id: 'app.about',
-      labelKey: 'commands.app.about',
-      defaultShortcut: 'F1',
+      id: aboutMetadata.id,
+      labelKey: aboutMetadata.labelKey,
+      defaultShortcut: aboutMetadata.defaultShortcut,
       getState: (context) => ({
         id: 'app.about',
         isVisible: true,

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CommandRegistry } from '../../../src/domain/commands'
@@ -16,6 +16,20 @@ interface PreloadHarness {
   readonly api: LatticeDesktopApi
   readonly updateStates: ReturnType<typeof vi.fn<LatticeDesktopApi['commands']['updateStates']>>
   readonly emitCommand: (id: CommandId) => void
+}
+
+interface Deferred<T> {
+  readonly promise: Promise<T>
+  readonly resolve: (value: T) => void
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolvePromise: ((value: T) => void) | undefined
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve
+  })
+  if (resolvePromise === undefined) throw new Error('Deferred resolver was not initialized')
+  return { promise, resolve: resolvePromise }
 }
 
 function createPreloadHarness(
@@ -66,6 +80,7 @@ describe('TC-M0-006 command shell', () => {
 
   afterEach(() => {
     Reflect.deleteProperty(window, 'lattice')
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
 
@@ -119,6 +134,18 @@ describe('TC-M0-006 command shell', () => {
     expect(execute).toHaveBeenCalledWith('view.toggleSidebar', expect.any(Object))
   })
 
+  it('moves focus to main when a sidebar context-menu command hides its trigger', async () => {
+    render(<App />)
+    const currentSidebar = screen.getByRole('complementary', { name: '侧栏' })
+    currentSidebar.focus()
+    fireEvent.contextMenu(currentSidebar, { clientX: 24, clientY: 36 })
+
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: '切换侧栏' }))
+
+    await waitFor(() => expect(sidebar()).not.toBeInTheDocument())
+    expect(screen.getByRole('main')).toHaveFocus()
+  })
+
   it('opens About with real AppInfo and restores the button focus on close', async () => {
     const aboutButton = '关于 Lattice'
     render(<App />)
@@ -134,6 +161,38 @@ describe('TC-M0-006 command shell', () => {
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
 
     await waitFor(() => expect(dialog).not.toBeInTheDocument())
+    expect(trigger).toHaveFocus()
+  })
+
+  it('keeps About closed when its pending AppInfo request settles after close', async () => {
+    const deferred = createDeferred<Awaited<ReturnType<LatticeDesktopApi['app']['getInfo']>>>()
+    installPreload(createPreloadHarness(() => deferred.promise))
+    render(<App />)
+    const trigger = screen.getByRole('button', { name: '关于 Lattice' })
+    fireEvent.click(trigger)
+    expect(await screen.findByRole('dialog', { name: '关于 Lattice' })).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await act(async () => {
+      deferred.resolve({ ok: true, value: appInfo })
+      await deferred.promise
+    })
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+  })
+
+  it('keeps the original About focus trigger after a disabled F1 attempt', async () => {
+    render(<App />)
+    const trigger = screen.getByRole('button', { name: '关于 Lattice' })
+    fireEvent.click(trigger)
+    await screen.findByText('0.0.0')
+
+    fireEvent.keyDown(window, { key: 'F1', code: 'F1' })
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(trigger).toHaveFocus()
   })
 
@@ -171,6 +230,34 @@ describe('TC-M0-006 command shell', () => {
 
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
     expect(main).toHaveFocus()
+  })
+
+  it('closes the context menu on an outside pointer press and restores its trigger', async () => {
+    render(<App />)
+    const main = screen.getByRole('main')
+    main.focus()
+    fireEvent.contextMenu(main, { clientX: 24, clientY: 36 })
+    expect(screen.getByRole('menu', { name: '命令菜单' })).toBeVisible()
+
+    fireEvent.pointerDown(screen.getByRole('banner'))
+
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument())
+    expect(main).toHaveFocus()
+  })
+
+  it('keeps a bottom-right context menu inside the viewport', async () => {
+    vi.stubGlobal('innerWidth', 800)
+    vi.stubGlobal('innerHeight', 600)
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(120)
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(96)
+    render(<App />)
+
+    fireEvent.contextMenu(screen.getByRole('main'), { clientX: 790, clientY: 590 })
+
+    const menu = screen.getByRole('menu', { name: '命令菜单' })
+    await waitFor(() => {
+      expect(menu).toHaveStyle({ left: '680px', top: '504px' })
+    })
   })
 
   it('does not execute a renderer shortcut while the window is unfocused', () => {

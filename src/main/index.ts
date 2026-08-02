@@ -56,6 +56,7 @@ const mainWindowOptions = resolveMainWindowOptions(
 
 const authorizedWindows = new AuthorizedWindowRegistry<WebContents>()
 const applicationMenu = createApplicationMenu({
+  locale: 'zh-CN',
   adapter: {
     buildFromTemplate: (template) =>
       Menu.buildFromTemplate(
@@ -191,6 +192,7 @@ function createRegisteredMainWindow(options: CreateMainWindowOptions): void {
     unregister()
   }
   window.on('focus', applicationMenu.applyForFocusedWindow)
+  window.on('blur', applicationMenu.applyForFocusedWindow)
   window.once('closed', cleanup)
   window.webContents.once('destroyed', cleanup)
 }

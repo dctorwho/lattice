@@ -9,6 +9,7 @@ import {
   commandStateSyncRequestSchema,
   commandStateSyncResultSchema
 } from '../../../src/shared/contracts'
+import { foundationCommandMetadata, translateFoundationMessage } from '../../../src/shared'
 
 const requestId = '00000000-0000-4000-8000-000000000001'
 const validStates = [
@@ -17,6 +18,29 @@ const validStates = [
 ] as const
 
 describe('M0 command contracts', () => {
+  it('owns immutable labels and shortcuts in one layer-neutral metadata table', () => {
+    expect(foundationCommandMetadata).toEqual({
+      'app.about': {
+        id: 'app.about',
+        labelKey: 'commands.app.about',
+        defaultShortcut: 'F1',
+        menuGroup: 'help',
+        menuType: 'normal'
+      },
+      'view.toggleSidebar': {
+        id: 'view.toggleSidebar',
+        labelKey: 'commands.view.toggleSidebar',
+        defaultShortcut: 'CommandOrControl+Shift+L',
+        menuGroup: 'view',
+        menuType: 'checkbox'
+      }
+    })
+    expect(Object.isFrozen(foundationCommandMetadata)).toBe(true)
+    expect(Object.values(foundationCommandMetadata).every(Object.isFrozen)).toBe(true)
+    expect(translateFoundationMessage('zh-CN', 'commands.app.about')).toBe('关于 Lattice')
+    expect(translateFoundationMessage('en', 'menus.view')).toBe('View')
+  })
+
   it('accepts the exact fixed invoke channel and strict state-sync envelope', () => {
     expect(approvedIpcChannelSchema.parse(COMMAND_UPDATE_STATES_CHANNEL)).toBe(
       'lattice:commands:update-states'

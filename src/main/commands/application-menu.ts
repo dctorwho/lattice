@@ -6,6 +6,12 @@ import {
   type CommandId,
   type CommandState
 } from '../../shared/contracts'
+import { foundationCommandMetadata } from '../../shared/commands'
+import {
+  translateFoundationMessage,
+  type FoundationLocale,
+  type FoundationMenuLabelKey
+} from '../../shared/i18n'
 
 export interface ApplicationMenuItem {
   visible: boolean
@@ -53,6 +59,7 @@ export interface ApplicationMenuController {
 export interface ApplicationMenuDependencies<TMenu> {
   readonly adapter: ApplicationMenuAdapter<TMenu>
   readonly resolveFocusedTarget: () => CommandTarget | undefined
+  readonly locale?: FoundationLocale
 }
 
 const failClosedStates: readonly CommandState[] = [
@@ -73,6 +80,7 @@ export function createApplicationMenu<TMenu>(
 ): ApplicationMenuController {
   const statesByWindow = new Map<number, readonly CommandState[]>()
   let menu: TMenu | undefined
+  const locale = dependencies.locale ?? 'zh-CN'
 
   const applyStates = (states: readonly CommandState[]): void => {
     if (menu === undefined) return
@@ -99,38 +107,28 @@ export function createApplicationMenu<TMenu>(
     }
   }
 
-  const template: readonly ApplicationMenuTemplate[] = [
-    {
-      label: 'View',
-      submenu: [
-        {
-          id: 'view.toggleSidebar',
-          label: 'Toggle Sidebar',
-          accelerator: 'CommandOrControl+Shift+L',
-          type: 'checkbox',
-          visible: true,
-          enabled: false,
-          checked: false,
-          click: () => relay('view.toggleSidebar')
-        }
-      ]
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          id: 'app.about',
-          label: 'About Lattice',
-          accelerator: 'F1',
-          type: 'normal',
-          visible: true,
-          enabled: false,
-          checked: false,
-          click: () => relay('app.about')
-        }
-      ]
-    }
-  ]
+  const menuGroups = [
+    { id: 'view', labelKey: 'menus.view' },
+    { id: 'help', labelKey: 'menus.help' }
+  ] as const satisfies readonly {
+    readonly id: 'view' | 'help'
+    readonly labelKey: FoundationMenuLabelKey
+  }[]
+  const template: readonly ApplicationMenuTemplate[] = menuGroups.map((group) => ({
+    label: translateFoundationMessage(locale, group.labelKey),
+    submenu: Object.values(foundationCommandMetadata)
+      .filter((metadata) => metadata.menuGroup === group.id)
+      .map((metadata) => ({
+        id: metadata.id,
+        label: translateFoundationMessage(locale, metadata.labelKey),
+        accelerator: metadata.defaultShortcut,
+        type: metadata.menuType,
+        visible: true,
+        enabled: false,
+        checked: false,
+        click: () => relay(metadata.id)
+      }))
+  }))
 
   const applyForFocusedWindow = (): void => {
     const target = safeFocusedTarget(dependencies.resolveFocusedTarget)
@@ -162,9 +160,7 @@ export function createApplicationMenu<TMenu>(
     applyForFocusedWindow,
     removeWindow: (windowId) => {
       statesByWindow.delete(windowId)
-      if (safeFocusedTarget(dependencies.resolveFocusedTarget)?.windowId === windowId) {
-        applyStates(failClosedStates)
-      }
+      applyForFocusedWindow()
     }
   }
 }

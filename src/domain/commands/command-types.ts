@@ -1,8 +1,8 @@
 import type { CommandId, CommandState } from '../../shared/contracts/command'
+import type { CommandLabelKey, FoundationCommandShortcut } from '../../shared/commands'
 
 export type { CommandId, CommandState }
-
-export type CommandLabelKey = 'commands.app.about' | 'commands.view.toggleSidebar'
+export type { CommandLabelKey }
 
 export interface CommandContext {
   readonly isSidebarVisible: boolean
@@ -32,7 +32,7 @@ export type CommandResult =
 export interface AppCommand {
   readonly id: CommandId
   readonly labelKey: CommandLabelKey
-  readonly defaultShortcut?: string
+  readonly defaultShortcut: FoundationCommandShortcut
   readonly getState: (context: CommandContext) => CommandState
   readonly run: (context: CommandExecutionContext) => Promise<CommandResult>
 }

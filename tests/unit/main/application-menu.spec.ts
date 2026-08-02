@@ -98,22 +98,22 @@ describe('M0 application menu projection', () => {
       }))
     ).toEqual([
       {
-        label: 'View',
+        label: '视图',
         items: [
           {
             id: 'view.toggleSidebar',
-            label: 'Toggle Sidebar',
+            label: '切换侧栏',
             accelerator: 'CommandOrControl+Shift+L',
             type: 'checkbox'
           }
         ]
       },
       {
-        label: 'Help',
+        label: '帮助',
         items: [
           {
             id: 'app.about',
-            label: 'About Lattice',
+            label: '关于 Lattice',
             accelerator: 'F1',
             type: 'normal'
           }
@@ -205,6 +205,27 @@ describe('M0 application menu projection', () => {
     expect(harness.items.get('view.toggleSidebar')?.checked).toBe(false)
   })
 
+  it('fails closed when no authorized window is focused', () => {
+    let target: CommandTarget | undefined = { windowId: 7, send: () => {} }
+    const harness = createMenuHarness()
+    const controller = createApplicationMenu({
+      adapter: harness.adapter,
+      resolveFocusedTarget: () => target
+    })
+    controller.install()
+    controller.updateStates(7, enabledStates)
+
+    target = undefined
+    controller.applyForFocusedWindow()
+
+    expect(harness.items.get('app.about')?.enabled).toBe(false)
+    expect(harness.items.get('view.toggleSidebar')).toEqual({
+      visible: true,
+      enabled: false,
+      checked: false
+    })
+  })
+
   it('rejects an invalid state set without changing the last valid projection', () => {
     const harness = createMenuHarness()
     const controller = createApplicationMenu({
@@ -223,14 +244,16 @@ describe('M0 application menu projection', () => {
   })
 
   it('fails closed after the focused window snapshot is removed', () => {
+    let target: CommandTarget | undefined = { windowId: 7, send: () => {} }
     const harness = createMenuHarness()
     const controller = createApplicationMenu({
       adapter: harness.adapter,
-      resolveFocusedTarget: () => ({ windowId: 7, send: () => {} })
+      resolveFocusedTarget: () => target
     })
     controller.install()
     controller.updateStates(7, enabledStates)
 
+    target = undefined
     controller.removeWindow(7)
 
     expect(harness.items.get('app.about')?.enabled).toBe(false)

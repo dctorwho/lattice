@@ -1,9 +1,14 @@
+import {
+  foundationMessages,
+  type FoundationLocale,
+  type FoundationMessageKey
+} from '../../../shared/i18n'
+
 export const zhCNMessages = {
+  ...foundationMessages['zh-CN'],
   'app.brand': 'Lattice',
   'app.foundationReady': '工程基础已就绪',
   'app.titleActions': '窗口命令',
-  'commands.view.toggleSidebar': '切换侧栏',
-  'commands.app.about': '关于 Lattice',
   'sidebar.label': '侧栏',
   'sidebar.heading': '工作区',
   'sidebar.empty': '尚未打开工作区',
@@ -27,15 +32,14 @@ export const zhCNMessages = {
   'errors.internal.unexpected': '发生了意外错误。'
 } as const
 
-export type MessageKey = keyof typeof zhCNMessages
-export type Locale = 'zh-CN' | 'en'
+export type MessageKey = keyof typeof zhCNMessages | FoundationMessageKey
+export type Locale = FoundationLocale
 
 export const enMessages = {
+  ...foundationMessages.en,
   'app.brand': 'Lattice',
   'app.foundationReady': 'Foundation ready',
   'app.titleActions': 'Window commands',
-  'commands.view.toggleSidebar': 'Toggle sidebar',
-  'commands.app.about': 'About Lattice',
   'sidebar.label': 'Sidebar',
   'sidebar.heading': 'Workspace',
   'sidebar.empty': 'No workspace is open',

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type JSX } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type JSX } from 'react'
 
 import type { CommandId, CommandState } from '../../../shared/contracts'
 import type { ContextMenuState } from '../commands/use-command-controller'
@@ -19,6 +19,16 @@ function stateFor(states: readonly CommandState[], id: CommandId): CommandState 
 
 export function CommandContextMenu(props: CommandContextMenuProps): JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ x: props.menu.x, y: props.menu.y })
+
+  useLayoutEffect(() => {
+    const menu = menuRef.current
+    if (menu === null) return
+    setPosition({
+      x: Math.min(Math.max(0, props.menu.x), Math.max(0, window.innerWidth - menu.offsetWidth)),
+      y: Math.min(Math.max(0, props.menu.y), Math.max(0, window.innerHeight - menu.offsetHeight))
+    })
+  }, [props.menu.x, props.menu.y])
 
   useEffect(() => {
     menuRef.current?.querySelector<HTMLButtonElement>('[role^="menuitem"]')?.focus()
@@ -48,7 +58,7 @@ export function CommandContextMenu(props: CommandContextMenuProps): JSX.Element 
       className="command-menu"
       role="menu"
       aria-label={props.label}
-      style={{ left: props.menu.x, top: props.menu.y }}
+      style={{ left: position.x, top: position.y }}
     >
       {toggle?.isVisible === true && (
         <button
