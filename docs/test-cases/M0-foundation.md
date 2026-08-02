@@ -11,8 +11,8 @@
 | TC-M0-008 | M0-T02 | integration/P1   | Chinese-and-space path, empty project store, network allowed           | frozen install and two builds                                                                                                                | unique lockfile, no pending builds, stable artifacts, cleanup                                                                                           | `pnpm test:bootstrap:cold`                                             |
 | TC-M0-003 | M0-T03 | security/P0      | SEC-M0-A                                                               | 启动生产配置，探测主窗口/伪造窗口/已销毁窗口、Node/Electron/裸 IPC，并投递污染对象和超大 renderer 消息                                       | `require/process/ipcRenderer/fs/shell` 不可得；sandbox 和窗口策略保持生效；窗口保持存活。M0-T03 完成时的空 preload 是历史证据，当前批准表面归 TC-M0-005 | `pnpm test:security -- tests/security/electron-boundary.spec.ts`       |
 | TC-M0-004 | M0-T03 | e2e-security/P0  | SEC-M0-B                                                               | 触发 http/file/javascript/data/自定义协议、导航、新窗口和权限请求                                                                            | 仅经确认的 https/mailto 外链交给系统；其余拒绝；主窗口不导航；无 DevTools 后门                                                                          | `pnpm test:e2e -- tests/e2e/navigation-policy.spec.ts`                 |
-| TC-M0-005 | M0-T04 | unit-security/P1 | CONTRACT-M0                                                            | 覆盖严格 Zod 请求/响应、预算、六类 sender 拒绝、固定路由、不可序列化结果、脱敏日志、preload 本地校验，并用真实 Electron 调用 `app.getInfo()` | 返回稳定且关联当前 request ID 的 `Result`；未知 channel 不可调用；批准表面精确为冻结的 `{ app: { getInfo } }`                                           | `pnpm test -- tests/unit/shared/contracts.spec.ts`                     |
-| TC-M0-006 | M0-T05 | component/P1     | COMMAND-M0                                                             | 从菜单、按钮、右键和快捷键调用同一命令；切换可见/启用/选中上下文                                                                             | 四入口使用同一 command ID 和状态；禁用命令不执行；焦点回到合理控件                                                                                      | `pnpm test -- tests/unit/component/command-registry.spec.ts`           |
+| TC-M0-005 | M0-T04 | unit-security/P1 | CONTRACT-M0                                                            | 覆盖严格 Zod 请求/响应、预算、六类 sender 拒绝、固定路由、不可序列化结果、脱敏日志、preload 本地校验，并用真实 Electron 调用 `app.getInfo()` | 返回稳定且关联当前 request ID 的 `Result`；未知 channel 不可调用；M0-T04 的 app 契约保持兼容                                                            | `pnpm test -- tests/unit/shared/contracts.spec.ts`                     |
+| TC-M0-006 | M0-T05 | component-e2e/P1 | COMMAND-M0                                                             | 从原生菜单、按钮、renderer 右键和快捷键调用同一 registry；切换可见/启用/选中上下文；读取 About AppInfo；验证焦点恢复和 preload               | 四入口使用同一 command ID 和状态；禁用命令不执行；焦点确定性恢复；批准表面精确为冻结 `{ app, commands }`；非法 command event 被丢弃                     | `pnpm test -- tests/unit/component/command-registry.spec.tsx`          |
 | TC-M0-007 | M0-T06 | integration/P1   | ENV-M0-A                                                               | 在干净 checkout 运行 CI 等价命令、许可证审计、SBOM 和构建制品检查                                                                            | CI 命令与文档一致；制品可启动；依赖有版本/许可证；SBOM 可解析且覆盖生产依赖                                                                             | `pnpm test:integration -- tests/integration/m0-gate.spec.ts`           |
 
 M0-T01 自举执行说明：TC-M0-001 的“自动化”列固定其最终回归目标，但该文件和 `test:integration` 脚本在 M0-T01 尚不存在。M0-T01 按 AGENTS/测试策略运行等价命令并以退出码取证即可完成；M0-T02 必须创建该测试文件、让同一检查进入 `pnpm test:integration` 并重新通过。此例外不适用于其他 TC。
@@ -66,6 +66,28 @@ boundary proof:
   `window.lattice.app.getInfo`, returns a real schema-valid `AppInfo`, and still
   denies raw Electron/Node and generic/file/export methods. M0-T03 retains
   ownership of sandbox/Node denial and historical empty-preload evidence.
+
+### M0-T05 command-shell acceptance detail
+
+- Domain: `command-registry.spec.ts` covers duplicate and unknown IDs,
+  visible/enabled/checked derivation, handler guards/failures, async effects, and
+  every COMMAND-M0 session/editor/dialog/focus row.
+- Boundary: `command-contracts.spec.ts`, `command-api.spec.ts`, and
+  `application-menu.spec.ts` cover exact two-ID snapshots, fixed channels,
+  request correlation, invalid event dropping, idempotent cleanup, per-window
+  state, authorized focused targets, and fail-closed native items.
+- Component: `command-registry.spec.tsx` exercises the real registry through
+  the title button, validated native event, context menu, and shortcut; About
+  success/error, close-during-pending cancellation, disabled-attempt focus
+  provenance, sidebar-origin context focus transfer, Escape/outside-click
+  restoration, and viewport clamping are behavior assertions.
+- Shared/main: `command-contracts.spec.ts` proves the frozen command metadata
+  and localized labels; `application-menu.spec.ts` proves blur/no-target and
+  destroyed-window removal fail closed.
+- Real Electron: `command-window-shell.spec.ts` exercises the same four entry
+  paths and real AppInfo. `electron-boundary.spec.ts` proves the frozen
+  `{ app, commands }` keys, valid state sync, raw privilege denial, and an
+  invalid `files.open` event not reaching an added listener.
 
 ## 参数矩阵
 

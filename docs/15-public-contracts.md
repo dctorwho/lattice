@@ -106,7 +106,7 @@ interface SavedFile {
 
 renderer 不提供“忽略冲突”布尔值。覆盖冲突使用单独 `files.confirmedOverwrite()`，携带主进程生成的一次性 conflict token。
 
-## 4. 当前 Preload API（M0-T04 已实现）
+## 4. 当前 Preload API（M0-T05 已实现）
 
 ```ts
 interface AppInfo {
@@ -120,17 +120,24 @@ interface LatticeDesktopApi {
   readonly app: {
     readonly getInfo: () => Promise<Result<AppInfo, AppError>>
   }
+  readonly commands: {
+    readonly onInvoke: (listener: (id: CommandId) => void) => () => void
+    readonly updateStates: (
+      states: readonly CommandState[]
+    ) => Promise<Result<CommandStateSync, AppError>>
+  }
 }
 ```
 
-当前 renderer 公共表面精确为冻结的
-`window.lattice.app.getInfo()`。它发送契约版本 1、preload 生成的 UUID 和空
-payload；频道 `lattice:app:get-info` 仅是 main/preload 内部映射。root 和
-`app` 均不含 `invoke`、`send` 或其他能力。
+当前 renderer 公共表面精确为冻结的 `{ app, commands }`。`getInfo()` 发送契约
+版本 1、preload 生成的 UUID 和空 payload。`commands.onInvoke()` 只传批准 ID
+并返回幂等 unsubscribe；`commands.updateStates()` 发送 preload UUID 和恰好
+两个批准状态。频道仅是 main/preload 内部映射。root、`app` 和 `commands`
+均不含通用 `invoke`、`send`、`on` 或其他能力。
 
 ### 后续任务目标表面（当前不可调用）
 
-下列接口继续约束未来设计，但不属于 M0-T04 的运行时
+下列接口继续约束未来设计，但不属于 M0-T05 的运行时
 `LatticeDesktopApi`。外链/对话框、文件、workspace、recovery、settings、
 import 和 export 必须由对应后续能力任务逐项授权、实现和测试后才能加入。
 
@@ -214,11 +221,40 @@ interface SearchRequest {
 
 命名为 `<domain>.<verb>`，一旦发布保持稳定：
 
+M0-T05 当前已实现：
+
+```ts
+type CommandId = 'app.about' | 'view.toggleSidebar'
+
+interface CommandState {
+  readonly id: CommandId
+  readonly isVisible: boolean
+  readonly isEnabled: boolean
+  readonly isChecked: boolean
+}
+
+interface CommandStateSync {
+  readonly contractVersion: 1
+  readonly applied: true
+}
+```
+
+state-sync 数组必须恰好包含每个批准 ID 一次。`app.about` 使用 F1；
+`view.toggleSidebar` 使用 `CommandOrControl+Shift+L`。未知、不可见或禁用命令
+不调用 handler；命令 handler 未知异常只返回稳定安全失败。
+
+命令 ID、label key、默认快捷键、原生菜单分组和菜单类型由
+`src/shared/commands/` 的冻结元数据表唯一持有；基础命令/菜单文案由
+`src/shared/i18n/` 提供中英文 catalog。domain、main 和 renderer 只做各层
+适配，不得复制这些元数据。
+
+以下是后续任务目标 ID，当前不可执行：
+
 - `file.new/open/openFolder/import/save/saveAs/close/export/print`
 - `edit.undo/redo/cut/copy/paste/pastePlain/find/replace`
 - `paragraph.heading1..6/paragraph/quote/orderedList/unorderedList/taskList/codeBlock/table`
 - `format.strong/emphasis/strike/code/link/image/highlight/subscript/superscript`
-- `view.toggleSidebar/files/outline/sourceMode/focusMode/typewriterMode/zoomIn/zoomOut/actualSize`
+- `view.files/outline/sourceMode/focusMode/typewriterMode/zoomIn/zoomOut/actualSize`
 - `workspace.quickOpen/globalSearch/reveal/rename/move/trash`
 
 Command handler 返回 `Promise<CommandResult>`，失败使用 AppError；菜单事件不能直接调用 service。

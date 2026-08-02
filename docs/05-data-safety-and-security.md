@@ -96,8 +96,9 @@
 
 ### M0-T04 enforced IPC invariants
 
-- The renderer receives only frozen `window.lattice.app.getInfo()`; neither the
-  root nor `app` object exposes generic `invoke`/`send`, Electron objects, file,
+- The M0-T05 renderer receives only frozen `window.lattice.app.getInfo()` and
+  `window.lattice.commands.{onInvoke,updateStates}`; neither the root nor its
+  nested objects exposes generic `invoke`/`send`/`on`, Electron objects, file,
   external-open, settings, workspace, import, or export methods.
 - Preload generates each request UUID. Main derives `windowId` and
   `webContentsId` from its authorized-window registry and sets `sessionId` to
@@ -122,6 +123,25 @@
   sandbox preload `require("zod")` that Electron could not load; the build
   excludes only `zod` from preload dependency externalization and does not
   weaken sandbox or BrowserWindow preferences.
+
+### M0-T05 enforced command invariants
+
+- `CommandId` is a strict two-value enum: `app.about` and
+  `view.toggleSidebar`. State synchronization requires exactly one strict state
+  object for each ID; missing, duplicate, unknown, extra-property, malformed,
+  or oversized sets fail before the menu changes.
+- The renderer supplies no window/WebContents ID. The existing router derives
+  the authorized window, validates value budgets and Zod schemas, and applies
+  state only to that window's native-menu snapshot.
+- Native clicks resolve the current focused registered window at click time.
+  Missing, destroyed, mismatched, or throwing targets receive no event; menu
+  state without a validated snapshot is disabled and unchecked.
+- Preload discards malformed command events before calling renderer listeners,
+  contains listener exceptions, and returns an idempotent unsubscribe. It never
+  exposes the Electron event or an arbitrary event/channel registration method.
+- State-sync errors keep renderer-local state and the last validated main
+  snapshot; there is no retry loop, modal storm, raw payload log, or privilege
+  fallback.
 
 ## 9. 内容与进程隔离
 

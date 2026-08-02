@@ -16,8 +16,10 @@
 │  │  ├─ api/              per-domain bridge implementations
 │  │  └─ index.ts
 │  ├─ shared/
+│  │  ├─ commands/         layer-neutral command metadata
 │  │  ├─ contracts/        Zod request/response/event schemas
 │  │  ├─ errors/           ErrorCode、Result、serialization
+│  │  ├─ i18n/             shared foundation command/menu catalogs
 │  │  └─ types/            readonly cross-process data
 │  ├─ domain/
 │  │  ├─ document/         SourceBuffer、session、EOL、encoding
@@ -50,21 +52,22 @@
 └─ scripts/
 ```
 
-### M0-T04 current executable ownership
+### M0-T05 current executable ownership
 
-| Concern                                                | Current owner                                                                                                                                                                                                          |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Wire schemas and renderer-visible API type             | `src/shared/contracts/app-info.ts`, `channels.ts`, `contract-version.ts`, `ipc-request.ts`, `lattice-desktop-api.ts`, and their barrel files                                                                           |
-| Stable Result and errors                               | `src/shared/errors/result.ts`, `app-error.ts`, `error-code.ts`, and `index.ts`                                                                                                                                         |
-| Trusted main IPC boundary                              | `src/main/ipc/authorized-window-registry.ts`, `validate-ipc-sender.ts`, `ipc-value-budget.ts`, `create-ipc-router.ts`, `ipc-error-logger.ts`, `create-app-info.ts`, and `register-app-info-ipc.ts`                     |
-| Electron composition and window lifecycle registration | `src/main/index.ts`                                                                                                                                                                                                    |
-| One-method preload and renderer declaration            | `src/preload/api/create-app-api.ts`, `src/preload/index.ts`, and `src/renderer/src/lattice-api.d.ts`                                                                                                                   |
-| Sandbox preload dependency bundling                    | `electron.vite.config.ts` inlines only `zod` instead of leaving a runtime `require("zod")`                                                                                                                             |
-| Unit proof                                             | `tests/unit/shared/contracts.spec.ts`, `tests/unit/main/ipc-value-budget.spec.ts`, `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`, `ipc-router.spec.ts`, and `tests/unit/preload/app-api.spec.ts` |
-| Real Electron proof                                    | `tests/security/electron-boundary.spec.ts`; M0-T03 regression ownership remains in `tests/e2e/navigation-policy.spec.ts`                                                                                               |
+| Concern                                      | Current owner                                                                                                                                                                                                          |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Wire schemas and renderer-visible API type   | `src/shared/contracts/app-info.ts`, `command.ts`, `channels.ts`, `contract-version.ts`, `ipc-request.ts`, `lattice-desktop-api.ts`, and their barrel files                                                             |
+| Stable Result and errors                     | `src/shared/errors/result.ts`, `app-error.ts`, `error-code.ts`, and `index.ts`                                                                                                                                         |
+| Trusted main IPC boundary                    | M0-T04 router modules plus `src/main/ipc/register-command-state-ipc.ts`                                                                                                                                                |
+| Command authority and native-menu projection | `src/shared/commands/`, `src/shared/i18n/`, `src/domain/commands/`, `src/main/commands/application-menu.ts`, and `src/main/index.ts`                                                                                   |
+| Frozen preload and renderer declaration      | `src/preload/api/create-app-api.ts`, `create-command-api.ts`, `src/preload/index.ts`, and `src/renderer/src/lattice-api.d.ts`                                                                                          |
+| Localized accessible renderer shell          | `src/renderer/src/commands/`, `components/`, `i18n/`, `app.tsx`, and `styles.css`                                                                                                                                      |
+| Sandbox preload dependency bundling          | `electron.vite.config.ts` inlines only `zod` instead of leaving a runtime `require("zod")`                                                                                                                             |
+| Unit proof                                   | `tests/unit/shared/contracts.spec.ts`, `tests/unit/main/ipc-value-budget.spec.ts`, `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`, `ipc-router.spec.ts`, and `tests/unit/preload/app-api.spec.ts` |
+| Real Electron proof                          | `tests/e2e/command-window-shell.spec.ts`, `app-launch.spec.ts`, and `tests/security/electron-boundary.spec.ts`; M0-T03 regression ownership remains in `navigation-policy.spec.ts`                                     |
 
 No file/workspace/settings/recovery/import/export service or preload method is
-implemented by M0-T04. Those entries in the target tree remain later-task
+implemented by M0-T05. Those entries in the target tree remain later-task
 ownership.
 
 ## 2. 依赖方向

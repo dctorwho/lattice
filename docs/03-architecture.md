@@ -44,13 +44,14 @@ module:
 | WebContents policy    | `src/main/security/web-contents-security-policy.ts`                                                                                                                   | Synchronously denies navigation, redirects, new windows, and webview attachment.                                                                                                                                                                                                    |
 | External URL policy   | `src/main/security/external-url-policy.ts`                                                                                                                            | Parses and bounds input, applies protocol, credential, and target allowlists, requests confirmation, then hands only the normalized URL to the OS.                                                                                                                                  |
 | BrowserWindow factory | `src/main/bootstrap/create-main-window.ts`                                                                                                                            | Creates windows with the immutable production `webPreferences` security baseline.                                                                                                                                                                                                   |
-| Preload               | `src/preload/index.ts` and `src/preload/api/create-app-api.ts`                                                                                                        | M0-T03 completed with an empty surface. M0-T04 now exposes only the frozen typed `window.lattice.app.getInfo()` capability; generic IPC and future product capabilities remain absent.                                                                                              |
+| Preload               | `src/preload/index.ts`, `src/preload/api/create-app-api.ts`, and `create-command-api.ts`                                                                              | M0-T03 completed with an empty surface. M0-T04 added `app.getInfo()`; M0-T05 now exposes the frozen typed `{ app, commands }` surface. Generic IPC and future product capabilities remain absent.                                                                                   |
 
 `src/main/index.ts` registers the WebContents policy through
 `web-contents-created` before readiness, so it also applies to future windows.
-That broad event coverage does not grant privileged capabilities. M0-T04 adds
-only one narrow typed method; every later capability still requires its own
-contract, authorization, implementation, and tests.
+That broad event coverage does not grant privileged capabilities. M0-T04 added
+one narrow invoke method; M0-T05 adds only strict command event/state methods.
+Every later capability still requires its own contract, authorization,
+implementation, and tests.
 
 ## 3. 源码与会话模型
 
@@ -119,26 +120,25 @@ interface MarkdownBlockAdapter<TModel> {
 
 ## 6. 命令系统
 
-```ts
-interface CommandContext {
-  session: DocumentSessionView
-  editor: EditorFacade | null
-  workspace: WorkspaceView | null
-  capabilities: CapabilitySet
-}
+M0-T05 的纯 TypeScript `CommandRegistry` 位于 `src/domain/commands/`，不依赖
+React、DOM、Electron 或 Node。当前 `CommandId` 仅包含
+`view.toggleSidebar` 和 `app.about`；context 已包含 session/dirty/editor 维度，
+但这两个基础命令不会虚构尚不存在的产品限制。
 
-interface AppCommand {
-  id: string
-  labelKey: string
-  defaultShortcut?: string
-  isVisible(ctx: CommandContext): boolean
-  isEnabled(ctx: CommandContext): boolean
-  isChecked?(ctx: CommandContext): boolean
-  run(ctx: CommandContext): Promise<CommandResult>
-}
-```
+`src/shared/commands/` 是这两个命令的层无关元数据权威，集中固定 ID、label
+key、快捷键、菜单分组和菜单类型；`src/shared/i18n/` 集中提供原生菜单与
+renderer 共用的中英文基础命令文案。domain 定义、main 原生菜单和 renderer
+快捷键适配器均从这张冻结台账派生，不再各自硬编码快捷键或标签。
 
-原生菜单通过 command ID 回传窗口；工具栏、右键和快捷键调用同一 registry。禁止在 UI 组件内复制保存、格式化或导出逻辑。
+registry 在构造时拒绝重复 ID，输出按 ID 排序的只读
+`visible/enabled/checked` 快照，并在执行前阻止未知、不可见或禁用命令。
+renderer 按钮、右键菜单和快捷键直接调用该 registry；原生菜单通过严格的
+main-to-preload event 回传同一 command ID。禁止在 UI 或 main 内复制命令逻辑。
+
+main 的应用菜单只是投影：renderer 把恰好两个批准 ID 的严格状态快照通过
+现有 sender/window 验证路由同步；main 按派生的窗口 ID 保存快照，只对当前
+focused 且已登记窗口应用。窗口 blur、销毁或无 focused target 时立即重新
+应用失败关闭状态；无快照、发送异常同样失败关闭。
 
 ## 7. IPC 契约
 
@@ -168,6 +168,27 @@ or session context crosses the boundary. The current handler returns only
 contract version 1 application name, version, and `win32 | darwin | linux`
 platform metadata. File, workspace, settings, import, and export capabilities
 are later-task contracts and are not callable in M0-T04.
+
+### M0-T05 command projection flow
+
+```text
+renderer CommandRegistry state
+→ frozen commands.updateStates(states)
+→ fixed lattice:commands:update-states route
+→ existing value budget + sender/window + Zod validation
+→ main menu snapshot for the derived window only
+
+native menu click
+→ current authorized focused window
+→ lattice:commands:invoked with a strict approved ID
+→ preload event validation
+→ renderer CommandRegistry.execute(id, context)
+```
+
+`commands.onInvoke()` returns an idempotent unsubscribe. Invalid event payloads
+and renderer listener exceptions are contained without exposing the Electron
+event or raw payload. Buttons, renderer context menu, and shortcuts never cross
+IPC; they call the same registry directly.
 
 ## 8. 工作区与搜索
 

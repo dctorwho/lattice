@@ -83,7 +83,7 @@
 - Pandoc/上传器使用参数数组并验证 `shell:false`。
 - M0-T03 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
 - `test:e2e` 验证导航、窗口、权限、CSP 与生产 DevTools；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
-- M0-T03 不伪造 IPC handler；其完成时的空 preload 表面是该任务的历史通过条件。M0-T03 持续拥有 Node/Electron/裸 IPC 不可得和 sandbox 断言；M0-T04 拥有当前仅含 `window.lattice.app.getInfo()` 的批准 preload 快照、真实 invoke 链路、request ID、sender 和参数拒绝。
+- M0-T03 不伪造 IPC handler；其完成时的空 preload 表面是该任务的历史通过条件。M0-T03 持续拥有 Node/Electron/裸 IPC 不可得和 sandbox 断言；M0-T04 拥有 `app.getInfo()` 的真实 invoke、request ID、sender 和参数拒绝；M0-T05 拥有当前冻结 `{ app, commands }` preload 快照、严格 command event/state 路由和四入口统一命令证明。
 
 M0-T03 security evidence separates pure-policy assertions from runtime behavior:
 
@@ -115,12 +115,36 @@ M0-T04 evidence is separated by layer:
   only the approved channel and exposes only `getInfo`; it does not substitute
   for an Electron boundary test.
 - `tests/security/electron-boundary.spec.ts` launches real production Electron
-  and proves the frozen `{ app: { getInfo } }` surface, absence of raw
+  and proves the current frozen `{ app: { getInfo }, commands: { onInvoke,
+updateStates } }` surface, absence of raw
   Electron/Node and generic/file/export methods, and a real schema-valid
   `AppInfo` Result. `zod` must be inline in the sandbox preload bundle for this
   proof; an external `require("zod")` is a failed preload boundary.
 - `tests/e2e/navigation-policy.spec.ts` remains M0-T03 navigation/external-link
   ownership and is rerun to prove the M0-T04 composition did not regress it.
+
+M0-T05 evidence is separated by behavior boundary:
+
+- `tests/unit/domain/command-registry.spec.ts` proves duplicate/unknown ID
+  handling, stable snapshots, guarded execution, safe handler failure, and the
+  complete COMMAND-M0 session/editor/dialog/focus state matrix.
+- `command-contracts.spec.ts`, `command-api.spec.ts`, and
+  `application-menu.spec.ts` prove exact state/event schemas, request-ID
+  correlation, invalid-event dropping, idempotent unsubscribe, sender-derived
+  per-window snapshots, fail-closed projection, and fixed menu relay.
+- `tests/unit/component/command-registry.spec.tsx` proves buttons, validated
+  native events, renderer context menu, and shortcuts call the real registry;
+  it also covers About data/error behavior, pending-request cancellation,
+  disabled-attempt focus provenance, Escape/outside-click focus restoration,
+  sidebar-origin focus transfer, and viewport-clamped context-menu placement.
+- `tests/unit/shared/command-contracts.spec.ts` additionally freezes the one
+  layer-neutral command metadata/localization table used by domain, main, and
+  renderer. `application-menu.spec.ts` covers blur/no-target and removal after
+  the destroyed window is no longer resolvable.
+- `tests/e2e/command-window-shell.spec.ts` launches production Electron and
+  executes all four entry paths plus real AppInfo. The security suite verifies
+  exact frozen keys and proves a malformed `files.open` event never reaches an
+  added renderer listener.
 
 ## 9. 性能测试
 

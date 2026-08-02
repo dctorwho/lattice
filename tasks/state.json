@@ -2,7 +2,7 @@
   "schema_version": 1,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
   "current_milestone": "M0",
-  "current_task": "M0-T05",
+  "current_task": null,
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "tasks": [
     {
@@ -110,14 +110,33 @@
     },
     {
       "id": "M0-T05",
-      "status": "in_progress",
+      "status": "passed",
       "depends_on": ["M0-T04"],
       "manual_gate": false,
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "command",
+          "summary": "pnpm 11.12.0; frozen offline install and ignored-build audit exit 0; full pnpm check exit 0 with 324 unit and 18 integration tests plus production build; real Electron E2E 3/3 and security 2/2 passed",
+          "path": "docs/evidence/M0-T05-command-window-shell-2026-08-02.md",
+          "recorded_at": "2026-08-02T07:19:18.1213626Z"
+        },
+        {
+          "kind": "test",
+          "summary": "TC-M0-006 passed one authoritative command registry, strict sender-owned native-menu projection, four real command entry paths, localized accessible shell, deterministic focus lifecycle, exact frozen preload surface, and privilege-boundary regressions",
+          "path": "docs/evidence/M0-T05-command-window-shell-2026-08-02.md",
+          "recorded_at": "2026-08-02T07:19:18.1213626Z"
+        },
+        {
+          "kind": "report",
+          "summary": "Independent review and two scoped re-reviews accepted lifecycle, focus, menu fail-closed, shared metadata/localization, viewport, and mounted-bridge fixes with no remaining blocker",
+          "path": "docs/evidence/M0-T05-command-window-shell-2026-08-02.md",
+          "recorded_at": "2026-08-02T07:19:18.1213626Z"
+        }
+      ]
     },
     {
       "id": "M0-T06",
-      "status": "blocked",
+      "status": "ready",
       "depends_on": ["M0-T05"],
       "manual_gate": true,
       "evidence": []

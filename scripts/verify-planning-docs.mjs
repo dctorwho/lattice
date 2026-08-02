@@ -353,7 +353,7 @@ const automationSuiteRoots = new Map([
   ['test:bootstrap:cold', 'tests/bootstrap/']
 ])
 const automationTargetPattern =
-  /^`pnpm (test(?::(?:integration|e2e|security|performance))?) -- (tests\/[a-z0-9./-]+\.spec\.ts)`$/
+  /^`pnpm (test(?::(?:integration|e2e|security|performance))?) -- (tests\/[a-z0-9./-]+\.spec\.tsx?)`$/
 const coldBootstrapTarget = '`pnpm test:bootstrap:cold`'
 const coldBootstrapPathTarget =
   '`pnpm test:bootstrap:cold -- tests/bootstrap/project-bootstrap-cold.spec.ts`'
