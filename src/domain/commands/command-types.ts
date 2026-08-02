@@ -1,5 +1,6 @@
-export const commandIds = ['app.about', 'view.toggleSidebar'] as const
-export type CommandId = (typeof commandIds)[number]
+import type { CommandId, CommandState } from '../../shared/contracts/command'
+
+export type { CommandId, CommandState }
 
 export type CommandLabelKey = 'commands.app.about' | 'commands.view.toggleSidebar'
 
@@ -15,13 +16,6 @@ export interface CommandContext {
 export interface CommandExecutionContext extends CommandContext {
   readonly toggleSidebar: () => void
   readonly openAbout: () => Promise<void>
-}
-
-export interface CommandState {
-  readonly id: CommandId
-  readonly isVisible: boolean
-  readonly isEnabled: boolean
-  readonly isChecked: boolean
 }
 
 export type CommandResult =

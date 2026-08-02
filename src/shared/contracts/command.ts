@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-import { commandIds, type CommandId, type CommandState } from '../../domain/commands'
 import { createResultSchema } from '../errors'
 import { IPC_CONTRACT_VERSION } from './contract-version'
 import { createIpcRequestEnvelopeSchema } from './ipc-request'
 
+export const commandIds = ['app.about', 'view.toggleSidebar'] as const
 export const commandIdSchema = z.enum(commandIds)
 
 export const commandStateSchema = z
@@ -50,7 +50,8 @@ export const commandInvokedEventSchema = z
   })
   .strict()
 
-export type { CommandId, CommandState }
+export type CommandId = z.infer<typeof commandIdSchema>
+export type CommandState = z.infer<typeof commandStateSchema>
 export type CommandStateSyncRequest = z.infer<typeof commandStateSyncRequestSchema>
 export type CommandStateSync = z.infer<typeof commandStateSyncSchema>
 export type CommandStateSyncResult = z.infer<typeof commandStateSyncResultSchema>

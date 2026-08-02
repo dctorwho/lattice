@@ -5,6 +5,7 @@ export { COMMAND_INVOKED_CHANNEL, COMMAND_UPDATE_STATES_CHANNEL } from './channe
 export type { ApprovedIpcChannel } from './channels'
 export {
   commandIdSchema,
+  commandIds,
   commandInvokedEventSchema,
   commandStateCollectionSchema,
   commandStateSchema,
