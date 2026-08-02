@@ -26,6 +26,7 @@ describe('verifyBootstrap', () => {
     failInstall?: boolean
     changeSecondBuildArtifact?: boolean
     ignoredBuildPackage?: string
+    explicitIgnoredBuildPackage?: string
   }) {
     const calls: Array<{ readonly args: readonly string[]; readonly cwd: string }> = []
     let buildNumber = 0
@@ -35,9 +36,13 @@ describe('verifyBootstrap', () => {
         return { exitCode: 8, stdout: '', stderr: 'injected install failure', timedOut: false }
       }
       if (args.includes('ignored-builds')) {
+        const explicitIgnoredBuilds =
+          options?.explicitIgnoredBuildPackage === undefined
+            ? ''
+            : `\nExplicitly ignored package builds (via allowBuilds):\n  ${options.explicitIgnoredBuildPackage}\n`
         return {
           exitCode: 0,
-          stdout: `Automatically ignored builds during installation:\n  ${options?.ignoredBuildPackage ?? 'None'}\n`,
+          stdout: `Automatically ignored builds during installation:\n  ${options?.ignoredBuildPackage ?? 'None'}\n${explicitIgnoredBuilds}`,
           stderr: '',
           timedOut: false
         }
@@ -136,6 +141,20 @@ describe('verifyBootstrap', () => {
         run: fake.run
       })
     ).rejects.toThrow(/ignored builds.*esbuild/i)
+  })
+
+  it('allows explicit package-build denial when no automatic builds are pending', async () => {
+    const fake = fakeRunner({ explicitIgnoredBuildPackage: 'electron-winstaller' })
+    const evidence = await verifyBootstrap({
+      sourceRoot,
+      tempParent: root,
+      mode: 'offline',
+      storeDirectory: join(root, 'store'),
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
+      run: fake.run
+    })
+
+    expect(evidence.pendingBuilds).toEqual([])
   })
 
   it('rejects mismatched required artifact hashes from the second build', async () => {

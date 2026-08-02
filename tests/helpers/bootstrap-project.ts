@@ -64,13 +64,19 @@ function parseIgnoredBuilds(output: string): readonly string[] {
     .replaceAll('\r\n', '\n')
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.length > 0)
 
   if (lines[0] !== ignoredBuildsHeading) {
     throw new Error('Unable to parse pnpm ignored-builds output.')
   }
 
-  const packages = lines.slice(1)
+  const packages: string[] = []
+  for (const line of lines.slice(1)) {
+    if (line.length === 0 || line.startsWith('Explicitly ignored package builds ')) {
+      break
+    }
+    packages.push(line)
+  }
+
   if (packages.length === 1 && packages[0] === 'None') {
     return []
   }
