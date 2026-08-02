@@ -1,13 +1,13 @@
-import type { JSX } from 'react'
+import { useRef, type JSX } from 'react'
+
+import { useCommandController } from './commands/use-command-controller'
+import { AppShell } from './components/app-shell'
 
 export function App(): JSX.Element {
+  const mainRef = useRef<HTMLElement>(null)
+  const sidebarRef = useRef<HTMLElement>(null)
+  const controller = useCommandController({ mainRef, sidebarRef })
   return (
-    <main className="bootstrap-shell">
-      <section className="bootstrap-card" aria-labelledby="bootstrap-title">
-        <p className="bootstrap-kicker">Electron + React + TypeScript</p>
-        <h1 id="bootstrap-title">Lattice</h1>
-        <p>Project bootstrap ready</p>
-      </section>
-    </main>
+    <AppShell locale="zh-CN" controller={controller} mainRef={mainRef} sidebarRef={sidebarRef} />
   )
 }

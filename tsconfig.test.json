@@ -17,5 +17,11 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["tests/**/*.ts", "tests/**/*.tsx", "vitest*.config.ts", "playwright*.config.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "src/renderer/src/lattice-api.d.ts",
+    "vitest*.config.ts",
+    "playwright*.config.ts"
+  ]
 }
