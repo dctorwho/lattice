@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lattice.local/schemas/iteration-state-v2.json",
+  "title": "Lattice iteration state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "product_baseline",
+    "current_iteration",
+    "allowed_statuses",
+    "iterations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "product_baseline": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "current_iteration": {
+      "type": "string",
+      "pattern": "^M[0-8]$"
+    },
+    "allowed_statuses": {
+      "const": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"]
+    },
+    "iterations": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "$ref": "#/$defs/iteration"
+      }
+    }
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(?:^|/)\\.\\.?/)(?!.*\\\\)(?!.*//)[^:]+$"
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements", "detailed_design", "test_cases"],
+      "properties": {
+        "requirements": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "pattern": "^iterations/M[0-8]-[a-z0-9-]+/01-requirements\\.md$"
+            }
+          ]
+        },
+        "detailed_design": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "pattern": "^iterations/M[0-8]-[a-z0-9-]+/02-detailed-design\\.md$"
+            }
+          ]
+        },
+        "test_cases": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "pattern": "^iterations/M[0-8]-[a-z0-9-]+/03-test-cases\\.md$"
+            }
+          ]
+        }
+      }
+    },
+    "exit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["test_report", "iteration_report"],
+      "properties": {
+        "test_report": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "pattern": "^iterations/M[0-8]-[a-z0-9-]+/04-test-report\\.md$"
+            }
+          ]
+        },
+        "iteration_report": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/repositoryPath"
+            },
+            {
+              "pattern": "^iterations/M[0-8]-[a-z0-9-]+/05-exit-report\\.md$"
+            }
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "summary", "recorded_at"],
+      "properties": {
+        "kind": {
+          "enum": ["command", "test", "report", "manual"]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "recorded_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "iteration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "status", "depends_on", "manual_gate", "entry", "exit", "evidence"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^M[0-8]$"
+        },
+        "status": {
+          "enum": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"]
+        },
+        "depends_on": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^M[0-8]$"
+          }
+        },
+        "manual_gate": {
+          "type": "boolean"
+        },
+        "entry": {
+          "$ref": "#/$defs/entry"
+        },
+        "exit": {
+          "$ref": "#/$defs/exit"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        }
+      }
+    }
+  }
+}
