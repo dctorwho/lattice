@@ -48,26 +48,26 @@
 │  └─ performance/
 ├─ resources/              icons, licenses, sidecars, export templates
 ├─ docs/
-├─ tasks/
+├─ iterations/
 └─ scripts/
 ```
 
-### M0-T05 current executable ownership
+### M0 current executable ownership
 
 | Concern                                      | Current owner                                                                                                                                                                                                          |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Wire schemas and renderer-visible API type   | `src/shared/contracts/app-info.ts`, `command.ts`, `channels.ts`, `contract-version.ts`, `ipc-request.ts`, `lattice-desktop-api.ts`, and their barrel files                                                             |
 | Stable Result and errors                     | `src/shared/errors/result.ts`, `app-error.ts`, `error-code.ts`, and `index.ts`                                                                                                                                         |
-| Trusted main IPC boundary                    | M0-T04 router modules plus `src/main/ipc/register-command-state-ipc.ts`                                                                                                                                                |
+| Trusted main IPC boundary                    | M0 router modules plus `src/main/ipc/register-command-state-ipc.ts`                                                                                                                                                    |
 | Command authority and native-menu projection | `src/shared/commands/`, `src/shared/i18n/`, `src/domain/commands/`, `src/main/commands/application-menu.ts`, and `src/main/index.ts`                                                                                   |
 | Frozen preload and renderer declaration      | `src/preload/api/create-app-api.ts`, `create-command-api.ts`, `src/preload/index.ts`, and `src/renderer/src/lattice-api.d.ts`                                                                                          |
 | Localized accessible renderer shell          | `src/renderer/src/commands/`, `components/`, `i18n/`, `app.tsx`, and `styles.css`                                                                                                                                      |
 | Sandbox preload dependency bundling          | `electron.vite.config.ts` inlines only `zod` instead of leaving a runtime `require("zod")`                                                                                                                             |
 | Unit proof                                   | `tests/unit/shared/contracts.spec.ts`, `tests/unit/main/ipc-value-budget.spec.ts`, `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`, `ipc-router.spec.ts`, and `tests/unit/preload/app-api.spec.ts` |
-| Real Electron proof                          | `tests/e2e/command-window-shell.spec.ts`, `app-launch.spec.ts`, and `tests/security/electron-boundary.spec.ts`; M0-T03 regression ownership remains in `navigation-policy.spec.ts`                                     |
+| Real Electron proof                          | `tests/e2e/command-window-shell.spec.ts`, `app-launch.spec.ts`, and `tests/security/electron-boundary.spec.ts`; M0 regression ownership remains in `navigation-policy.spec.ts`                                         |
 
 No file/workspace/settings/recovery/import/export service or preload method is
-implemented by M0-T05. Those entries in the target tree remain later-task
+implemented by M0. Those entries in the target tree remain owned by later
 ownership.
 
 ## 2. 依赖方向
@@ -111,7 +111,7 @@ main 与 renderer 不互相 import。renderer 不 import `electron` 或 Node bui
 - 领域返回 Result/typed error；只有进程边界捕获未知异常并转换 `INTERNAL_UNEXPECTED`。
 - 禁止空 catch。允许忽略的清理错误必须有注释和脱敏日志。
 - 用户消息使用 message key，日志记录 code/request ID/安全上下文，不记录正文。
-- M0-T04 的 IPC sink 只接受固定字段：level、code、request ID、approved
+- M0 的 IPC sink 只接受固定字段：level、code、request ID、approved
   channel/`unknown`、safe reason、可选 main-derived window/WebContents ID 和
   可选脱敏 stack。stack 最多 8 帧/每帧 256 字符；只保留 basename，不保留目录。
 

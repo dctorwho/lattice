@@ -78,7 +78,7 @@
 - CSP 默认 `default-src 'self'`，按功能最小开放；生产环境不使用 `unsafe-eval`。
 - 不使用 `<webview>` 承载用户 HTML。
 
-### M0-T03 enforced Electron invariants
+### M0 enforced Electron invariants
 
 - External-link input is limited to 2,081 UTF-16 code units. Leading or trailing
   whitespace, control characters, parse failures, credentials, empty targets,
@@ -94,9 +94,9 @@
 - A packaged application ignores a development renderer URL, and production
   uses `devTools: false`.
 
-### M0-T04 enforced IPC invariants
+### M0 enforced IPC invariants
 
-- The M0-T05 renderer receives only frozen `window.lattice.app.getInfo()` and
+- The M0 renderer receives only frozen `window.lattice.app.getInfo()` and
   `window.lattice.commands.{onInvoke,updateStates}`; neither the root nor its
   nested objects exposes generic `invoke`/`send`/`on`, Electron objects, file,
   external-open, settings, workspace, import, or export methods.
@@ -124,7 +124,7 @@
   excludes only `zod` from preload dependency externalization and does not
   weaken sandbox or BrowserWindow preferences.
 
-### M0-T05 enforced command invariants
+### M0 enforced command invariants
 
 - `CommandId` is a strict two-value enum: `app.about` and
   `view.toggleSidebar`. State synchronization requires exactly one strict state
@@ -159,7 +159,7 @@
 - 日志使用路径哈希或根目录相对路径；不记录文档、剪贴板、搜索词、YAML 值和导出自定义内容。
 - 用户可从设置打开日志目录并一键清理。
 - 错误报告在未来加入时必须预览待发送内容并显式同意。
-- M0-T04 IPC logs contain only level, stable code, request ID, approved channel
+- M0 IPC logs contain only level, stable code, request ID, approved channel
   or `unknown`, safe reason, optional main-derived window/WebContents IDs, and
   an optional sanitized stack. Raw payloads, errors, document text, and full
   paths are excluded. Stack processing inspects at most 16,384 characters, 64

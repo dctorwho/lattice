@@ -30,7 +30,7 @@ type Result<T, E extends AppError = AppError> =
   { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: E }
 ```
 
-M0-T04 的四个 active code 与 message key 一一对应，全部
+M0 的四个 active code 与 message key 一一对应，全部
 `retryable:false`。main 产生的错误必须携带当前 UUID request ID；preload
 拒绝缺失或错配 request ID 的失败 Result。本地 UUID 生成本身失败时尚无可信
 request ID，因此该本地 `INTERNAL_UNEXPECTED` 可不带 ID。`safeDetails` 只接受
@@ -106,7 +106,7 @@ interface SavedFile {
 
 renderer 不提供“忽略冲突”布尔值。覆盖冲突使用单独 `files.confirmedOverwrite()`，携带主进程生成的一次性 conflict token。
 
-## 4. 当前 Preload API（M0-T05 已实现）
+## 4. 当前 Preload API（M0 已实现）
 
 ```ts
 interface AppInfo {
@@ -135,11 +135,11 @@ interface LatticeDesktopApi {
 两个批准状态。频道仅是 main/preload 内部映射。root、`app` 和 `commands`
 均不含通用 `invoke`、`send`、`on` 或其他能力。
 
-### 后续任务目标表面（当前不可调用）
+### 后续迭代目标表面（当前不可调用）
 
-下列接口继续约束未来设计，但不属于 M0-T05 的运行时
+下列接口继续约束未来设计，但不属于 M0 的运行时
 `LatticeDesktopApi`。外链/对话框、文件、workspace、recovery、settings、
-import 和 export 必须由对应后续能力任务逐项授权、实现和测试后才能加入。
+import 和 export 必须由对应后续迭代逐项授权、实现和测试后才能加入。
 
 ```ts
 interface TargetLatticeDesktopApi {
@@ -221,7 +221,7 @@ interface SearchRequest {
 
 命名为 `<domain>.<verb>`，一旦发布保持稳定：
 
-M0-T05 当前已实现：
+M0 当前已实现：
 
 ```ts
 type CommandId = 'app.about' | 'view.toggleSidebar'
@@ -248,7 +248,7 @@ state-sync 数组必须恰好包含每个批准 ID 一次。`app.about` 使用 F
 `src/shared/i18n/` 提供中英文 catalog。domain、main 和 renderer 只做各层
 适配，不得复制这些元数据。
 
-以下是后续任务目标 ID，当前不可执行：
+以下是后续迭代目标 ID，当前不可执行：
 
 - `file.new/open/openFolder/import/save/saveAs/close/export/print`
 - `edit.undo/redo/cut/copy/paste/pastePlain/find/replace`

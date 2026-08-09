@@ -81,9 +81,9 @@
 | UPDATE_FAILED            | 下载/安装失败                    | 保持当前版本，稍后重试                   |
 | INTERNAL_UNEXPECTED      | 未知异常                         | 提供 request ID、保存/恢复建议和打开日志 |
 
-## 8. M0-T04 active IPC errors
+## 8. M0 active IPC errors
 
-M0-T04 当前可执行契约只启用以下四项；目录中其他 code 是后续能力的目标错误，
+M0 当前可执行契约只启用以下四项；目录中其他 code 是后续能力的目标错误，
 不表示当前 preload 可以调用对应功能。
 
 | Code                      | 固定 message key                | 当前触发                                                               | retryable |

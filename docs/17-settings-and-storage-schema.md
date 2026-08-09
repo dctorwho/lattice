@@ -141,7 +141,7 @@ interface RecoveryMetaV2 extends Omit<RecoveryMetaV1, 'schemaVersion'> {
 }
 ```
 
-正文单独文件原子轮转。meta 不可信，读取时验证文件名、大小、哈希和路径；绝不把 `contentFile` 或 `importStagingId` 当任意路径。恢复导入会话时只接受主进程生成且仍位于 `import-staging/` 内的 ID；缺失或损坏资源必须显示警告，但不能阻止 Markdown 正文恢复。M1 只实现 V1，M6-T08 负责 V1→V2 迁移和回归。
+正文单独文件原子轮转。meta 不可信，读取时验证文件名、大小、哈希和路径；绝不把 `contentFile` 或 `importStagingId` 当任意路径。恢复导入会话时只接受主进程生成且仍位于 `import-staging/` 内的 ID；缺失或损坏资源必须显示警告，但不能阻止 Markdown 正文恢复。M1 只实现 V1，M6 负责 V1→V2 迁移和回归。
 
 ## 7. 主题
 
