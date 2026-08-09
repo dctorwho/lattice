@@ -326,7 +326,7 @@ const validateAutomationTargets = (relativePath, content, requireTargetFiles) =>
     }
 
     if (requireTargetFiles) {
-      let isRegularFile = false
+      let isRegularFile
       try {
         isRegularFile = fs.lstatSync(resolvedTarget).isFile()
       } catch {
