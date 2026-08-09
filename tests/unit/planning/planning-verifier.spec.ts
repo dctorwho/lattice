@@ -99,7 +99,11 @@ const makeIterationOnlyFixture = (
     for (const match of testCases.matchAll(
       /`pnpm test(?::(?:integration|e2e|security|performance))? -- (tests\/[a-z0-9./-]+\.spec\.tsx?)`/g
     )) {
-      const target = join(root, match[1])
+      const relativeTarget = match[1]
+      if (relativeTarget === undefined) {
+        throw new Error('Expected an automation target capture in the planning test fixture.')
+      }
+      const target = join(root, relativeTarget)
       mkdirSync(join(target, '..'), { recursive: true })
       writeFileSync(target, 'export {}\n', 'utf8')
     }
