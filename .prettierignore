@@ -6,4 +6,4 @@ test-results
 .superpowers
 pnpm-lock.yaml
 tests/fixtures
-docs/evidence
+docs/archive/task-model-v1
