@@ -11,6 +11,12 @@ describe('M0-T02 focused-test configuration', () => {
     expect(contents).toMatch(/^\*\.ico -text$/m)
   })
 
+  it('serializes integration test files that orchestrate nested quality processes', async () => {
+    const contents = await readFile(join(process.cwd(), 'vitest.integration.config.ts'), 'utf8')
+
+    expect(contents).toMatch(/fileParallelism:\s*false/)
+  })
+
   it.each([
     'vitest.config.ts',
     'vitest.integration.config.ts',
