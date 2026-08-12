@@ -21,9 +21,6 @@ jobs:
     name: quality
     runs-on: windows-latest
     timeout-minutes: 30
-    env:
-      TEMP: ${{ runner.temp }}
-      TMP: ${{ runner.temp }}
 
     steps:
       - name: Check out repository
@@ -53,4 +50,7 @@ jobs:
 
       - name: Run the project quality gate
         shell: pwsh
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: pnpm check

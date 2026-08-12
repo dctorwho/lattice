@@ -13,9 +13,12 @@ describe('M0-T02 focused-test configuration', () => {
 
   it('uses the canonical runner temp path for nested Windows quality processes', async () => {
     const contents = await readFile(join(process.cwd(), '.github/workflows/quality.yml'), 'utf8')
+    const qualityStep = contents.match(
+      /- name: Run the project quality gate\n(?<body>(?: {8,}.+\n?)*)/
+    )?.groups?.body
 
-    expect(contents).toMatch(/TEMP:\s*\$\{\{ runner\.temp \}\}/)
-    expect(contents).toMatch(/TMP:\s*\$\{\{ runner\.temp \}\}/)
+    expect(qualityStep).toMatch(/env:\s*\n\s*TEMP:\s*\$\{\{ runner\.temp \}\}/)
+    expect(qualityStep).toMatch(/TMP:\s*\$\{\{ runner\.temp \}\}/)
   })
 
   it.each([
