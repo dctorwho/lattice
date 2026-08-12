@@ -6,7 +6,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     allowOnly: false,
-    fileParallelism: false,
     include: ['tests/integration/**/*.spec.ts'],
     exclude: isMetaChild ? ['tests/integration/quality-scripts.spec.ts'] : [],
     testTimeout: 1_020_000,

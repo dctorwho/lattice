@@ -21,6 +21,9 @@ jobs:
     name: quality
     runs-on: windows-latest
     timeout-minutes: 30
+    env:
+      TEMP: ${{ runner.temp }}
+      TMP: ${{ runner.temp }}
 
     steps:
       - name: Check out repository

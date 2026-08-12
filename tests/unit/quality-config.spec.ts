@@ -11,10 +11,11 @@ describe('M0-T02 focused-test configuration', () => {
     expect(contents).toMatch(/^\*\.ico -text$/m)
   })
 
-  it('serializes integration test files that orchestrate nested quality processes', async () => {
-    const contents = await readFile(join(process.cwd(), 'vitest.integration.config.ts'), 'utf8')
+  it('uses the canonical runner temp path for nested Windows quality processes', async () => {
+    const contents = await readFile(join(process.cwd(), '.github/workflows/quality.yml'), 'utf8')
 
-    expect(contents).toMatch(/fileParallelism:\s*false/)
+    expect(contents).toMatch(/TEMP:\s*\$\{\{ runner\.temp \}\}/)
+    expect(contents).toMatch(/TMP:\s*\$\{\{ runner\.temp \}\}/)
   })
 
   it.each([
