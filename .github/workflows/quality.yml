@@ -1,0 +1,53 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: quality
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.10.0
+
+      - name: Activate the pinned pnpm version
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack install --global pnpm@11.12.0
+          pnpm --version
+
+      - name: Install frozen dependencies and Electron runtime
+        shell: pwsh
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec electron --version
+
+      - name: Verify planning documentation
+        shell: pwsh
+        run: node scripts/verify-planning-docs.mjs
+
+      - name: Run the project quality gate
+        shell: pwsh
+        run: pnpm check
