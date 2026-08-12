@@ -21,6 +21,20 @@ describe('M0-T02 focused-test configuration', () => {
     expect(qualityStep).toMatch(/TMP:\s*\$\{\{ runner\.temp \}\}/)
   })
 
+  it('serializes nested integration orchestrators and keeps their commands bounded', async () => {
+    const integrationConfig = await readFile(
+      join(process.cwd(), 'vitest.integration.config.ts'),
+      'utf8'
+    )
+    const qualityContracts = await readFile(
+      join(process.cwd(), 'tests/integration/quality-scripts.spec.ts'),
+      'utf8'
+    )
+
+    expect(integrationConfig).toMatch(/fileParallelism:\s*false/)
+    expect(qualityContracts).toMatch(/const commandTimeoutMs = 180_000/)
+  })
+
   it.each([
     'vitest.config.ts',
     'vitest.integration.config.ts',
