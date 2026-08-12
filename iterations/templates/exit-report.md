@@ -8,6 +8,10 @@
 
 ## Requirement completion matrix
 
+List every global requirement and compatibility ID declared by this
+iteration's `01-requirements.md` exactly once. Every row requires a non-empty
+outcome, non-empty completion evidence, and `passed` result.
+
 | Global ID | Required outcome | Completion evidence | Result |
 | --------- | ---------------- | ------------------- | ------ |
 
@@ -30,7 +34,11 @@ or designated evaluator.
 
 ## Final iteration decision
 
-Record whether `{{ITERATION_ID}}` meets the conditions to become `passed`. A
-passed iteration has a complete test report, this final exit report, and every
-required manual gate completed. Only its direct successor may then be
+Record the following machine-readable line only after `{{ITERATION_ID}}` meets
+the conditions to become `passed`:
+
+`Decision: passed`
+
+A passed iteration has a complete test report, this final exit report, and
+every required manual gate completed. Only its direct successor may then be
 unblocked.

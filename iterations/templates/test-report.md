@@ -20,6 +20,26 @@ It is complete before the iteration enters `awaiting_manual`.
 | Date | Environment | Command or procedure | Exit code | Cases or coverage | Result | Evidence |
 | ---- | ----------- | -------------------- | --------- | ----------------- | ------ | -------- |
 
+## Automated case results
+
+Before `awaiting_manual`, list every `TC-{{ITERATION_ID}}-*` declared in
+`03-test-cases.md` exactly once. `Result` must be `passed`, and `Evidence` must
+identify the command output or artifact that proves the result.
+
+| Case ID | Result | Evidence | Notes |
+| ------- | ------ | -------- | ----- |
+
+## Manual case results
+
+Before `passed`, list every `MAN-{{ITERATION_ID}}-*` declared in
+`03-test-cases.md` exactly once. `Result` must be `passed`; `Evaluator` and
+`Evidence` must both be non-empty. Leave the table empty while manual
+evaluation is pending. Iterations with no declared manual cases keep the empty
+table.
+
+| Case ID | Result | Evaluator | Evidence |
+| ------- | ------ | --------- | -------- |
+
 ## Failures, fixes, and regression evidence
 
 | Finding | Impact | Resolution | Regression evidence | Status |

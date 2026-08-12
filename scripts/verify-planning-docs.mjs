@@ -268,6 +268,196 @@ const parseMarkdownTableCells = (line) => {
     .map((cell) => cell.trim())
 }
 
+const extractSecondLevelSection = (content, heading) => {
+  const lines = content.split(/\r?\n/)
+  const headingIndex = lines.findIndex((line) => line.trim() === `## ${heading}`)
+  if (headingIndex === -1) return null
+  const endIndex = lines.findIndex(
+    (line, index) => index > headingIndex && /^##\s+\S/.test(line.trim())
+  )
+  return lines.slice(headingIndex + 1, endIndex === -1 ? lines.length : endIndex)
+}
+
+const parseExactSectionTable = (relativePath, content, heading, expectedHeader) => {
+  const sectionLines = extractSecondLevelSection(content, heading)
+  if (sectionLines === null) {
+    errors.push(`${relativePath} is missing required section: ${heading}`)
+    return []
+  }
+
+  const headerIndex = sectionLines.findIndex((line) => {
+    const cells = parseMarkdownTableCells(line)
+    return (
+      cells !== null &&
+      cells.length === expectedHeader.length &&
+      cells.every((cell, index) => cell === expectedHeader[index])
+    )
+  })
+  if (headerIndex === -1) {
+    errors.push(
+      `${relativePath} ${heading} must contain table header: ${expectedHeader.join(' | ')}`
+    )
+    return []
+  }
+
+  const separatorCells = parseMarkdownTableCells(sectionLines[headerIndex + 1] ?? '')
+  if (
+    separatorCells === null ||
+    separatorCells.length !== expectedHeader.length ||
+    separatorCells.some((cell) => !/^:?-{3,}:?$/.test(cell))
+  ) {
+    errors.push(`${relativePath} ${heading} must contain a Markdown table separator`)
+    return []
+  }
+
+  const rows = []
+  for (const line of sectionLines.slice(headerIndex + 2)) {
+    if (line.trim().length === 0) continue
+    const cells = parseMarkdownTableCells(line)
+    if (cells === null) continue
+    if (cells.length !== expectedHeader.length) {
+      errors.push(`${relativePath} ${heading} contains a malformed result row`)
+      continue
+    }
+    rows.push(cells)
+  }
+  return rows
+}
+
+const validateExactCaseResults = ({
+  relativePath,
+  content,
+  heading,
+  header,
+  declaredIds,
+  iterationId,
+  kind,
+  evidenceIndex,
+  evaluatorIndex
+}) => {
+  const parsedRows = parseExactSectionTable(relativePath, content, heading, header)
+  const declared = new Set(declaredIds)
+  const seen = new Set()
+  const canonicalPattern = new RegExp(`^${kind}-M([0-8])-\\d{3}$`)
+
+  for (const cells of parsedRows) {
+    const caseId = cells[0]
+    const ownerMatch = canonicalPattern.exec(caseId)
+    if (ownerMatch === null) {
+      errors.push(
+        `${relativePath} malformed ${kind === 'TC' ? 'automated' : 'manual'} result id: ${caseId}`
+      )
+      continue
+    }
+    if (`M${ownerMatch[1]}` !== iterationId) {
+      errors.push(
+        `${relativePath} ${kind === 'TC' ? 'automated' : 'manual'} result ${caseId} belongs to M${ownerMatch[1]}, not ${iterationId}`
+      )
+      continue
+    }
+    if (seen.has(caseId)) {
+      errors.push(
+        `${relativePath} duplicate ${kind === 'TC' ? 'automated' : 'manual'} result id: ${caseId}`
+      )
+      continue
+    }
+    seen.add(caseId)
+    if (!declared.has(caseId)) {
+      errors.push(
+        `${relativePath} unexpected ${kind === 'TC' ? 'automated' : 'manual'} result id: ${caseId}`
+      )
+      continue
+    }
+    if (cells[1] !== 'passed') errors.push(`${relativePath} ${caseId} Result must be passed`)
+    if (cells[evidenceIndex].length === 0) {
+      errors.push(`${relativePath} ${caseId} Evidence must be non-empty`)
+    }
+    if (evaluatorIndex !== undefined && cells[evaluatorIndex].length === 0) {
+      errors.push(`${relativePath} ${caseId} Evaluator must be non-empty`)
+    }
+  }
+
+  const missing = declaredIds.filter((caseId) => !seen.has(caseId))
+  if (missing.length > 0 || seen.size !== declared.size) {
+    errors.push(
+      `${relativePath} ${heading.toLowerCase()} must cover every declared ${kind} case exactly once${missing.length > 0 ? `; missing ${missing.join(', ')}` : ''}`
+    )
+  }
+}
+
+const validateTestReportCompletion = (relativePath, content, iteration, parsedCases) => {
+  validateExactCaseResults({
+    relativePath,
+    content,
+    heading: 'Automated case results',
+    header: ['Case ID', 'Result', 'Evidence', 'Notes'],
+    declaredIds: parsedCases.automated,
+    iterationId: iteration.id,
+    kind: 'TC',
+    evidenceIndex: 2
+  })
+
+  if (iteration.status === 'passed') {
+    validateExactCaseResults({
+      relativePath,
+      content,
+      heading: 'Manual case results',
+      header: ['Case ID', 'Result', 'Evaluator', 'Evidence'],
+      declaredIds: parsedCases.manual,
+      iterationId: iteration.id,
+      kind: 'MAN',
+      evidenceIndex: 3,
+      evaluatorIndex: 2
+    })
+  }
+}
+
+const validateExitReportCompletion = (relativePath, content, requirementsContent) => {
+  const declaredIds = [
+    ...collectReferenceIds(requirementsContent, requirementPrefixes),
+    ...collectReferenceIds(requirementsContent, new Set(['COMP']))
+  ]
+  const declared = new Set(declaredIds)
+  const rows = parseExactSectionTable(relativePath, content, 'Requirement completion matrix', [
+    'Global ID',
+    'Required outcome',
+    'Completion evidence',
+    'Result'
+  ])
+  const seen = new Set()
+  for (const cells of rows) {
+    const globalId = cells[0]
+    if (seen.has(globalId)) {
+      errors.push(`${relativePath} duplicate requirement completion id: ${globalId}`)
+      continue
+    }
+    seen.add(globalId)
+    if (!declared.has(globalId)) {
+      errors.push(`${relativePath} unexpected requirement completion id: ${globalId}`)
+      continue
+    }
+    if (cells[1].length === 0) {
+      errors.push(`${relativePath} ${globalId} Required outcome must be non-empty`)
+    }
+    if (cells[2].length === 0) {
+      errors.push(`${relativePath} ${globalId} Completion evidence must be non-empty`)
+    }
+    if (cells[3] !== 'passed') errors.push(`${relativePath} ${globalId} Result must be passed`)
+  }
+  const missing = declaredIds.filter((globalId) => !seen.has(globalId))
+  if (missing.length > 0 || seen.size !== declared.size) {
+    errors.push(
+      `${relativePath} requirement completion matrix must cover every declared global ID exactly once${missing.length > 0 ? `; missing ${missing.join(', ')}` : ''}`
+    )
+  }
+
+  const decisionSection = extractSecondLevelSection(content, 'Final iteration decision')
+  const decisions = (decisionSection ?? []).filter((line) => line.startsWith('Decision:'))
+  if (decisions.length !== 1 || decisions[0] !== 'Decision: passed') {
+    errors.push(`${relativePath} final iteration decision must be Decision: passed`)
+  }
+}
+
 const isContainedPath = (container, candidate) => {
   const relative = path.relative(container, candidate)
   return (
@@ -419,6 +609,7 @@ const activeMarkdownFiles = new Set([
   'iterations/README.md'
 ])
 const iterationRequirementContents = []
+const requirementContentByIteration = new Map()
 const globalAutomatedCases = new Set()
 const globalManualCases = new Set()
 const parsedCasesByIteration = new Map()
@@ -442,7 +633,10 @@ for (const iteration of iterations) {
     validateRequiredSections(relativePath, content, sections)
     validateResolvedContent(relativePath, content)
 
-    if (role === 'requirements') iterationRequirementContents.push(content)
+    if (role === 'requirements') {
+      iterationRequirementContents.push(content)
+      requirementContentByIteration.set(iteration.id, content)
+    }
     if (role !== 'test_cases') continue
 
     const parsed = parseIterationTestCases(content, iteration.id)
@@ -506,6 +700,20 @@ for (const iteration of iterations) {
     activeMarkdownFiles.add(relativePath)
     validateRequiredSections(relativePath, content, sections)
     validateResolvedContent(relativePath, content)
+    const parsedCases = parsedCasesByIteration.get(iteration.id)
+    if (
+      role === 'exit.test_report' &&
+      (iteration.status === 'awaiting_manual' || iteration.status === 'passed') &&
+      parsedCases !== undefined
+    ) {
+      validateTestReportCompletion(relativePath, content, iteration, parsedCases)
+    }
+    if (role === 'exit.iteration_report' && iteration.status === 'passed') {
+      const requirementsContent = requirementContentByIteration.get(iteration.id)
+      if (requirementsContent !== undefined) {
+        validateExitReportCompletion(relativePath, content, requirementsContent)
+      }
+    }
   }
 }
 

@@ -84,6 +84,27 @@ evidence but cannot self-approve a manual gate.
 pause at `awaiting_manual`. The test-case document defines the applicable
 manual cases and the evidence required to close them.
 
+### Machine-checkable exit contract
+
+For `awaiting_manual` and `passed`, `04-test-report.md` contains an
+`## Automated case results` table with the exact header `Case ID | Result |
+Evidence | Notes`. Its case IDs equal the iteration's declared `TC-*` IDs
+exactly once each; every result is `passed` and every evidence cell is
+non-empty.
+
+For `passed`, the same report contains an `## Manual case results` table with
+the exact header `Case ID | Result | Evaluator | Evidence`. Its case IDs equal
+the declared `MAN-*` IDs exactly once each; every result is `passed`, and every
+evaluator and evidence cell is non-empty. An iteration with no declared manual
+cases may leave this table empty.
+
+For `passed`, `05-exit-report.md` contains one completion row for every global
+requirement and compatibility ID declared by that iteration, exactly once.
+Every row has a non-empty required outcome and completion evidence and a
+`passed` result. Under `## Final iteration decision`, the report contains the
+literal machine line `Decision: passed`. Headings, table headers, prose, or a
+generic state evidence object do not substitute for these per-ID results.
+
 ## No subtask ownership
 
 Implementation order and checklists may organize work inside a detailed design,
