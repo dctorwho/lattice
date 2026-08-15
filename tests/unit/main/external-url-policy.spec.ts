@@ -65,6 +65,18 @@ describe('external URL policy', () => {
     expect(decideExternalUrl(rawUrl)).toEqual({ kind: 'deny', reason: 'too-long' })
   })
 
+  it('SEC-005 confirms a valid URL at the exact UTF-16 code unit limit', () => {
+    const prefix = 'https://example.com/'
+    const rawUrl = `${prefix}${'a'.repeat(maximumExternalUrlLength - prefix.length)}`
+
+    expect(rawUrl.length).toBe(maximumExternalUrlLength)
+    expect(decideExternalUrl(rawUrl)).toEqual({
+      kind: 'confirm',
+      protocol: 'https:',
+      normalizedUrl: rawUrl
+    })
+  })
+
   it('SEC-005 denies without confirming or opening', async () => {
     const { port, confirm, open } = createPort(true)
 

@@ -78,7 +78,7 @@
 - CSP 默认 `default-src 'self'`，按功能最小开放；生产环境不使用 `unsafe-eval`。
 - 不使用 `<webview>` 承载用户 HTML。
 
-### M0-T03 enforced Electron invariants
+### M0 enforced Electron invariants
 
 - External-link input is limited to 2,081 UTF-16 code units. Leading or trailing
   whitespace, control characters, parse failures, credentials, empty targets,
@@ -94,9 +94,9 @@
 - A packaged application ignores a development renderer URL, and production
   uses `devTools: false`.
 
-### M0-T04 enforced IPC invariants
+### M0 enforced IPC invariants
 
-- The M0-T05 renderer receives only frozen `window.lattice.app.getInfo()` and
+- The M0 renderer receives only frozen `window.lattice.app.getInfo()` and
   `window.lattice.commands.{onInvoke,updateStates}`; neither the root nor its
   nested objects exposes generic `invoke`/`send`/`on`, Electron objects, file,
   external-open, settings, workspace, import, or export methods.
@@ -124,7 +124,7 @@
   excludes only `zod` from preload dependency externalization and does not
   weaken sandbox or BrowserWindow preferences.
 
-### M0-T05 enforced command invariants
+### M0 enforced command invariants
 
 - `CommandId` is a strict two-value enum: `app.about` and
   `view.toggleSidebar`. State synchronization requires exactly one strict state
@@ -159,7 +159,7 @@
 - 日志使用路径哈希或根目录相对路径；不记录文档、剪贴板、搜索词、YAML 值和导出自定义内容。
 - 用户可从设置打开日志目录并一键清理。
 - 错误报告在未来加入时必须预览待发送内容并显式同意。
-- M0-T04 IPC logs contain only level, stable code, request ID, approved channel
+- M0 IPC logs contain only level, stable code, request ID, approved channel
   or `unknown`, safe reason, optional main-derived window/WebContents IDs, and
   an optional sanitized stack. Raw payloads, errors, document text, and full
   paths are excluded. Stack processing inspects at most 16,384 characters, 64
@@ -173,3 +173,15 @@
 - IPC fuzz、路径遍历、符号链接、协议绕过、恶意 HTML/SVG/Mermaid/TeX、压缩炸弹图片和 shell 元字符参数。
 - 打包后验证 sandbox、CSP、fuses、asar 完整性和没有开发服务器/DevTools 后门。
 - 生产依赖漏洞和许可证检查；高危问题未评估前不能发布。
+
+## 12. M0 供应链与 CI 边界
+
+- `audit:deps` 对 lockfile 解析出的生产图要求每个直接和传递包都有精确版本与 MIT 许可证，并阻断 high/critical 漏洞；同一命令还审计完整开发/构建工具链并阻断 moderate 及以上漏洞。未知许可证、结构异常、命令失败、报告绝对路径或任一阈值违规都会使门禁失败，生产与工具链报告分别写入 `audit.json` 和 `toolchain-audit.json`。
+- `audit:sbom` 从受控依赖、许可证和漏洞报告生成 CycloneDX 1.6 JSON。组件、许可证和依赖边必须精确覆盖且无重复/悬空引用；报告写入使用同目录临时文件和原子替换。
+- `hash-artifacts.mjs` 只接受仓库内的显式相对路径，拒绝绝对路径、遍历、重复、目录、符号链接和真实路径逃逸；清单包含路径、字节数和 SHA-256，不包含主机绝对路径。
+- `run-m0-audit.mjs` 只启动六个固定 Node 脚本；每步有限时、有限输出，子进程失败或超时立即阻断，不执行任意 shell 字符串或重试循环。
+- Windows 打包只从 `node_modules/electron/dist` 读取冻结依赖安装后已校验、版本一致的 Electron 运行时。打包配置测试验证目录、可执行文件、资源目录和版本文件；electron-builder 不为同一 Electron 版本建立第二条网络下载链，也不允许通过关闭校验来规避网络故障。
+- `.github/workflows/` 只允许 `quality.yml`、`codeql.yml` 和 `dependency-review.yml`。`verify-workflows.mjs` 要求所有 Action 使用审阅过的 40 位 SHA，拒绝 `pull_request_target`、过宽权限、无界循环、命令漂移和越界 artifact 路径。
+- Dependency Review 的许可证策略不是“全部依赖必须为 MIT”：生产运行图由本地审计维持 MIT-only；PR 的完整开发/构建工具链只允许已审阅的 MIT、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、Python-2.0 与 WTFPL 精确集合。缺少集合成员、加入未审阅许可证、启用按依赖绕过或降低 moderate 漏洞阈值都必须失败。
+- `quality` 默认只有 `contents: read`；CodeQL 额外只有 `packages: read` 与 `security-events: write`；Dependency Review 额外只有 `pull-requests: read`。证据上传仅允许忽略目录 `artifacts/m0/`，保留 14 天。
+- M0 的 NSIS 和 unpacked 制品未签名、无发布和自动更新权限。自动化验证真实 packaged renderer 的 file URL、关闭 DevTools、冻结 preload 表面与 Node/Electron 不可得；普通用户安装和未签名提示必须由 MAN-M0-001 人工确认。

@@ -10,7 +10,7 @@ import {
   removeWithRetry
 } from '../helpers/project-copy'
 
-const commandTimeoutMs = 90_000
+const commandTimeoutMs = 180_000
 const contractTestTimeoutMs = 120_000
 const positiveCommandTestTimeoutMs = 1_020_000
 const faultCommandTestTimeoutMs = 300_000

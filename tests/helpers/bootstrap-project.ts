@@ -26,6 +26,8 @@ export interface BootstrapEvidence {
 
 const commandTimeoutMs = 90_000
 const ignoredBuildsHeading = 'Automatically ignored builds during installation:'
+const explicitlyIgnoredBuildsHeading = 'Explicitly ignored package builds (via allowBuilds):'
+const packageNamePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/
 
 function commandFailure(stage: string, result: CommandResult): Error {
   if (result.timedOut) {
@@ -64,20 +66,40 @@ function parseIgnoredBuilds(output: string): readonly string[] {
     .replaceAll('\r\n', '\n')
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.length > 0)
+
+  if (lines.at(-1) === '') {
+    lines.pop()
+  }
 
   if (lines[0] !== ignoredBuildsHeading) {
     throw new Error('Unable to parse pnpm ignored-builds output.')
   }
 
-  const packages = lines.slice(1)
-  if (packages.length === 1 && packages[0] === 'None') {
-    return []
-  }
-  if (packages.length === 0 || packages.some((packageName) => packageName === 'None')) {
+  const sectionBreak = lines.indexOf('', 1)
+  const automaticBuilds = lines.slice(1, sectionBreak === -1 ? lines.length : sectionBreak)
+  const suffix = sectionBreak === -1 ? [] : lines.slice(sectionBreak + 1)
+
+  if (automaticBuilds.length === 0) {
     throw new Error('Unable to parse pnpm ignored-builds output.')
   }
-  return packages
+  if (
+    (automaticBuilds.length === 1 && automaticBuilds[0] === 'None') === false &&
+    automaticBuilds.some(
+      (packageName) => packageName === 'None' || !packageNamePattern.test(packageName)
+    )
+  ) {
+    throw new Error('Unable to parse pnpm ignored-builds output.')
+  }
+  if (
+    suffix.length > 0 &&
+    (suffix[0] !== explicitlyIgnoredBuildsHeading ||
+      suffix.length === 1 ||
+      suffix.slice(1).some((packageName) => !packageNamePattern.test(packageName)))
+  ) {
+    throw new Error('Unable to parse pnpm ignored-builds output.')
+  }
+
+  return automaticBuilds[0] === 'None' ? [] : automaticBuilds
 }
 
 async function runPnpm(

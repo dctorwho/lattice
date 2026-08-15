@@ -32,9 +32,9 @@ flowchart LR
 - **Workers/utility process**：全局搜索、批量解析、Mermaid 和重型导出准备。
 - **Export renderer**：只加载本地模板和净化后的文档模型，无 Node 权限。
 
-### M0-T03 Electron security ownership
+### M0 Electron security ownership
 
-The M0-T03 Electron shell keeps each security boundary owned by one main-process
+The M0 Electron shell keeps each security boundary owned by one main-process
 module:
 
 | Boundary              | Owner                                                                                                                                                                 | Responsibility                                                                                                                                                                                                                                                                      |
@@ -44,13 +44,13 @@ module:
 | WebContents policy    | `src/main/security/web-contents-security-policy.ts`                                                                                                                   | Synchronously denies navigation, redirects, new windows, and webview attachment.                                                                                                                                                                                                    |
 | External URL policy   | `src/main/security/external-url-policy.ts`                                                                                                                            | Parses and bounds input, applies protocol, credential, and target allowlists, requests confirmation, then hands only the normalized URL to the OS.                                                                                                                                  |
 | BrowserWindow factory | `src/main/bootstrap/create-main-window.ts`                                                                                                                            | Creates windows with the immutable production `webPreferences` security baseline.                                                                                                                                                                                                   |
-| Preload               | `src/preload/index.ts`, `src/preload/api/create-app-api.ts`, and `create-command-api.ts`                                                                              | M0-T03 completed with an empty surface. M0-T04 added `app.getInfo()`; M0-T05 now exposes the frozen typed `{ app, commands }` surface. Generic IPC and future product capabilities remain absent.                                                                                   |
+| Preload               | `src/preload/index.ts`, `src/preload/api/create-app-api.ts`, and `create-command-api.ts`                                                                              | M0 owns the frozen typed `{ app, commands }` surface. Generic IPC and future product capabilities remain absent until their owning iteration defines and verifies a narrow contract.                                                                                                |
 
 `src/main/index.ts` registers the WebContents policy through
 `web-contents-created` before readiness, so it also applies to future windows.
-That broad event coverage does not grant privileged capabilities. M0-T04 added
-one narrow invoke method; M0-T05 adds only strict command event/state methods.
-Every later capability still requires its own contract, authorization,
+That broad event coverage does not grant privileged capabilities. M0 exposes
+only one narrow invoke method and strict command event/state methods. Every
+later capability still requires its owning iteration's contract, authorization,
 implementation, and tests.
 
 ## 3. 源码与会话模型
@@ -120,7 +120,7 @@ interface MarkdownBlockAdapter<TModel> {
 
 ## 6. 命令系统
 
-M0-T05 的纯 TypeScript `CommandRegistry` 位于 `src/domain/commands/`，不依赖
+M0 的纯 TypeScript `CommandRegistry` 位于 `src/domain/commands/`，不依赖
 React、DOM、Electron 或 Node。当前 `CommandId` 仅包含
 `view.toggleSidebar` 和 `app.about`；context 已包含 session/dirty/editor 维度，
 但这两个基础命令不会虚构尚不存在的产品限制。
@@ -148,7 +148,7 @@ focused 且已登记窗口应用。窗口 blur、销毁或无 focused target 时
 - 结果使用 `Result<T, AppError>` 形状，错误包含稳定 code、可本地化 message key 和安全 details。
 - 长任务支持进度、取消和超时；取消必须终止子进程或 worker。
 
-### M0-T04 implemented IPC flow
+### M0 implemented IPC flow
 
 ```text
 renderer window.lattice.app.getInfo()
@@ -162,14 +162,14 @@ renderer window.lattice.app.getInfo()
 → renderer
 ```
 
-M0-T04 derives `windowId` and `webContentsId` from the application-owned
+M0 derives `windowId` and `webContentsId` from the application-owned
 registry. Its `sessionId` is explicitly `null`; no renderer-controlled window
 or session context crosses the boundary. The current handler returns only
 contract version 1 application name, version, and `win32 | darwin | linux`
 platform metadata. File, workspace, settings, import, and export capabilities
-are later-task contracts and are not callable in M0-T04.
+belong to their owning iterations and are not callable in M0.
 
-### M0-T05 command projection flow
+### M0 command projection flow
 
 ```text
 renderer CommandRegistry state

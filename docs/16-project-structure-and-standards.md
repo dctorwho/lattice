@@ -46,28 +46,39 @@
 │  ├─ e2e/
 │  ├─ security/
 │  └─ performance/
+├─ .github/
+│  ├─ workflows/            SHA-pinned quality, CodeQL, dependency review
+│  └─ dependabot.yml        bounded weekly dependency update policy
+├─ build/brand/             original deterministic Lattice package assets
+├─ artifacts/m0/            ignored, machine-readable audit evidence
 ├─ resources/              icons, licenses, sidecars, export templates
 ├─ docs/
-├─ tasks/
+├─ iterations/
 └─ scripts/
+   ├─ assets/               deterministic committed asset generation/check
+   ├─ audit/                dependency, SBOM, package hash and M0 gate
+   └─ planning/             iteration model and planning verification
 ```
 
-### M0-T05 current executable ownership
+### M0 current executable ownership
 
 | Concern                                      | Current owner                                                                                                                                                                                                          |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Wire schemas and renderer-visible API type   | `src/shared/contracts/app-info.ts`, `command.ts`, `channels.ts`, `contract-version.ts`, `ipc-request.ts`, `lattice-desktop-api.ts`, and their barrel files                                                             |
 | Stable Result and errors                     | `src/shared/errors/result.ts`, `app-error.ts`, `error-code.ts`, and `index.ts`                                                                                                                                         |
-| Trusted main IPC boundary                    | M0-T04 router modules plus `src/main/ipc/register-command-state-ipc.ts`                                                                                                                                                |
+| Trusted main IPC boundary                    | M0 router modules plus `src/main/ipc/register-command-state-ipc.ts`                                                                                                                                                    |
 | Command authority and native-menu projection | `src/shared/commands/`, `src/shared/i18n/`, `src/domain/commands/`, `src/main/commands/application-menu.ts`, and `src/main/index.ts`                                                                                   |
 | Frozen preload and renderer declaration      | `src/preload/api/create-app-api.ts`, `create-command-api.ts`, `src/preload/index.ts`, and `src/renderer/src/lattice-api.d.ts`                                                                                          |
 | Localized accessible renderer shell          | `src/renderer/src/commands/`, `components/`, `i18n/`, `app.tsx`, and `styles.css`                                                                                                                                      |
 | Sandbox preload dependency bundling          | `electron.vite.config.ts` inlines only `zod` instead of leaving a runtime `require("zod")`                                                                                                                             |
+| Dependency and package evidence              | `scripts/audit/` owns normalized production inventory/licenses/vulnerabilities, complete toolchain vulnerability evidence, CycloneDX 1.6, path-safe SHA-256 manifests and the finite six-step M0 gate                  |
+| GitHub automation policy                     | `scripts/verify-workflows.mjs`, `.github/workflows/` and `.github/dependabot.yml` own exact action pins, least privilege, command parity and bounded update policy                                                     |
+| Windows package                              | `package.json` electron-builder configuration owns the installed Electron runtime boundary plus x64 unpacked/per-user NSIS output; `build/brand/` supplies deterministic Lattice assets                                |
 | Unit proof                                   | `tests/unit/shared/contracts.spec.ts`, `tests/unit/main/ipc-value-budget.spec.ts`, `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`, `ipc-router.spec.ts`, and `tests/unit/preload/app-api.spec.ts` |
-| Real Electron proof                          | `tests/e2e/command-window-shell.spec.ts`, `app-launch.spec.ts`, and `tests/security/electron-boundary.spec.ts`; M0-T03 regression ownership remains in `navigation-policy.spec.ts`                                     |
+| Real Electron proof                          | Ordinary `playwright.config.ts` owns app/command/navigation E2E; `playwright.packaged.config.ts` owns only `packaged-app.spec.ts`; `tests/security/electron-boundary.spec.ts` owns the production privilege boundary   |
 
 No file/workspace/settings/recovery/import/export service or preload method is
-implemented by M0-T05. Those entries in the target tree remain later-task
+implemented by M0. Those entries in the target tree remain owned by later
 ownership.
 
 ## 2. 依赖方向
@@ -111,7 +122,7 @@ main 与 renderer 不互相 import。renderer 不 import `electron` 或 Node bui
 - 领域返回 Result/typed error；只有进程边界捕获未知异常并转换 `INTERNAL_UNEXPECTED`。
 - 禁止空 catch。允许忽略的清理错误必须有注释和脱敏日志。
 - 用户消息使用 message key，日志记录 code/request ID/安全上下文，不记录正文。
-- M0-T04 的 IPC sink 只接受固定字段：level、code、request ID、approved
+- M0 的 IPC sink 只接受固定字段：level、code、request ID、approved
   channel/`unknown`、safe reason、可选 main-derived window/WebContents ID 和
   可选脱敏 stack。stack 最多 8 帧/每帧 256 字符；只保留 basename，不保留目录。
 
@@ -127,6 +138,8 @@ main 与 renderer 不互相 import。renderer 不 import `electron` 或 Node bui
 - 纯领域测试可与模块相邻或集中 tests/unit，但同类保持一致。
 - 每个回归测试名包含需求/测试 ID 或在 fixture metadata 引用。
 - E2E 通过 test-only adapter 控制对话框/路径，不在生产构建保留任意调试 IPC。
+- 打包前 E2E 与 packaged E2E 使用不同配置；普通 E2E 不得依赖 `dist/`，packaged E2E 不得退回开发入口或未打包 Electron。
+- `tests/integration/m0-gate.spec.ts` 对工作流策略和六步审计编排使用真实临时文件与真实子进程；外部网络查询只在显式本地/CI 门禁中执行，不用 mock 结果冒充出口证据。
 - 性能测试只运行打包构建并记录环境。
 
 ## 9. 注释和文档

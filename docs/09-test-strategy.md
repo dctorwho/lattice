@@ -16,7 +16,7 @@
 
 ## 3. 测试 ID 与套件
 
-实现和证据使用 `docs/test-cases/` 中唯一的 `TC-Mx-nnn`（自动/半自动）与 `MAN-Mx-nnn`（人工）作为稳定用例 ID。下表中的 `DATA-*` 等编号是数据集与兼容追踪编号，可被一个参数化 `TC-*` 展开覆盖，不能单独当作已经设计完成的测试用例。
+实现和证据使用各迭代 `03-test-cases.md` 中唯一的 `TC-Mx-nnn`（自动/半自动）与 `MAN-Mx-nnn`（人工）作为稳定用例 ID。下表中的 `DATA-*` 等编号是数据集与兼容追踪编号，可被一个参数化 `TC-*` 展开覆盖，不能单独当作已经设计完成的测试用例。
 
 | 前缀  | 范围                                                  |
 | ----- | ----------------------------------------------------- |
@@ -81,11 +81,12 @@
 - CSP、导航、新窗口、权限请求、外链协议和自定义 URL。
 - HTML/SVG/Math/Mermaid 载荷、超时、内存预算和远程资源阻断。
 - Pandoc/上传器使用参数数组并验证 `shell:false`。
-- M0-T03 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
-- `test:e2e` 验证导航、窗口、权限、CSP 与生产 DevTools；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
-- M0-T03 不伪造 IPC handler；其完成时的空 preload 表面是该任务的历史通过条件。M0-T03 持续拥有 Node/Electron/裸 IPC 不可得和 sandbox 断言；M0-T04 拥有 `app.getInfo()` 的真实 invoke、request ID、sender 和参数拒绝；M0-T05 拥有当前冻结 `{ app, commands }` preload 快照、严格 command event/state 路由和四入口统一命令证明。
+- M0 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
+- `test:e2e` 使用 `playwright.config.ts` 验证导航、窗口、权限、CSP 与生产 DevTools，并明确排除需要现成 `dist/` 的 packaged 用例；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
+- `test:packaged` 使用独立的 `playwright.packaged.config.ts`，只从 `dist/win-unpacked/Lattice.exe` 启动 `packaged-app.spec.ts`。它要求真实 `app.asar`、`app.isPackaged`、file URL、关闭 DevTools、无开发 URL、冻结 `{ app, commands }` 表面和 renderer 中 Node/Electron 全局不可得。Playwright 为控制通道注入的两个零值调试参数必须是进程唯一附加参数，不能被误记为产品参数。
+- M0 不伪造 IPC handler；它持续拥有 Node/Electron/裸 IPC 不可得、sandbox、真实 `app.getInfo()` invoke、request ID、sender 拒绝，以及当前冻结 `{ app, commands }` preload 快照、严格 command event/state 路由和四入口统一命令证明。
 
-M0-T03 security evidence separates pure-policy assertions from runtime behavior:
+M0 security evidence separates pure-policy assertions from runtime behavior:
 
 - `external-url-policy` unit coverage rejects inputs over 2,081 UTF-16 code
   units, plus leading/trailing whitespace, control characters, parse failures,
@@ -96,17 +97,17 @@ M0-T03 security evidence separates pure-policy assertions from runtime behavior:
   navigation, redirects, new windows, and webview attachment.
 - `content-security-policy` unit coverage asserts the exact CSP directive
   string. The `resolve-main-window-options` factory/unit test proves that a
-  packaged app ignores a development URL. M0-T06 provides final
+  packaged app ignores a development URL. M0 provides final
   packaged-artifact coverage.
-- The M0-T03 E2E covers confirmed and cancelled `https:`/`mailto:` handoff,
+- The M0 E2E covers confirmed and cancelled `https:`/`mailto:` handoff,
   runtime denial of disallowed protocols and credentials, no navigation/new
   window/redirect request, inline-script and `connect-src` behavioral blocking,
   permission denial, and effective DevTools denial from a no-development-URL
   launch.
 
-M0-T04 evidence is separated by layer:
+M0 evidence is separated by layer:
 
-- TC-M0-005 unit tests cover strict contract version 1 schemas, the four stable
+- M0 unit tests cover strict contract version 1 schemas, the four stable
   error codes/message keys, request-ID correlation, six sender rejection
   reasons, fail-closed destroyed-state callbacks, the 65,536-character /
   depth-8 / 256-entry value budget, JSON-like serialization, fixed routing,
@@ -120,10 +121,10 @@ updateStates } }` surface, absence of raw
   Electron/Node and generic/file/export methods, and a real schema-valid
   `AppInfo` Result. `zod` must be inline in the sandbox preload bundle for this
   proof; an external `require("zod")` is a failed preload boundary.
-- `tests/e2e/navigation-policy.spec.ts` remains M0-T03 navigation/external-link
-  ownership and is rerun to prove the M0-T04 composition did not regress it.
+- `tests/e2e/navigation-policy.spec.ts` remains M0 navigation/external-link
+  ownership and is rerun with the remaining M0 security composition.
 
-M0-T05 evidence is separated by behavior boundary:
+M0 command evidence is separated by behavior boundary:
 
 - `tests/unit/domain/command-registry.spec.ts` proves duplicate/unknown ID
   handling, stable snapshots, guarded execution, safe handler failure, and the
@@ -158,7 +159,7 @@ M0-T05 evidence is separated by behavior boundary:
 
 ## 11. 命令契约
 
-M0 建立以下脚本，之后任务不得改名而不更新全部文档：
+M0 建立以下脚本，之后迭代不得改名而不更新全部文档：
 
 ```powershell
 pnpm format
@@ -171,31 +172,42 @@ pnpm test:e2e
 pnpm test:security
 pnpm test:performance
 pnpm test:bootstrap:cold
+pnpm audit:deps
+pnpm audit:sbom
+pnpm verify:workflows
+pnpm audit:m0
+pnpm package:dir
+pnpm package:win
+pnpm test:packaged
 pnpm build
 pnpm check
 ```
 
-`pnpm check` 至少包含 format:check、lint、typecheck、unit、integration 和 build，并且不得访问网络。E2E、安全、性能按任务和里程碑显式运行。`pnpm test:bootstrap:cold` 是使用空项目级 store 的显式、允许联网冷自举门禁，不进入 `check`。
+`pnpm check` 至少包含 format:check、lint、typecheck、unit、integration 和 build，并且不得访问网络。E2E、安全、性能按迭代入口和退出门禁显式运行。`pnpm test:bootstrap:cold` 是使用空项目级 store 的显式、允许联网冷自举门禁，不进入 `check`。
+
+`pnpm audit:deps` 是显式联网门禁：生产图保留 high/critical 阈值并生成许可证/SBOM 输入，完整开发与构建工具链使用与 Dependency Review 一致的 moderate 阈值并生成 `toolchain-audit.json`。pnpm 结构化 audit 因发现阈值内公告而返回 `1` 时仍必须解析并验证报告；超时、输出超限、其他退出码、无效 JSON 或未知 schema 一律失败。
+
+TC-M0-007 的本地顺序是：冻结安装/基础质量与 Electron 套件 → 验证 `node_modules/electron/dist` 的目录、可执行文件、资源目录和精确版本 → `package:win` → `test:packaged` → `audit:m0`。`package:win` 通过 `build.electronDist` 复用已校验的安装运行时，不再次下载同版本 Electron；运行时缺失或版本漂移必须在打包前失败。综合审计要求安装包、unpacked executable、`app.asar` 和品牌图标已存在；它随后重建生产依赖/许可证/漏洞报告、全工具链漏洞报告、CycloneDX SBOM、工作流证明、品牌校验、artifact 哈希和六步门禁报告。`tests/integration/m0-gate.spec.ts` 使用真实临时目录和真实子进程覆盖成功顺序、浮动 Action、越权权限、危险触发器、缺失 frozen install、命令漂移、越界上传、无界循环、各审计错误和超时。
 
 TC-M0-002 在临时项目副本中启动嵌套 `pnpm check` 时必须设置 `LATTICE_QUALITY_META_CHILD=1`。集成测试配置仅在该变量存在时排除 `quality-scripts.spec.ts` 自身，仍运行其余集成测试；顶层 `test:integration` 不设置该变量，因此持续覆盖 TC-M0-002，避免递归而不跳过真实集成验证。
 
-**M0-T01 自举例外**：M0-T01 尚无上述质量脚本，只执行 `pnpm install`、开发窗口 smoke、`pnpm build`、lockfile/产物检查，并保存命令退出码作为 TC-M0-001 证据。M0-T02 建立完整脚本后必须把 TC-M0-001 纳入 `test:integration`；从 M0-T02 起恢复“每任务运行 `pnpm check`”规则。禁止用空脚本或固定成功脚本伪造自举通过。
+M0 建立质量脚本；在它退出前，`pnpm check`、构建和与范围相关的集成、安全与 E2E 证据必须全部通过。禁止用空脚本或固定成功脚本伪造通过。
 
 ## 12. 覆盖与反作弊
 
 - 领域与安全模块分支覆盖目标 90%，其他核心模块 80%；覆盖率不是完成条件的替代。
 - 禁止 `.skip`、`.only`、宽泛 snapshot、吞异常、无断言测试和为了通过而删除 fixture。
-- flaky 测试先隔离根因；不可长期重试掩盖。任何 quarantine 必须有任务 ID、负责人和期限。
+- flaky 测试先隔离根因；不可长期重试掩盖。任何 quarantine 必须有迭代 ID、负责人和期限。
 
 ## 13. CI 和人工门禁
 
-- 每任务：除上述 M0-T01 自举例外外，在 Windows 当前主环境运行 `pnpm check`。
-- 每里程碑：Windows 10/11、100%/150% 缩放的 E2E、安全和性能；依赖/许可证审计。
-- M1、M2、M5、M6、M8 有强制人工门禁。结果记录在任务状态 evidence 中，不能由 Codex 自评代替。
+- 开发中：运行当前能力的聚焦测试，失败时留在当前迭代并修复根因。
+- 迭代退出：在 Windows 当前主环境运行 `pnpm check`，并运行当前 `03-test-cases.md` 要求的 E2E、安全、性能和集成套件。
+- M0、M1、M2、M5、M6、M8 有强制人工门禁。结果记录在迭代状态 evidence 中，不能由 Codex 自评代替。
 
 ## 14. 可执行用例规格
 
-- 每个实现任务必须至少关联一个 [`TC-*`](test-cases/README.md)，每个 `manual_gate:true` 任务必须关联至少一个 `MAN-*`。
-- 实现测试前读取对应迭代文件的参数矩阵；矩阵每一行都要成为独立实例，不允许只实现表格中的正常路径。
-- 用例的步骤、预期、严重度和证据是验收契约。实现拆分可以调整，但用例 ID 不得复用或静默删除。
-- 夹具和环境按[夹具目录](test-cases/fixture-catalog.md)创建；实际 SHA-256 和来源在 M0/M1 实现时补入 manifest。
+- 每个迭代必须至少关联一个 [`TC-*`](../iterations/README.md)，每个 `manual_gate:true` 迭代必须关联至少一个 `MAN-*`。
+- 实现测试前读取当前迭代的参数矩阵；矩阵每一行都要成为独立实例，不允许只实现表格中的正常路径。
+- 用例的步骤、预期、严重度和证据是迭代验收契约。能力拆分可以调整，但用例 ID 不得复用或静默删除。
+- 夹具和环境按当前迭代的 `03-test-cases.md` 创建；实际 SHA-256 和来源在 M0/M1 实现时补入 manifest。

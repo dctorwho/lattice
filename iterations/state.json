@@ -1,0 +1,171 @@
+{
+  "schema_version": 2,
+  "product_baseline": "Typora 1.13.8 documented feature compatibility",
+  "current_iteration": "M1",
+  "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
+  "iterations": [
+    {
+      "id": "M0",
+      "status": "passed",
+      "depends_on": [],
+      "manual_gate": true,
+      "entry": {
+        "requirements": "iterations/M0-foundation/01-requirements.md",
+        "detailed_design": "iterations/M0-foundation/02-detailed-design.md",
+        "test_cases": "iterations/M0-foundation/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M0-foundation/04-test-report.md",
+        "iteration_report": "iterations/M0-foundation/05-exit-report.md"
+      },
+      "evidence": [
+        {
+          "kind": "test",
+          "summary": "All eight M0 automated cases passed on the final local and GitHub candidate.",
+          "path": "iterations/M0-foundation/04-test-report.md",
+          "recorded_at": "2026-08-15T14:05:09Z"
+        },
+        {
+          "kind": "report",
+          "summary": "GitHub Quality, CodeQL, Dependency Review, and the active main ruleset were verified without bypass.",
+          "path": "iterations/M0-foundation/04-test-report.md",
+          "recorded_at": "2026-08-15T14:05:09Z"
+        },
+        {
+          "kind": "manual",
+          "summary": "The user reported no observed issue and accepted M0 after all designed iteration test cases passed.",
+          "path": "iterations/M0-foundation/04-test-report.md",
+          "recorded_at": "2026-08-15T14:56:32Z"
+        }
+      ]
+    },
+    {
+      "id": "M1",
+      "status": "ready",
+      "depends_on": ["M0"],
+      "manual_gate": true,
+      "entry": {
+        "requirements": "iterations/M1-document-core/01-requirements.md",
+        "detailed_design": "iterations/M1-document-core/02-detailed-design.md",
+        "test_cases": "iterations/M1-document-core/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M1-document-core/04-test-report.md",
+        "iteration_report": "iterations/M1-document-core/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M2",
+      "status": "blocked",
+      "depends_on": ["M1"],
+      "manual_gate": true,
+      "entry": {
+        "requirements": "iterations/M2-hybrid-editor/01-requirements.md",
+        "detailed_design": "iterations/M2-hybrid-editor/02-detailed-design.md",
+        "test_cases": "iterations/M2-hybrid-editor/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M2-hybrid-editor/04-test-report.md",
+        "iteration_report": "iterations/M2-hybrid-editor/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M3",
+      "status": "blocked",
+      "depends_on": ["M2"],
+      "manual_gate": false,
+      "entry": {
+        "requirements": "iterations/M3-workspace-shell/01-requirements.md",
+        "detailed_design": "iterations/M3-workspace-shell/02-detailed-design.md",
+        "test_cases": "iterations/M3-workspace-shell/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M3-workspace-shell/04-test-report.md",
+        "iteration_report": "iterations/M3-workspace-shell/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M4",
+      "status": "blocked",
+      "depends_on": ["M3"],
+      "manual_gate": false,
+      "entry": {
+        "requirements": "iterations/M4-advanced-markdown/01-requirements.md",
+        "detailed_design": "iterations/M4-advanced-markdown/02-detailed-design.md",
+        "test_cases": "iterations/M4-advanced-markdown/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M4-advanced-markdown/04-test-report.md",
+        "iteration_report": "iterations/M4-advanced-markdown/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M5",
+      "status": "blocked",
+      "depends_on": ["M4"],
+      "manual_gate": true,
+      "entry": {
+        "requirements": "iterations/M5-media-theme/01-requirements.md",
+        "detailed_design": "iterations/M5-media-theme/02-detailed-design.md",
+        "test_cases": "iterations/M5-media-theme/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M5-media-theme/04-test-report.md",
+        "iteration_report": "iterations/M5-media-theme/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M6",
+      "status": "blocked",
+      "depends_on": ["M5"],
+      "manual_gate": true,
+      "entry": {
+        "requirements": "iterations/M6-export/01-requirements.md",
+        "detailed_design": "iterations/M6-export/02-detailed-design.md",
+        "test_cases": "iterations/M6-export/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M6-export/04-test-report.md",
+        "iteration_report": "iterations/M6-export/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M7",
+      "status": "blocked",
+      "depends_on": ["M6"],
+      "manual_gate": false,
+      "entry": {
+        "requirements": "iterations/M7-parity-hardening/01-requirements.md",
+        "detailed_design": "iterations/M7-parity-hardening/02-detailed-design.md",
+        "test_cases": "iterations/M7-parity-hardening/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M7-parity-hardening/04-test-report.md",
+        "iteration_report": "iterations/M7-parity-hardening/05-exit-report.md"
+      },
+      "evidence": []
+    },
+    {
+      "id": "M8",
+      "status": "blocked",
+      "depends_on": ["M7"],
+      "manual_gate": true,
+      "entry": {
+        "requirements": "iterations/M8-windows-release/01-requirements.md",
+        "detailed_design": "iterations/M8-windows-release/02-detailed-design.md",
+        "test_cases": "iterations/M8-windows-release/03-test-cases.md"
+      },
+      "exit": {
+        "test_report": "iterations/M8-windows-release/04-test-report.md",
+        "iteration_report": "iterations/M8-windows-release/05-exit-report.md"
+      },
+      "evidence": []
+    }
+  ]
+}

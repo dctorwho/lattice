@@ -26,6 +26,8 @@ describe('verifyBootstrap', () => {
     failInstall?: boolean
     changeSecondBuildArtifact?: boolean
     ignoredBuildPackage?: string
+    explicitIgnoredBuildPackage?: string
+    ignoredBuildsOutput?: string
   }) {
     const calls: Array<{ readonly args: readonly string[]; readonly cwd: string }> = []
     let buildNumber = 0
@@ -35,9 +37,15 @@ describe('verifyBootstrap', () => {
         return { exitCode: 8, stdout: '', stderr: 'injected install failure', timedOut: false }
       }
       if (args.includes('ignored-builds')) {
+        const explicitIgnoredBuilds =
+          options?.explicitIgnoredBuildPackage === undefined
+            ? ''
+            : `\nExplicitly ignored package builds (via allowBuilds):\n  ${options.explicitIgnoredBuildPackage}\n`
         return {
           exitCode: 0,
-          stdout: `Automatically ignored builds during installation:\n  ${options?.ignoredBuildPackage ?? 'None'}\n`,
+          stdout:
+            options?.ignoredBuildsOutput ??
+            `Automatically ignored builds during installation:\n  ${options?.ignoredBuildPackage ?? 'None'}\n${explicitIgnoredBuilds}`,
           stderr: '',
           timedOut: false
         }
@@ -136,6 +144,107 @@ describe('verifyBootstrap', () => {
         run: fake.run
       })
     ).rejects.toThrow(/ignored builds.*esbuild/i)
+  })
+
+  it('allows explicit package-build denial when no automatic builds are pending', async () => {
+    const fake = fakeRunner({ explicitIgnoredBuildPackage: 'electron-winstaller' })
+    const evidence = await verifyBootstrap({
+      sourceRoot,
+      tempParent: root,
+      mode: 'offline',
+      storeDirectory: join(root, 'store'),
+      relativePaths: ['package.json', 'pnpm-lock.yaml'],
+      run: fake.run
+    })
+
+    expect(evidence.pendingBuilds).toEqual([])
+  })
+
+  it('rejects a bare suffix after the automatic None section', async () => {
+    const fake = fakeRunner({
+      ignoredBuildsOutput: 'Automatically ignored builds during installation:\n  None\n\nesbuild\n'
+    })
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('Unable to parse pnpm ignored-builds output.')
+  })
+
+  it('rejects an unknown suffix heading after the automatic None section', async () => {
+    const fake = fakeRunner({
+      ignoredBuildsOutput:
+        'Automatically ignored builds during installation:\n  None\n\nUnexpected ignored builds:\n  esbuild\n'
+    })
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('Unable to parse pnpm ignored-builds output.')
+  })
+
+  it('rejects None mixed with an automatically ignored package', async () => {
+    const fake = fakeRunner({
+      ignoredBuildsOutput: 'Automatically ignored builds during installation:\n  None\n  esbuild\n'
+    })
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('Unable to parse pnpm ignored-builds output.')
+  })
+
+  it('rejects output without the automatic ignored-builds heading', async () => {
+    const fake = fakeRunner({
+      ignoredBuildsOutput: 'Ignored builds during installation:\n  None\n'
+    })
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('Unable to parse pnpm ignored-builds output.')
+  })
+
+  it('rejects an explicit ignored-builds heading without a package', async () => {
+    const fake = fakeRunner({
+      ignoredBuildsOutput:
+        'Automatically ignored builds during installation:\n  None\n\nExplicitly ignored package builds (via allowBuilds):\n'
+    })
+
+    await expect(
+      verifyBootstrap({
+        sourceRoot,
+        tempParent: root,
+        mode: 'offline',
+        storeDirectory: join(root, 'store'),
+        relativePaths: ['package.json', 'pnpm-lock.yaml'],
+        run: fake.run
+      })
+    ).rejects.toThrow('Unable to parse pnpm ignored-builds output.')
   })
 
   it('rejects mismatched required artifact hashes from the second build', async () => {

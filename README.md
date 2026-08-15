@@ -1,16 +1,16 @@
 # Lattice Markdown Editor
 
-本仓库用于从零开发一个 Windows 优先、Markdown 文件无损、功能与工作流对齐 Typora 1.13.8 的桌面编辑器。产品使用独立名称、图标、主题和文案；不复制 Typora 的源码、默认主题或品牌素材。
+本仓库从零开发一个 Windows 优先、Markdown 文件无损、功能与工作流对齐 Typora 1.13.8 的桌面编辑器。产品使用独立名称、图标、主题和文案；不复制 Typora 的源码、默认主题或品牌素材。
 
-当前仓库首先提供一套可供 Codex CLI 按任务实施的工程规格。实现代码必须以这些文档为约束，而不是临时生成一个 Markdown 原型。
+工程规格以 M0–M8 迭代执行。代码实现必须遵守这些文档，而不是临时生成一个 Markdown 原型。
 
 ## 文档入口
 
-- [AGENTS.md](AGENTS.md)：Codex CLI 的强制工作规则。
+- [AGENTS.md](AGENTS.md)：Codex 的强制工作规则。
 - [文档索引](docs/README.md)：需求、架构、技术栈、界面、数据安全和测试规格。
-- [任务索引](tasks/README.md)：M0–M8 的完整任务依赖图与执行顺序。
-- [Codex CLI 执行手册](docs/11-codex-cli-runbook.md)：逐任务运行、验收和恢复方式。
-- [任务状态](tasks/state.json)：唯一的任务状态来源。
+- [迭代索引](iterations/README.md)：M0–M8 的入口/退出文档和执行方式。
+- [迭代状态](iterations/state.json)：唯一的迭代状态来源。
+- [Codex CLI 执行手册](docs/11-codex-cli-runbook.md)：迭代运行、验收和恢复方式。
 
 ## 固定目标
 
@@ -22,10 +22,10 @@
 
 ## Codex CLI 启动方式
 
-首次执行前先初始化 Git。之后每次只执行一个任务：
+首次执行前先初始化 Git。之后每次只执行一个迭代：
 
 ```powershell
-codex exec --sandbox workspace-write "读取 AGENTS.md、tasks/state.json 和 tasks/M0-foundation.md；执行第一个状态为 ready 的任务。只完成该任务，运行其全部验收并停止。"
+codex exec --sandbox workspace-write "读取 AGENTS.md、iterations/state.json 和 iterations/README.md；选择一个 ready 且依赖 passed 的迭代，读取其三份入口文档。只完成该迭代，开发中运行聚焦测试，退出时运行全部门禁并按状态写报告后停止。"
 ```
 
-不要使用单条提示词要求 Codex 完成全部 M0–M8。编辑器内核、中文输入法和文件无损性必须在阶段门禁通过后再扩展。
+不要使用单条提示词要求 Codex 完成全部 M0–M8。编辑器内核、中文输入法和文件无损性必须在迭代门禁通过后再扩展。
