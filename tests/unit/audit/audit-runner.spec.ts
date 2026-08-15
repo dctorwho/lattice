@@ -65,7 +65,15 @@ describe('M0 dependency audit orchestration', () => {
           timedOut: false
         })
       }
-      if (key === 'audit --prod --json') {
+      if (key === 'audit --prod --json --audit-level high') {
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify(auditInput),
+          stderr: '',
+          timedOut: false
+        })
+      }
+      if (key === 'audit --json --audit-level moderate') {
         return Promise.resolve({
           exitCode: 0,
           stdout: JSON.stringify(auditInput),
@@ -89,13 +97,15 @@ describe('M0 dependency audit orchestration', () => {
     expect(executor.calls).toEqual([
       ['list', '--prod', '--json', '--depth', 'Infinity'],
       ['licenses', 'list', '--prod', '--json'],
-      ['audit', '--prod', '--json']
+      ['audit', '--prod', '--json', '--audit-level', 'high'],
+      ['audit', '--json', '--audit-level', 'moderate']
     ])
     expect(bundle.inventory.components).toHaveLength(1)
     expect(await readdir(outputDirectory)).toEqual([
       'audit.json',
       'dependency-inventory.json',
-      'licenses.json'
+      'licenses.json',
+      'toolchain-audit.json'
     ])
     for (const fileName of await readdir(outputDirectory)) {
       const contents = await readFile(join(outputDirectory, fileName), 'utf8')
@@ -103,6 +113,52 @@ describe('M0 dependency audit orchestration', () => {
       expect(contents).not.toContain('/private/store')
       expect(contents.endsWith('\n')).toBe(true)
     }
+  })
+
+  it('fails closed when the complete toolchain has a moderate vulnerability', async () => {
+    const toolchainAudit = structuredClone(auditInput)
+    toolchainAudit.metadata.vulnerabilities.moderate = 1
+    toolchainAudit.advisories = {
+      23: {
+        module_name: 'tooling-package',
+        severity: 'moderate',
+        title: 'controlled toolchain fixture',
+        vulnerable_versions: '<2.0.0',
+        patched_versions: '>=2.0.0'
+      }
+    }
+    const execute = (args: readonly string[]) => {
+      const key = args.join(' ')
+      if (key === 'list --prod --json --depth Infinity') {
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify(dependencyInput),
+          stderr: '',
+          timedOut: false
+        })
+      }
+      if (key === 'licenses list --prod --json') {
+        return Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify(licenseInput),
+          stderr: '',
+          timedOut: false
+        })
+      }
+      const isToolchainAudit = key === 'audit --json --audit-level moderate'
+      const input = isToolchainAudit ? toolchainAudit : auditInput
+      return Promise.resolve({
+        exitCode: isToolchainAudit ? 1 : 0,
+        stdout: JSON.stringify(input),
+        stderr: '',
+        timedOut: false
+      })
+    }
+
+    await expect(runDependencyAudit({ outputDirectory, execute })).rejects.toThrow(
+      'M0_AUDIT_VULNERABILITY_THRESHOLD'
+    )
+    await expect(readdir(outputDirectory)).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
   it('fails closed on a command failure without writing partial reports or raw stderr', async () => {

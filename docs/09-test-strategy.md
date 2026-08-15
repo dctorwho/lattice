@@ -185,7 +185,9 @@ pnpm check
 
 `pnpm check` 至少包含 format:check、lint、typecheck、unit、integration 和 build，并且不得访问网络。E2E、安全、性能按迭代入口和退出门禁显式运行。`pnpm test:bootstrap:cold` 是使用空项目级 store 的显式、允许联网冷自举门禁，不进入 `check`。
 
-TC-M0-007 的本地顺序是：冻结安装/基础质量与 Electron 套件 → `package:win` → `test:packaged` → `audit:m0`。综合审计要求安装包、unpacked executable、`app.asar` 和品牌图标已存在；它随后重建生产依赖/许可证/漏洞报告、CycloneDX SBOM、工作流证明、品牌校验、artifact 哈希和六步门禁报告。`tests/integration/m0-gate.spec.ts` 使用真实临时目录和真实子进程覆盖成功顺序、浮动 Action、越权权限、危险触发器、缺失 frozen install、命令漂移、越界上传、无界循环、各审计错误和超时。
+`pnpm audit:deps` 是显式联网门禁：生产图保留 high/critical 阈值并生成许可证/SBOM 输入，完整开发与构建工具链使用与 Dependency Review 一致的 moderate 阈值并生成 `toolchain-audit.json`。pnpm 结构化 audit 因发现阈值内公告而返回 `1` 时仍必须解析并验证报告；超时、输出超限、其他退出码、无效 JSON 或未知 schema 一律失败。
+
+TC-M0-007 的本地顺序是：冻结安装/基础质量与 Electron 套件 → 验证 `node_modules/electron/dist` 的目录、可执行文件、资源目录和精确版本 → `package:win` → `test:packaged` → `audit:m0`。`package:win` 通过 `build.electronDist` 复用已校验的安装运行时，不再次下载同版本 Electron；运行时缺失或版本漂移必须在打包前失败。综合审计要求安装包、unpacked executable、`app.asar` 和品牌图标已存在；它随后重建生产依赖/许可证/漏洞报告、全工具链漏洞报告、CycloneDX SBOM、工作流证明、品牌校验、artifact 哈希和六步门禁报告。`tests/integration/m0-gate.spec.ts` 使用真实临时目录和真实子进程覆盖成功顺序、浮动 Action、越权权限、危险触发器、缺失 frozen install、命令漂移、越界上传、无界循环、各审计错误和超时。
 
 TC-M0-002 在临时项目副本中启动嵌套 `pnpm check` 时必须设置 `LATTICE_QUALITY_META_CHILD=1`。集成测试配置仅在该变量存在时排除 `quality-scripts.spec.ts` 自身，仍运行其余集成测试；顶层 `test:integration` 不设置该变量，因此持续覆盖 TC-M0-002，避免递归而不跳过真实集成验证。
 

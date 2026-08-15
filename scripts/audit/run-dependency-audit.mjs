@@ -96,6 +96,20 @@ async function executeJson(execute, args) {
   return parseJson(result.stdout)
 }
 
+async function executeAuditJson(execute, args) {
+  const result = await execute(args)
+  if (result.timedOut) {
+    fail('M0_AUDIT_COMMAND_TIMEOUT')
+  }
+  if (result.outputExceeded === true) {
+    fail('M0_AUDIT_COMMAND_OUTPUT_LIMIT')
+  }
+  if (result.exitCode !== 0 && result.exitCode !== 1) {
+    fail('M0_AUDIT_COMMAND_FAILED')
+  }
+  return parseJson(result.stdout)
+}
+
 async function replaceReportDirectory(outputDirectory, reports) {
   const parent = dirname(outputDirectory)
   const name = basename(outputDirectory)
@@ -151,24 +165,38 @@ export async function runDependencyAudit(options) {
     'Infinity'
   ])
   const licenseInput = await executeJson(execute, ['licenses', 'list', '--prod', '--json'])
-  const auditInput = await executeJson(execute, ['audit', '--prod', '--json'])
+  const auditInput = await executeAuditJson(execute, [
+    'audit',
+    '--prod',
+    '--json',
+    '--audit-level',
+    'high'
+  ])
+  const toolchainAuditInput = await executeAuditJson(execute, [
+    'audit',
+    '--json',
+    '--audit-level',
+    'moderate'
+  ])
   const bundle = {
     inventory: normalizeDependencyGraph(dependencyInput),
     licenses: normalizeLicenseReport(licenseInput, productionLicenseAllowlist),
-    audit: normalizeAuditReport(auditInput)
+    audit: normalizeAuditReport(auditInput),
+    toolchainAudit: normalizeAuditReport(toolchainAuditInput, 'moderate')
   }
   assertNoAbsolutePaths(bundle)
   await replaceReportDirectory(options.outputDirectory, [
     ['dependency-inventory.json', bundle.inventory],
     ['licenses.json', bundle.licenses],
-    ['audit.json', bundle.audit]
+    ['audit.json', bundle.audit],
+    ['toolchain-audit.json', bundle.toolchainAudit]
   ])
   return bundle
 }
 
 async function main() {
   await runDependencyAudit({ outputDirectory: resolve('artifacts', 'm0') })
-  process.stdout.write('M0 dependency, license, and vulnerability audit passed.\n')
+  process.stdout.write('M0 production and toolchain dependency audits passed.\n')
 }
 
 if (

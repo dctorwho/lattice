@@ -196,6 +196,15 @@ describe('M0 dependency audit core', () => {
     )
   })
 
+  it('blocks moderate vulnerabilities when the toolchain threshold is requested', () => {
+    const moderate = structuredClone(cleanAuditInput)
+    moderate.metadata.vulnerabilities.moderate = 1
+
+    expect(() => normalizeAuditReport(moderate, 'moderate')).toThrow(
+      'M0_AUDIT_VULNERABILITY_THRESHOLD'
+    )
+  })
+
   it('creates a deterministic CycloneDX 1.6 BOM covering every production component', () => {
     const inventory = normalizeDependencyGraph(dependencyInput)
     const licenses = normalizeLicenseReport(licenseInput, ['MIT'])

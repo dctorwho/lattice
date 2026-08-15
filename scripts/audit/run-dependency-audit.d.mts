@@ -1,4 +1,4 @@
-import type { AuditBundle } from './audit-core.mjs'
+import type { DependencyAuditBundle } from './audit-core.mjs'
 
 export interface AuditCommandResult {
   readonly exitCode: number | null
@@ -13,4 +13,4 @@ export interface DependencyAuditOptions {
   readonly execute?: (args: readonly string[]) => Promise<AuditCommandResult>
 }
 
-export function runDependencyAudit(options: DependencyAuditOptions): Promise<AuditBundle>
+export function runDependencyAudit(options: DependencyAuditOptions): Promise<DependencyAuditBundle>

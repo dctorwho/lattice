@@ -59,6 +59,10 @@ export interface AuditBundle {
   readonly audit: VulnerabilityReport
 }
 
+export interface DependencyAuditBundle extends AuditBundle {
+  readonly toolchainAudit: VulnerabilityReport
+}
+
 export interface CycloneDxComponent {
   readonly type: 'library'
   readonly name: string
@@ -97,7 +101,10 @@ export interface CycloneDxBom {
 
 export function normalizeDependencyGraph(input: unknown): DependencyInventory
 export function normalizeLicenseReport(input: unknown, allowlist: readonly string[]): LicenseReport
-export function normalizeAuditReport(input: unknown): VulnerabilityReport
+export function normalizeAuditReport(
+  input: unknown,
+  minimumSeverity?: 'moderate' | 'high'
+): VulnerabilityReport
 export function createCycloneDxBom(input: AuditBundle, generatedAt: string): CycloneDxBom
 export function assertNoAbsolutePaths(input: unknown): void
 export function stableJson(input: unknown): string

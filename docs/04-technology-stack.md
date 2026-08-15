@@ -7,7 +7,7 @@
 | 层       | 选择                 | 版本策略             | 理由                                                               |
 | -------- | -------------------- | -------------------- | ------------------------------------------------------------------ |
 | 桌面     | Electron             | 初始 43.1.1          | 与 Typora 公开技术路线接近，Node/Chromium、打印和 Windows 集成成熟 |
-| 构建     | electron-vite / Vite | 5.0.0 / 7.2.6        | 明确分离 main/preload/renderer，开发反馈快                         |
+| 构建     | electron-vite / Vite | 5.0.0 / 7.3.6        | 明确分离 main/preload/renderer，开发反馈快                         |
 | 语言     | TypeScript           | 5.9.3，strict        | 共享 IPC 与领域类型；固定兼容版本，不跟随未评审主版本              |
 | UI       | React / React DOM    | 19.2.7               | 壳层、设置和复杂块组件生态成熟                                     |
 | 编辑器   | CodeMirror 6         | 各包固定 lockfile    | 文本是权威，支持增量 transaction、decorations 和虚拟化             |
@@ -38,7 +38,7 @@
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ---------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------ |
 | Electron 43.1.1                                                                                              | Windows 桌面运行时、打印和系统集成                             | MIT                                | 是，打包 Chromium/Node                 | npm 安装期不下载运行时；Electron 42+ 在首次执行 Electron 时下载。`electron-vite dev` 5.0.0 会先读取 `path.txt`，所以 `dev` 脚本先执行 `electron --version` 触发受控下载；必须单独验证 CDN/代理与窗口 smoke | Tauri、CEF；不能满足当前 Web 编辑器生态和 Electron 对齐目标 | 极高，主要应用体积来源               |
 | electron-vite 5.0.0                                                                                          | main/preload/renderer 构建分层                                 | MIT                                | 否                                     | 否                                                                                                                                                                                                         | 手工 Vite/Rollup 多入口配置                                 | 仅构建期，运行体积低                 |
-| Vite 7.2.6、`@vitejs/plugin-react` 5.1.1                                                                     | renderer 构建、TSX 转换与开发热更新                            | MIT                                | Vite 的 esbuild 依赖使用预构建平台包   | esbuild 有受控安装脚本，仅批准 `esbuild`，禁止全量批准                                                                                                                                                     | 手工 Rollup/React JSX 配置；维护与 HMR 成本更高             | 仅构建期，中                         |
+| Vite 7.3.6、`@vitejs/plugin-react` 5.1.1                                                                     | renderer 构建、TSX 转换与开发热更新                            | MIT                                | Vite 的 esbuild 依赖使用预构建平台包   | esbuild 有受控安装脚本，仅批准 `esbuild`，禁止全量批准                                                                                                                                                     | 手工 Rollup/React JSX 配置；维护与 HMR 成本更高             | 仅构建期，中                         |
 | React、React DOM 19.2.7                                                                                      | 应用壳、设置和复杂块 UI；将 React 树挂载到 renderer DOM        | MIT                                | 否                                     | 否                                                                                                                                                                                                         | Preact、原生 DOM；生态和可访问组件覆盖较弱                  | 中                                   |
 | CodeMirror 6、`@lezer/markdown`                                                                              | 文本权威、增量编辑、投影与语法范围                             | MIT                                | 否                                     | 否                                                                                                                                                                                                         | Monaco、ProseMirror；不符合体积或源码权威约束               | 中                                   |
 | `markdown-it`                                                                                                | 只读语义渲染与 HTML 输出                                       | MIT                                | 否                                     | 否                                                                                                                                                                                                         | unified/remark；扩展适配成本更高                            | 低–中                                |
@@ -81,6 +81,10 @@
 
 `app-builder-lib@26.15.3` 上游声明了可选的 `electron-builder-squirrel-windows` peer，但 Lattice 只锁定 Windows x64 `dir` 与 NSIS，不使用 Squirrel。根级 `pnpm-workspace.yaml` 因此使用精确版本和精确父包作用域的 override，仅删除 `app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` 这一条未使用的依赖边；`electron-builder-squirrel-windows` 与 `electron-winstaller` 不再进入实际解析和安装图，其他 peer 仍按 pnpm 默认规则处理。安装脚本准入只保留既有 `esbuild: true`，不得为已移除的包增加许可。升级 `electron-builder` 时必须重新审阅该 override；若未来采用 Squirrel，须另行完成需求、依赖、脚本和打包安全评审。
 
+2026-08-15 的 Dependency Review 在启用 Dependency Graph 后阻断了工具链传递依赖中的已知漏洞。Vite 直接依赖升级到同一主版本的 `7.3.6`；根级安全 override 仅覆盖当前父包 semver 已允许的受影响主版本，并固定 `brace-expansion` 1.1.18/2.1.4/5.0.9、`nanoid` 3.3.18、`postcss` 8.5.23、`undici` 6.28.0/7.29.0。不得用忽略公告或降低严重级别替代升级；上游父包消除旧范围后应移除相应 override，并重新执行冻结安装、全工具链审计、构建、打包和 Electron 回归。
+
+Windows 打包把 `build.electronDist` 固定为 `node_modules/electron/dist`：冻结安装后的显式 Electron 运行时验证必须先物化与直接依赖 `electron@43.1.1` 一致的完整目录，electron-builder 随后复用这一已由 Electron 包校验的本地运行时，不再为同一版本启动第二条下载链。目录、`electron.exe`、`resources/` 或版本文件缺失/不一致时，打包配置测试与打包命令必须失败；不得用跳过校验的下载参数替代这条边界。
+
 ### M0 GitHub Action 准入台账
 
 GitHub Action 不是 npm 生产依赖，但它们会在受信 CI 中执行，因此按供应链代码处理。2026-08-15 通过各官方 GitHub 仓库的 tag/ref 与 license API 核对以下版本；工作流只使用 40 位提交 SHA，版本号仅作审计注释。升级必须重新核对标签解引用后的提交、许可证、权限和行为。
@@ -104,13 +108,14 @@ GitHub Action 不是 npm 生产依赖，但它们会在受信 CI 中执行，因
 - Prettier：仅格式化项目源码和自有文档；绝不格式化用户 Markdown fixture 输出。
 - `tsc --noEmit`：严格类型门禁。
 - `pnpm check`：无网络的日常质量门禁；冷自举另由显式、允许联网的 `pnpm test:bootstrap:cold` 执行，不进入 `check`。
-- `pnpm audit:m0`：顺序执行规划、依赖/许可证/漏洞、CycloneDX 1.6 SBOM、工作流、品牌资产和包哈希六个有限步骤；每个子步骤有 300 秒上限和 4 MiB 输出上限。
+- `pnpm audit:deps`：生产图继续执行精确版本、MIT 许可证和 high/critical 漏洞门禁；同时审计完整开发/构建工具链，任何 moderate/high/critical 漏洞都会失败并生成 `toolchain-audit.json`。
+- `pnpm audit:m0`：顺序执行规划、生产与全工具链依赖审计、CycloneDX 1.6 SBOM、工作流、品牌资产和包哈希六个有限步骤；每个子步骤有 300 秒上限和 4 MiB 输出上限。
 
 ## 5. 构建与发布
 
 - pnpm 为唯一包管理器。
-- `pnpm package:dir` 与 `pnpm package:win` 分别生成 Windows x64 unpacked 目录和 per-user NSIS 安装包；输出位于忽略的 `dist/`。
-- `artifacts/m0/` 只保存可解析的依赖、许可证、漏洞、CycloneDX SBOM、门禁和 SHA-256 清单；报告禁止绝对路径。
+- `pnpm package:dir` 与 `pnpm package:win` 复用 `node_modules/electron/dist` 中已校验的精确 Electron 运行时，分别生成 Windows x64 unpacked 目录和 per-user NSIS 安装包；输出位于忽略的 `dist/`。
+- `artifacts/m0/` 只保存可解析的生产依赖/许可证/漏洞、全工具链漏洞、CycloneDX SBOM、门禁和 SHA-256 清单；报告禁止绝对路径。
 - M0 制品不签名、不发布、不自动更新；普通用户安装时的未签名提示属于 MAN-M0-001 的明确风险，代码签名和公开发布由 M8 负责。
 - 首发不启用自动更新；公开发布时使用签名制品和 `electron-updater`。
 - Pandoc 不随核心包强绑定。导入和高级导出先检测用户配置路径；未来是否捆绑需要单独许可证、体积和更新评审。

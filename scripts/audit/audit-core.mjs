@@ -160,7 +160,10 @@ export function normalizeLicenseReport(input, allowlist) {
   }
 }
 
-export function normalizeAuditReport(input) {
+export function normalizeAuditReport(input, minimumSeverity = 'high') {
+  if (minimumSeverity !== 'moderate' && minimumSeverity !== 'high') {
+    fail('M0_AUDIT_SCHEMA_INVALID')
+  }
   const source = requireObject(input, 'M0_AUDIT_SCHEMA_INVALID')
   const advisoriesInput = requireObject(source.advisories, 'M0_AUDIT_SCHEMA_INVALID')
   const metadata = requireObject(source.metadata, 'M0_AUDIT_SCHEMA_INVALID')
@@ -196,10 +199,10 @@ export function normalizeAuditReport(input) {
     })
     .sort((left, right) => compareStrings(left.id, right.id))
 
+  const thresholdIndex = severityNames.indexOf(minimumSeverity)
   if (
-    counts.high > 0 ||
-    counts.critical > 0 ||
-    advisories.some(({ severity }) => severity === 'high' || severity === 'critical')
+    severityNames.slice(thresholdIndex).some((severity) => counts[severity] > 0) ||
+    advisories.some(({ severity }) => severityNames.indexOf(severity) >= thresholdIndex)
   ) {
     fail('M0_AUDIT_VULNERABILITY_THRESHOLD')
   }

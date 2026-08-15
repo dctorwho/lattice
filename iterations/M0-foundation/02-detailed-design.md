@@ -57,12 +57,14 @@ targets fail closed. Sidebar and About flows restore focus deterministically.
 ### CI, dependency audit, and packaged artifact gate
 
 Run Windows CI-equivalent commands from clean checkouts. Audit production
-dependency versions and licenses, generate a parseable SBOM, verify command
-documentation matches executable scripts, and prove the packaged artifact
-launches without development URLs or privilege regressions.
+dependency versions and licenses, audit the complete development/build
+toolchain at the Dependency Review moderate threshold, generate a parseable
+SBOM, verify command documentation matches executable scripts, and prove the
+packaged artifact launches without development URLs or privilege regressions.
 
-The local gate is intentionally composed from narrow boundaries. Dependency,
-license and vulnerability normalization produces path-free JSON; CycloneDX
+The local gate is intentionally composed from narrow boundaries. Production
+dependency/license/vulnerability and complete-toolchain vulnerability
+normalization produce path-free JSON; CycloneDX
 generation requires exact component/license/dependency coverage; package
 hashing accepts only explicit repository-relative regular files. The finite
 orchestrator runs planning, dependency audit, SBOM, workflow verification,
@@ -82,9 +84,9 @@ privilege, and uploads only `artifacts/m0`.
 - `src/preload/api` exposes frozen validated methods only.
 - `src/domain/commands`, `src/shared/commands`, and `src/shared/i18n` own
   command behavior, metadata, and localized labels.
-- `scripts/audit` owns normalized production dependency evidence, CycloneDX,
-  artifact hashes and the finite M0 gate; it does not become a product runtime
-  dependency.
+- `scripts/audit` owns normalized production dependency evidence, complete
+  toolchain vulnerability evidence, CycloneDX, artifact hashes and the finite
+  M0 gate; it does not become a product runtime dependency.
 - `scripts/verify-workflows.mjs` owns the exact GitHub automation allowlist,
   action pins, permissions, command parity and artifact-upload boundary.
 
@@ -131,6 +133,15 @@ install script is allowed. A frozen install must report no automatically
 pending builds before packaging work may proceed. Any `electron-builder`
 upgrade, or any future decision to support Squirrel, requires a new dependency
 and install-script review before changing this override.
+
+Windows packaging sets `build.electronDist` to `node_modules/electron/dist`.
+The frozen install and explicit Electron runtime verification must first
+materialize the complete directory for exact `electron@43.1.1`; electron-builder
+then consumes those checksum-verified local bytes instead of opening a second
+download path for the same runtime. The packaging contract test fails closed if
+the directory, `electron.exe`, `resources/`, or version file is missing or does
+not match the declared Electron version. Disabling upstream checksum validation
+is not an accepted fallback.
 
 The original Lattice SVG, deterministic PNG, and ICO live under
 `build/brand/`. `scripts/assets/build-lattice-icon.mjs --check` regenerates the
