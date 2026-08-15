@@ -1,87 +1,100 @@
-# Windows pnpm EPERM recovery design
+# Remove the unused Squirrel peer design
 
 ## Context
 
-The required Windows quality workflow runs the M0 bootstrap verifier in clean
-project copies. On GitHub-hosted Windows runners, pnpm 11.12.0 can fail while
-importing a package from the offline store with `ERR_PNPM_EPERM`: Windows
-temporarily denies pnpm's rename from its generated package temporary directory
-to the final package directory. The failure remains after serializing the
-integration suite and moving temporary copies to the runner's canonical short
-temporary directory, so neither concurrent test execution nor path length is
-the remaining cause.
+M0 requires a frozen, offline-capable Windows bootstrap in a path containing
+Chinese characters and spaces. GitHub-hosted Windows runners consistently fail
+while pnpm imports `electron-winstaller@5.4.0`: Windows denies pnpm's temporary
+directory rename with `ERR_PNPM_EPERM`.
 
-The verifier must tolerate this one transient operating-system condition
-without hiding dependency, lockfile, network, timeout, or persistent filesystem
-failures.
+A bounded cleanup and one-retry implementation was tested locally and in the
+required GitHub `quality` job. The second install hit the same package lock, so
+the failure is not safely addressed as a single transient event. Path analysis
+also excludes the classic 260-character limit: the failing package directory is
+158 characters and its deepest projected child is 207 characters.
 
-## Scope
+The dependency exists because pnpm automatically satisfies
+`app-builder-lib@26.15.3`'s `electron-builder-squirrel-windows` peer. Lattice M0
+uses only Windows x64 `dir` and NSIS packaging. It does not use Squirrel, so the
+peer and its `electron-winstaller` dependency provide no accepted capability.
 
-Change only the M0 bootstrap test helper and its focused tests. Keep the pnpm
-version, frozen-lockfile policy, offline store, project-copy isolation, build
-hash checks, ignored-build checks, workflow commands, and integration-suite
-serialization unchanged.
+## Goal
 
-## Recovery policy
+Preserve the pinned `electron-builder@26.15.3` NSIS/dir capability while
+removing the unused Squirrel dependency edge from the resolved and installed
+graph. The bootstrap must then remain strict: any install failure is terminal,
+with no retry or timeout expansion.
 
-The install boundary recognizes a retryable failure only when all of these
-conditions hold:
+## Dependency policy
 
-- the command did not time out;
-- pnpm output identifies `ERR_PNPM_EPERM` and `importPackage`;
-- the operating-system diagnostic is `EPERM: operation not permitted, rename`;
-- the rename source is pnpm's generated package temporary directory and the
-  destination is its corresponding final package directory.
+Add one version-scoped root override to `pnpm-workspace.yaml`:
 
-On the first matching failure, the verifier removes only the copied project's
-`node_modules` tree with the existing bounded cleanup helper, waits for a short
-fixed interval, and invokes the same pinned pnpm install command once more.
-The retry uses the same project root, frozen lockfile, store directory, and
-offline flag.
+```yaml
+overrides:
+  'app-builder-lib@26.15.3>electron-builder-squirrel-windows': '-'
+```
 
-There are exactly two install attempts. A second matching failure is reported
-through the existing install-stage error path. A timeout or any non-matching
-failure is reported immediately without cleanup-and-retry. Failure to clean the
-partial dependency tree also stops immediately.
+pnpm 11 applies root overrides to peer dependencies and supports `-` as an
+explicit dependency-edge removal. The parent and version are fixed so an
+electron-builder upgrade cannot silently inherit the exception.
 
-## Interfaces and data flow
+Remove `allowBuilds.electron-winstaller: false` because the package no longer
+belongs in the dependency graph. Keep `allowBuilds.esbuild: true` unchanged.
+Do not disable `autoInstallPeers` globally; unrelated peer resolution must keep
+its current behavior.
 
-`verifyBootstrap` remains the public entry point. Its injected command runner
-and removal function continue to provide deterministic test boundaries. A
-small injected wait function is added so unit tests can prove the delay request
-without sleeping.
+Regenerate `pnpm-lock.yaml` with pinned pnpm 11.12.0. The resulting graph must
+not contain package or snapshot entries for `electron-winstaller@5.4.0` or
+`electron-builder-squirrel-windows@26.15.3`. The version-scoped override remains
+recorded as lockfile policy metadata.
 
-The flow is:
+## Bootstrap behavior
 
-1. Copy and validate the isolated project.
-2. Run the pinned pnpm install command.
-3. If and only if the first result matches the retryable signature, remove the
-   copied `node_modules`, request the fixed delay, and rerun that same command.
-4. Apply the existing success assertion to the terminal result.
-5. Continue ignored-build and two-build hash verification unchanged.
-6. Preserve the existing final cleanup and aggregate-error behavior.
+Restore `verifyBootstrap` to a single pnpm install attempt. Remove the injected
+wait boundary, EPERM classifier, partial `node_modules` cleanup, and retry tests.
+The existing install-stage error test continues to prove that every install
+failure stops the bootstrap and retains its exit code.
 
-## Verification design
+The ignored-build parser remains fail-closed and keeps support for pnpm's
+explicit-denial section, but the live project output must be:
 
-Focused unit coverage proves:
+```text
+Automatically ignored builds during installation:
+  None
+```
 
-- one exact transient import-package rename failure is cleaned up, delayed,
-  retried once, and can complete successfully;
-- an unrelated `EPERM` failure is not retried;
-- a command timeout is not retried;
-- two matching transient failures stop after the second attempt;
-- retry cleanup failure prevents the second install;
-- install arguments are identical across attempts and remain frozen/offline.
+## Verification
 
-Existing bootstrap unit and integration cases must remain green. Final
-acceptance requires formatting, lint, strict type checking, unit tests,
-integration tests, build, the planning verifier, and the GitHub `quality` check.
+Add focused configuration tests which prove:
+
+- the exact version-scoped override exists;
+- global `autoInstallPeers: false` is absent;
+- only `esbuild: true` remains under `allowBuilds`;
+- the lockfile has no Squirrel or electron-winstaller package/snapshot entry;
+- the pinned electron-builder version remains declared.
+
+Then regenerate dependencies and require:
+
+- frozen offline install succeeds;
+- `pnpm peers check` reports no issues;
+- `pnpm ignored-builds` reports automatic `None` with no explicit denial;
+- focused unit coverage passes;
+- the isolated Chinese-and-space bootstrap passes;
+- `node scripts/verify-planning-docs.mjs` and `pnpm check` pass;
+- the GitHub required `quality` job succeeds.
+
+## Documentation
+
+Update the technology ledger and M0 detailed design to record the exact removed
+peer edge, its version scope, the retained NSIS/dir capability, the removal of
+the unused install-script exposure, and the required upgrade review. Update the
+M0 test report only with commands and results that were actually observed.
 
 ## Non-goals
 
-- Retrying arbitrary pnpm failures.
-- Increasing command or workflow timeouts.
-- Changing dependency versions, package import strategy, antivirus settings,
-  or GitHub runner security configuration.
-- Creating an unbounded loop or converting a persistent install failure into a
-  passing result.
+- Retrying or ignoring arbitrary pnpm failures.
+- Disabling peer auto-installation across the project.
+- Adding Squirrel packaging support.
+- Changing pnpm, Electron, electron-builder, runner security, antivirus, or
+  workflow timeout settings.
+- Replacing electron-builder or weakening the Chinese-and-space path contract.
