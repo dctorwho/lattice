@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { join } from 'node:path'
+import { join, win32 } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 import { assertPackageManager, assertSingleLockfile, hashArtifacts } from './artifacts'
 import { pnpmCommand, runCommand, type CommandResult } from './command'
@@ -15,6 +15,7 @@ export interface BootstrapOptions {
   readonly relativePaths?: readonly string[]
   readonly run?: typeof runCommand
   readonly remove?: typeof removeWithRetry
+  readonly wait?: (milliseconds: number) => Promise<void>
 }
 
 export interface BootstrapEvidence {
@@ -25,6 +26,7 @@ export interface BootstrapEvidence {
 }
 
 const commandTimeoutMs = 90_000
+const installRetryDelayMs = 500
 const ignoredBuildsHeading = 'Automatically ignored builds during installation:'
 const explicitlyIgnoredBuildsHeading = 'Explicitly ignored package builds (via allowBuilds):'
 const packageNamePattern = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/
@@ -53,6 +55,44 @@ function failureDetail(error: unknown): string {
 
 function cleanupError(error: unknown): Error {
   return new Error(`Bootstrap cleanup failed: ${failureDetail(error)}`, { cause: error })
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolveDelay) => {
+    setTimeout(resolveDelay, milliseconds)
+  })
+}
+
+function normalizeWindowsPath(value: string): string {
+  return win32.normalize(value).toLowerCase()
+}
+
+function isRetryableImportRenameFailure(result: CommandResult): boolean {
+  if (result.timedOut) {
+    return false
+  }
+
+  const detail = `${result.stderr}\n${result.stdout}`
+  const imported = detail.match(/\[ERR_PNPM_EPERM\]\s+\[importPackage ([^\]\r\n]+)\]/)
+  const renamed = detail.match(
+    /EPERM: operation not permitted, rename '([^'\r\n]+)_tmp_\d+(?:_\d+)?' -> '([^'\r\n]+)'/
+  )
+  const importedPath = imported?.[1]
+  const temporaryBasePath = renamed?.[1]
+  const destinationPath = renamed?.[2]
+  if (
+    importedPath === undefined ||
+    temporaryBasePath === undefined ||
+    destinationPath === undefined
+  ) {
+    return false
+  }
+
+  const normalizedImportedPath = normalizeWindowsPath(importedPath)
+  return (
+    normalizedImportedPath === normalizeWindowsPath(temporaryBasePath) &&
+    normalizedImportedPath === normalizeWindowsPath(destinationPath)
+  )
 }
 
 function failureError(error: unknown): Error {
@@ -102,17 +142,25 @@ function parseIgnoredBuilds(output: string): readonly string[] {
   return automaticBuilds[0] === 'None' ? [] : automaticBuilds
 }
 
+async function runPnpmOnce(
+  run: typeof runCommand,
+  cwd: string,
+  args: readonly string[]
+): Promise<CommandResult> {
+  const invocation = pnpmCommand(args)
+  return run(invocation.command, invocation.args, {
+    cwd,
+    timeoutMs: commandTimeoutMs
+  })
+}
+
 async function runPnpm(
   run: typeof runCommand,
   cwd: string,
   args: readonly string[],
   stage: string
 ): Promise<CommandResult> {
-  const invocation = pnpmCommand(args)
-  const result = await run(invocation.command, invocation.args, {
-    cwd,
-    timeoutMs: commandTimeoutMs
-  })
+  const result = await runPnpmOnce(run, cwd, args)
   assertCommandSucceeded(stage, result)
   return result
 }
@@ -121,6 +169,7 @@ export async function verifyBootstrap(options: BootstrapOptions): Promise<Bootst
   const projectRoot = join(options.tempParent, `Lattice 质量门禁 ${randomUUID()}`)
   const run = options.run ?? runCommand
   const remove = options.remove ?? removeWithRetry
+  const wait = options.wait ?? delay
   let primaryFailure: unknown
   let cleanupFailure: unknown
   let evidence: BootstrapEvidence | undefined
@@ -138,7 +187,13 @@ export async function verifyBootstrap(options: BootstrapOptions): Promise<Bootst
       options.storeDirectory,
       ...(options.mode === 'offline' ? ['--offline'] : [])
     ]
-    await runPnpm(run, projectRoot, installArguments, 'pnpm install')
+    let installResult = await runPnpmOnce(run, projectRoot, installArguments)
+    if (isRetryableImportRenameFailure(installResult)) {
+      await remove(join(projectRoot, 'node_modules'))
+      await wait(installRetryDelayMs)
+      installResult = await runPnpmOnce(run, projectRoot, installArguments)
+    }
+    assertCommandSucceeded('pnpm install', installResult)
 
     const ignoredBuilds = await runPnpm(run, projectRoot, ['ignored-builds'], 'pnpm ignored-builds')
     const pendingBuilds = parseIgnoredBuilds(ignoredBuilds.stdout)
