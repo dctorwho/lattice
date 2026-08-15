@@ -10,6 +10,8 @@ const setupNodeSha = '820762786026740c76f36085b0efc47a31fe5020'
 const uploadArtifactSha = '043fb46d1a93c77aae656e7c1c64a875d1fc6a0a'
 const codeqlSha = 'f205ea1c3313d32999d8d6a48b4f6530d4437b38'
 const dependencyReviewSha = 'a1d282b36b6f3519aa1f3fc636f609c47dddb294'
+const dependencyReviewLicenses =
+  'MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, BlueOak-1.0.0, Python-2.0, WTFPL'
 
 const temporaryRoots: string[] = []
 
@@ -103,7 +105,7 @@ jobs:
       - uses: actions/dependency-review-action@${dependencyReviewSha}
         with:
           fail-on-severity: moderate
-          allow-licenses: MIT
+          allow-licenses: ${dependencyReviewLicenses}
 `
   }
 }
@@ -211,6 +213,47 @@ describe('TC-M0-007 workflow policy', () => {
       mutate(files: Record<string, string>) {
         files['quality.yml'] =
           files['quality.yml']?.replace('pnpm check', 'while ($true) { pnpm check }') ?? ''
+      }
+    },
+    {
+      name: 'missing reviewed permissive license',
+      code: 'M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID',
+      mutate(files: Record<string, string>) {
+        files['dependency-review.yml'] =
+          files['dependency-review.yml']?.replace(', WTFPL', '') ?? ''
+      }
+    },
+    {
+      name: 'unreviewed dependency license',
+      code: 'M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID',
+      mutate(files: Record<string, string>) {
+        files['dependency-review.yml'] =
+          files['dependency-review.yml']?.replace(
+            dependencyReviewLicenses,
+            `${dependencyReviewLicenses}, GPL-3.0-only`
+          ) ?? ''
+      }
+    },
+    {
+      name: 'dependency-level license bypass',
+      code: 'M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID',
+      mutate(files: Record<string, string>) {
+        files['dependency-review.yml'] =
+          files['dependency-review.yml']?.replace(
+            `          allow-licenses: ${dependencyReviewLicenses}`,
+            `          allow-licenses: ${dependencyReviewLicenses}\n          allow-dependencies-licenses: pkg:npm/truncate-utf8-bytes@1.0.2`
+          ) ?? ''
+      }
+    },
+    {
+      name: 'warn-only dependency review',
+      code: 'M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID',
+      mutate(files: Record<string, string>) {
+        files['dependency-review.yml'] =
+          files['dependency-review.yml']?.replace(
+            '          fail-on-severity: moderate',
+            '          fail-on-severity: moderate\n          warn-only: true'
+          ) ?? ''
       }
     }
   ])('rejects $name', async (fixture) => {

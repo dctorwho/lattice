@@ -61,6 +61,11 @@ dependency versions and licenses, audit the complete development/build
 toolchain at the Dependency Review moderate threshold, generate a parseable
 SBOM, verify command documentation matches executable scripts, and prove the
 packaged artifact launches without development URLs or privilege regressions.
+The production dependency graph remains MIT-only. Dependency Review evaluates
+the broader development/build graph against the exact reviewed permissive set
+MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD, BlueOak-1.0.0,
+Python-2.0, and WTFPL; unknown or unlisted licenses remain blocking and no
+dependency-level bypass is permitted.
 
 The local gate is intentionally composed from narrow boundaries. Production
 dependency/license/vulnerability and complete-toolchain vulnerability

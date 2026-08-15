@@ -85,6 +85,8 @@
 
 Windows 打包把 `build.electronDist` 固定为 `node_modules/electron/dist`：冻结安装后的显式 Electron 运行时验证必须先物化与直接依赖 `electron@43.1.1` 一致的完整目录，electron-builder 随后复用这一已由 Electron 包校验的本地运行时，不再为同一版本启动第二条下载链。目录、`electron.exe`、`resources/` 或版本文件缺失/不一致时，打包配置测试与打包命令必须失败；不得用跳过校验的下载参数替代这条边界。
 
+Dependency Review 对新增依赖继续阻断 moderate 及以上漏洞，并只允许台账已审阅的宽松 SPDX 集合：MIT、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、Python-2.0 与 WTFPL。该集合覆盖当前 Electron/electron-builder/Vite 工具链的真实传递许可证，但不会放行未知许可证、未列出的 copyleft 许可证或任何漏洞；禁止用 `warn-only` 或按依赖整体绕过替代许可证评审。生产运行图仍执行单独的 MIT-only 许可证门禁。
+
 ### M0 GitHub Action 准入台账
 
 GitHub Action 不是 npm 生产依赖，但它们会在受信 CI 中执行，因此按供应链代码处理。2026-08-15 通过各官方 GitHub 仓库的 tag/ref 与 license API 核对以下版本；工作流只使用 40 位提交 SHA，版本号仅作审计注释。升级必须重新核对标签解引用后的提交、许可证、权限和行为。

@@ -182,5 +182,6 @@
 - `run-m0-audit.mjs` 只启动六个固定 Node 脚本；每步有限时、有限输出，子进程失败或超时立即阻断，不执行任意 shell 字符串或重试循环。
 - Windows 打包只从 `node_modules/electron/dist` 读取冻结依赖安装后已校验、版本一致的 Electron 运行时。打包配置测试验证目录、可执行文件、资源目录和版本文件；electron-builder 不为同一 Electron 版本建立第二条网络下载链，也不允许通过关闭校验来规避网络故障。
 - `.github/workflows/` 只允许 `quality.yml`、`codeql.yml` 和 `dependency-review.yml`。`verify-workflows.mjs` 要求所有 Action 使用审阅过的 40 位 SHA，拒绝 `pull_request_target`、过宽权限、无界循环、命令漂移和越界 artifact 路径。
+- Dependency Review 的许可证策略不是“全部依赖必须为 MIT”：生产运行图由本地审计维持 MIT-only；PR 的完整开发/构建工具链只允许已审阅的 MIT、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、Python-2.0 与 WTFPL 精确集合。缺少集合成员、加入未审阅许可证、启用按依赖绕过或降低 moderate 漏洞阈值都必须失败。
 - `quality` 默认只有 `contents: read`；CodeQL 额外只有 `packages: read` 与 `security-events: write`；Dependency Review 额外只有 `pull-requests: read`。证据上传仅允许忽略目录 `artifacts/m0/`，保留 14 天。
 - M0 的 NSIS 和 unpacked 制品未签名、无发布和自动更新权限。自动化验证真实 packaged renderer 的 file URL、关闭 DevTools、冻结 preload 表面与 Node/Electron 不可得；普通用户安装和未签名提示必须由 MAN-M0-001 人工确认。

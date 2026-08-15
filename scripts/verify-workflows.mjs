@@ -3,6 +3,17 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const expectedWorkflowFiles = ['codeql.yml', 'dependency-review.yml', 'quality.yml']
+const expectedDependencyReviewLicenses = new Set([
+  '0BSD',
+  'Apache-2.0',
+  'BlueOak-1.0.0',
+  'BSD-2-Clause',
+  'BSD-3-Clause',
+  'ISC',
+  'MIT',
+  'Python-2.0',
+  'WTFPL'
+])
 const allowedActions = new Map([
   ['actions/checkout', '3d3c42e5aac5ba805825da76410c181273ba90b1'],
   ['actions/setup-node', '820762786026740c76f36085b0efc47a31fe5020'],
@@ -184,7 +195,21 @@ function assertDependencyReviewContract(source) {
   if (!/^\s+fail-on-severity:\s+moderate\s*$/m.test(source)) {
     fail('M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID')
   }
-  if (!/^\s+allow-licenses:\s+MIT\s*$/m.test(source)) {
+  if (/^\s+(?:allow-dependencies-licenses|warn-only):/m.test(source)) {
+    fail('M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID')
+  }
+  const licenseLines = [...source.matchAll(/^\s+allow-licenses:\s+(.+)\s*$/gm)]
+  const licenseSource = licenseLines[0]?.[1]
+  if (licenseLines.length !== 1 || licenseSource === undefined) {
+    fail('M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID')
+  }
+  const licenses = licenseSource.split(',').map((license) => license.trim())
+  if (
+    licenses.some((license) => license.length === 0) ||
+    new Set(licenses).size !== licenses.length ||
+    licenses.length !== expectedDependencyReviewLicenses.size ||
+    licenses.some((license) => !expectedDependencyReviewLicenses.has(license))
+  ) {
     fail('M0_WORKFLOW_DEPENDENCY_REVIEW_POLICY_INVALID')
   }
 }
