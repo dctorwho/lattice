@@ -35,6 +35,27 @@ describe('M0-T02 focused-test configuration', () => {
     expect(qualityContracts).toMatch(/const commandTimeoutMs = 180_000/)
   })
 
+  it('removes only the unused pinned Squirrel peer from the packaging graph', async () => {
+    const [workspace, lockfile, manifestText] = await Promise.all([
+      readFile(join(process.cwd(), 'pnpm-workspace.yaml'), 'utf8'),
+      readFile(join(process.cwd(), 'pnpm-lock.yaml'), 'utf8'),
+      readFile(join(process.cwd(), 'package.json'), 'utf8')
+    ])
+    const manifest: unknown = JSON.parse(manifestText)
+
+    expect(workspace).toMatch(
+      /overrides:\s*\n\s*['"]app-builder-lib@26\.15\.3>electron-builder-squirrel-windows['"]:\s*['"]-['"]/
+    )
+    expect(workspace).not.toMatch(/^autoInstallPeers:/m)
+    expect(workspace).toMatch(/allowBuilds:\s*\n\s*esbuild:\s*true/)
+    expect(workspace).not.toContain('electron-winstaller')
+    expect(lockfile).not.toMatch(/^\s{2}electron-winstaller@5\.4\.0:/m)
+    expect(lockfile).not.toMatch(
+      /^\s{2}electron-builder-squirrel-windows@26\.15\.3(?:\([^\n]+\))?:/m
+    )
+    expect(manifest).toMatchObject({ devDependencies: { 'electron-builder': '26.15.3' } })
+  })
+
   it.each([
     'vitest.config.ts',
     'vitest.integration.config.ts',

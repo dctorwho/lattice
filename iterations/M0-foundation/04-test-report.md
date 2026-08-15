@@ -87,7 +87,7 @@ M0 exit run.
 | Command                                                                                                     | Exit code | Recorded result                                                                                                                                                                                   |
 | ----------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm.cmd install --frozen-lockfile`                                                                        | `0`       | pnpm `11.12.0`; `251` packages reused, `0` downloaded; the frozen graph contains exact `electron-builder@26.15.3`.                                                                                |
-| `pnpm.cmd ignored-builds`                                                                                   | `0`       | Automatically ignored builds: `None`. The explicit `allowBuilds` denial contains `electron-winstaller`; Squirrel packaging is not used.                                                           |
+| `pnpm.cmd ignored-builds`                                                                                   | `0`       | Historical result: automatically ignored builds were `None`; the then-current explicit denial of `electron-winstaller` has since been superseded by the dependency-edge removal recorded below.   |
 | `node scripts/assets/build-lattice-icon.mjs --check`                                                        | `0`       | PNG SHA-256 `4317ae0aecca27dddd570e511b073bc8b6963e46a49fe025d2c4c98775036014`; ICO SHA-256 `06e6f68ec6f11a92e6df43e35c83f72abe1f6eeff6fa378328fc17a3ff36896c`, matching `build/brand/README.md`. |
 | `pnpm.cmd test -- tests/unit/helpers/bootstrap-project.spec.ts tests/unit/planning/iteration-model.spec.ts` | `0`       | pnpm-managed unit run passed `26` files and `400` tests, including the strict ignored-build parser and iteration model.                                                                           |
 | `pnpm.cmd test:integration`                                                                                 | `0`       | Standalone integration run passed `2` files and `18` tests.                                                                                                                                       |
@@ -120,6 +120,28 @@ implementation:
 | Externalized Zod prevented the sandboxed preload from exposing the approved API.                                                                  | The shared IPC contract was unavailable at runtime.                                            | Preload bundling now inlines only Zod; real-Electron tests verify the exact frozen API and continued privilege denial.                                                   | Shared-contract security and E2E evidence.                                                                  | Resolved in the main baseline.                       |
 | Some malformed `pnpm ignored-builds` output could be interpreted too permissively.                                                                | Dependency-build admission could fail open on an unknown or malformed output suffix.           | Integrated commit `644ad699384cfe608a84132b44ebbb43af950817` validates the complete automatic section and optional exact explicit section, with fail-closed regressions. | Focused parser tests, integration tests and the full quality gate passed in the normal Windows environment. | Resolved and integrated.                             |
 | Sandboxed child-process cleanup reported `taskkill exited with 1` during the preserved-work check.                                                | The sandbox produced an environment-specific false failure in unrelated timeout cleanup tests. | The same finite checks were run once in the normal Windows process environment without weakening cleanup assertions.                                                     | Focused, integration and full quality gates exited `0`; `git diff --check` was clean.                       | Environment issue resolved for the preserved commit. |
+
+## Unused Squirrel peer correction (2026-08-15)
+
+GitHub quality run
+[`31871899038`](https://github.com/dctorwho/lattice/actions/runs/31871899038)
+showed that retrying the same pnpm import operation did not resolve the
+Windows `EPERM` failure: the second bounded attempt failed on the same
+`electron-winstaller` rename. That retry is excluded from acceptance evidence
+and has been removed.
+
+The replacement policy removes only the unused
+`app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` peer edge. A
+fresh offline resolution installed `489` packages with pnpm `11.12.0`, did not
+install either Squirrel package, and `pnpm peers check` reported no peer issues.
+The focused configuration and bootstrap-helper regression run passed `25/25`
+tests. The isolated offline bootstrap passed `1/1`, including a frozen install
+in a Chinese-and-space path, no automatically ignored build, and two identical
+production builds. A subsequent `pnpm.cmd check` passed formatting, lint,
+strict type checking, `423/423` unit tests, `18/18` integration tests and the
+production build. These are correction-development results, not M0 exit
+evidence; the GitHub CI gate and remaining M0 exit work listed below still
+govern acceptance.
 
 ## Blockers
 

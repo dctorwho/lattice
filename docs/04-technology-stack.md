@@ -79,7 +79,7 @@
 
 2026-08-02 在安装前审查 `electron-builder@26.15.3`：直接包的 npm 元数据为 MIT，定位为仅构建期的 Windows x64 `dir`/`nsis` 打包器，不进入 renderer 或运行时生产依赖。审查来源为 [npm 精确版本元数据](https://registry.npmjs.org/electron-builder/26.15.3) 与 [上游仓库](https://github.com/electron-userland/electron-builder)。直接包 manifest 不声明安装脚本；其传递依赖和打包阶段可能下载或调用平台辅助工具，故不得声称其安装或下载行为不存在，必须在冻结安装后记录 `pnpm ignored-builds` 输出并在后续打包审计来源、缓存和哈希。替代方案 Electron Forge 或手工 NSIS 会增加迁移或维护成本，故不采用；影响限于开发/打包期，供应链与磁盘体积影响为高。
 
-冻结安装实际解析出 `electron-builder -> app-builder-lib -> electron-builder-squirrel-windows -> electron-winstaller@5.4.0`。后者的 MIT manifest 在安装时执行 `node ./script/select-7z-arch.js`；Lattice 只锁定 Windows x64 `dir` 与 NSIS，不使用 Squirrel，因此该脚本没有业务必要。`pnpm-workspace.yaml` 明确设定 `allowBuilds.electron-winstaller: false`（保留既有 `esbuild: true`），以最小权限拒绝该脚本；这不影响 NSIS 打包。`pnpm ignored-builds` 的初始待决输出与拒绝决定须保留在 M0 测试报告中，且不得在本迭代放行其他新增脚本。
+`app-builder-lib@26.15.3` 上游声明了可选的 `electron-builder-squirrel-windows` peer，但 Lattice 只锁定 Windows x64 `dir` 与 NSIS，不使用 Squirrel。根级 `pnpm-workspace.yaml` 因此使用精确版本和精确父包作用域的 override，仅删除 `app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` 这一条未使用的依赖边；`electron-builder-squirrel-windows` 与 `electron-winstaller` 不再进入实际解析和安装图，其他 peer 仍按 pnpm 默认规则处理。安装脚本准入只保留既有 `esbuild: true`，不得为已移除的包增加许可。升级 `electron-builder` 时必须重新审阅该 override；若未来采用 Squirrel，须另行完成需求、依赖、脚本和打包安全评审。
 
 ## 4. 测试和质量
 

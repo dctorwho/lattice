@@ -2,5 +2,7 @@ packages:
   - '.'
 
 allowBuilds:
-  electron-winstaller: false
   esbuild: true
+
+overrides:
+  'app-builder-lib@26.15.3>electron-builder-squirrel-windows': '-'

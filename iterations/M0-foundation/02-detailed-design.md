@@ -104,12 +104,18 @@ native export behavior.
 The retained M0 foundation work admits `electron-builder@26.15.3` as an exact
 development dependency for Windows x64 `dir` and NSIS packaging. Its purpose,
 license, native-tool and install-script exposure, alternatives, and package
-impact are recorded in the technology-stack ledger. The lockfile includes the
-transitive Squirrel toolchain, but M0 does not use Squirrel;
-`pnpm-workspace.yaml` therefore keeps `electron-winstaller` explicitly denied
-while allowing only the previously reviewed `esbuild` install script. A
-frozen install must report no automatically pending builds before packaging
-work may proceed.
+impact are recorded in the technology-stack ledger. M0 does not use Squirrel,
+so the root `pnpm-workspace.yaml` applies an exact, version-scoped override that
+removes only the unused
+`app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` peer edge. The
+resolved package graph therefore contains neither the Squirrel packager nor
+`electron-winstaller`, and the lockfile contains no package or snapshot record
+for either one, while pnpm's normal peer handling remains unchanged for every
+other dependency. Only the previously reviewed `esbuild`
+install script is allowed. A frozen install must report no automatically
+pending builds before packaging work may proceed. Any `electron-builder`
+upgrade, or any future decision to support Squirrel, requires a new dependency
+and install-script review before changing this override.
 
 The original Lattice SVG, deterministic PNG, and ICO live under
 `build/brand/`. `scripts/assets/build-lattice-icon.mjs --check` regenerates the
