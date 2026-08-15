@@ -284,13 +284,22 @@ const makeIterationOnlyFixture = (
     throw new Error('fixture state must be an object')
   const iterations: unknown = Reflect.get(state, 'iterations')
   if (!Array.isArray(iterations)) throw new Error('fixture state must contain iterations')
+  Reflect.set(state, 'current_iteration', 'M0')
+  for (const iteration of iterations) {
+    if (iteration === null || typeof iteration !== 'object') {
+      throw new Error('fixture iteration must be an object')
+    }
+    const iterationId: unknown = Reflect.get(iteration, 'id')
+    Reflect.set(iteration, 'status', iterationId === 'M0' ? m0Status : 'blocked')
+    Reflect.set(iteration, 'evidence', [])
+  }
   const m0: unknown = iterations.find(
     (iteration) =>
       iteration !== null && typeof iteration === 'object' && Reflect.get(iteration, 'id') === 'M0'
   )
   if (m0 === null || typeof m0 !== 'object') throw new Error('fixture state must contain M0')
-  Reflect.set(m0, 'status', m0Status)
   writeFixture(root, 'iterations/state.json', `${JSON.stringify(state, null, 2)}\n`)
+  rmSync(join(root, 'iterations', 'M0-foundation', '05-exit-report.md'), { force: true })
   const executableIterations = new Set(
     iterations
       .filter(

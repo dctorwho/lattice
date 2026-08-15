@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
   "product_baseline": "Typora 1.13.8 documented feature compatibility",
-  "current_iteration": "M0",
+  "current_iteration": "M1",
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "iterations": [
     {
       "id": "M0",
-      "status": "awaiting_manual",
+      "status": "passed",
       "depends_on": [],
       "manual_gate": true,
       "entry": {
@@ -30,12 +30,18 @@
           "summary": "GitHub Quality, CodeQL, Dependency Review, and the active main ruleset were verified without bypass.",
           "path": "iterations/M0-foundation/04-test-report.md",
           "recorded_at": "2026-08-15T14:05:09Z"
+        },
+        {
+          "kind": "manual",
+          "summary": "The user reported no observed issue and accepted M0 after all designed iteration test cases passed.",
+          "path": "iterations/M0-foundation/04-test-report.md",
+          "recorded_at": "2026-08-15T14:56:32Z"
         }
       ]
     },
     {
       "id": "M1",
-      "status": "blocked",
+      "status": "ready",
       "depends_on": ["M0"],
       "manual_gate": true,
       "entry": {
