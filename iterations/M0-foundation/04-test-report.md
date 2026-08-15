@@ -3,7 +3,7 @@
 ## Iteration context
 
 - Iteration: `M0`
-- Current status: `in_progress`
+- Current status: `awaiting_manual`
 - State authority: [`iterations/state.json`](../state.json)
 - Test contract: [`03-test-cases.md`](03-test-cases.md)
 - Manual gate: required
@@ -15,9 +15,10 @@ task-model archive.
 
 ## Report status
 
-This is the controlled working test report for M0. It consolidates evidence
-that existed before the iteration-governance migration and will be extended as
-the remaining M0 gates run. It is not an iteration-completion record.
+This is the controlled working test report for M0. It consolidates historical
+evidence and the final automated-gate evidence recorded on 2026-08-15. Every
+declared automated case has passed; the report is not an iteration-completion
+record because MAN-M0-001 is still pending.
 
 ## Scope
 
@@ -28,9 +29,8 @@ dependency admission, deterministic branding assets, fail-closed ignored-build
 parser, production dependency/license/vulnerability audit, CycloneDX SBOM,
 Windows packaging, packaged-artifact launch and the local TC-M0-007 gate.
 
-The remaining scope is clean-checkout GitHub execution of the new quality,
-CodeQL and Dependency Review workflows, proof that the main ruleset blocks
-failed checks and permits the repaired candidate, and the M0 manual review.
+The remaining scope is the M0 manual review by the user or another designated
+Windows 11 ordinary-user evaluator.
 
 ## Baseline and environment
 
@@ -52,6 +52,14 @@ failed checks and permits the repaired candidate, and the M0 manual review.
   `95c975f`.
 - Finite TC-M0-007 gate and SHA-pinned GitHub automation implementation:
   `e6433a9`.
+- Toolchain-vulnerability and offline Electron-distribution packaging fix:
+  local commit `a1d60b7`, published as
+  `f42559688f4d90d1dea9bb1da2ff939da7387cd0`.
+- Reviewed toolchain-license admission fix: local commit `0661f87`, published
+  as `ccd06f0d604429e1ebfc70fad211967bb0cd8830`.
+- Exact external-URL boundary regression: local commit `7d429c0`, published as
+  final automated candidate
+  `3c4ae5d7f268165409570da5dc5d603e4149fda0`.
 - Legacy task-state and task-documentation commits `9a286ad` and `c50a8e0`
   were intentionally excluded from integration.
 
@@ -153,116 +161,137 @@ govern acceptance.
 ## Current local exit evidence (2026-08-15)
 
 The following commands ran from the active Windows worktree after the audit,
-packaging and workflow implementations were integrated. They prove the local
-candidate only; they do not substitute for clean-checkout GitHub execution or
-MAN-M0-001.
+packaging and workflow implementations were integrated. GitHub subsequently
+ran the same quality, Electron, package and audit gates from a clean checkout.
+Neither automated path substitutes for MAN-M0-001.
 
-| Command / boundary                                   | Exit code | Result                                                                                                                        |
-| ---------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Focused audit, package-config and TC-M0-007 suites   | `0`       | Audit/package unit regressions passed; TC-M0-007 passed `16/16`, including workflow mutations and real child timeout/failure. |
-| `pnpm.cmd check`                                     | `0`       | Format, lint, strict typecheck, `441/441` unit tests, `34/34` integration tests and production build passed.                  |
-| `pnpm.cmd test:e2e`                                  | `0`       | The pre-package configuration ran only app, command and navigation cases: `3/3` passed.                                       |
-| `pnpm.cmd test:security`                             | `0`       | Real Electron privilege-boundary cases passed `2/2`.                                                                          |
-| `pnpm.cmd test:performance`                          | `0`       | The currently applicable M0 performance harness passed `2/2`.                                                                 |
-| `pnpm.cmd test:bootstrap:cold`                       | `0`       | Network-enabled empty-store bootstrap in the controlled path passed `1/1`, including two builds.                              |
-| `pnpm.cmd package:win` then `pnpm.cmd test:packaged` | `0`       | x64 per-user NSIS and unpacked application were produced; the dedicated packaged case passed `1/1`.                           |
-| `pnpm.cmd verify:workflows`                          | `0`       | Exactly `3` workflows and `9` reviewed, SHA-pinned Action references passed policy verification.                              |
-| `pnpm.cmd audit:m0`                                  | `0`       | Planning, dependency audit, CycloneDX, workflows, brand assets and artifact hashes passed all `6` finite steps.               |
-| `node scripts/verify-planning-docs.mjs`              | `0`       | Verified `9` iterations, `86` automated cases, `13` manual cases, `83` requirements and `36` compatibility items.             |
+| Command / boundary                                   | Exit code | Result                                                                                                                                                                              |
+| ---------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focused audit, package-config and TC-M0-007 suites   | `0`       | Audit regressions passed; package configuration passed `3/3`; TC-M0-007 passed `20/20`, including workflow mutations, exact license-set enforcement and real child timeout/failure. |
+| External-URL policy focused suite and mutation probe | `0`       | The suite passed `25/25`; changing the 2,081-unit boundary from `>` to `>=` made exactly the new boundary case fail, then the restored implementation passed.                       |
+| `pnpm.cmd check`                                     | `0`       | Format, lint, strict typecheck, `445/445` unit tests, `38/38` integration tests and production build passed.                                                                        |
+| `pnpm.cmd test:e2e`                                  | `0`       | The pre-package configuration ran only app, command and navigation cases: `3/3` passed.                                                                                             |
+| `pnpm.cmd test:security`                             | `0`       | Real Electron privilege-boundary cases passed `2/2`.                                                                                                                                |
+| `pnpm.cmd test:performance`                          | `0`       | The currently applicable M0 performance harness passed `2/2`.                                                                                                                       |
+| `pnpm.cmd test:bootstrap:cold`                       | `0`       | Network-enabled empty-store bootstrap in the controlled path passed `1/1`, including two builds.                                                                                    |
+| `pnpm.cmd package:win` then `pnpm.cmd test:packaged` | `0`       | x64 per-user NSIS and unpacked application were produced; the dedicated packaged case passed `1/1`.                                                                                 |
+| `pnpm.cmd verify:workflows`                          | `0`       | Exactly `3` workflows and `9` reviewed, SHA-pinned Action references passed policy verification.                                                                                    |
+| `pnpm.cmd audit:m0`                                  | `0`       | Planning, dependency audit, CycloneDX, workflows, brand assets and artifact hashes passed all `6` finite steps.                                                                     |
+| `node scripts/verify-planning-docs.mjs`              | `0`       | Verified `9` iterations, `86` automated cases, `13` manual cases, `83` requirements and `36` compatibility items.                                                                   |
 
-The ignored `artifacts/m0/` evidence set contains six JSON files:
-`dependency-inventory.json`, `licenses.json`, `audit.json`, `sbom.cdx.json`,
-`artifact-hashes.json` and `m0-gate.json`. The production graph contains four
-components (`react`, `react-dom`, `scheduler`, `zod`), all four have MIT license
-coverage, high and critical vulnerability counts are zero, and the CycloneDX
-document uses spec version 1.6 with exact component/dependency coverage.
+The ignored `artifacts/m0/` evidence set contains seven JSON files:
+`dependency-inventory.json`, `licenses.json`, `audit.json`,
+`toolchain-audit.json`, `sbom.cdx.json`, `artifact-hashes.json` and
+`m0-gate.json`. The production graph contains four components (`react`,
+`react-dom`, `scheduler`, `zod`), all four have MIT license coverage, production
+high and critical vulnerability counts are zero, and the complete toolchain
+has zero moderate, high or critical findings. The CycloneDX document uses spec
+version 1.6 with exact component/dependency coverage.
 
 The rebuilt local candidate hashes are:
 
 | Artifact                               | Bytes       | SHA-256                                                            |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------ |
-| `dist/Lattice-0.0.0-windows-x64.exe`   | `100631100` | `0b3bcbd7ecfc24f2c910fb492859d4f020a13e880f9053d94d5286244b3ed259` |
-| `dist/win-unpacked/Lattice.exe`        | `225485824` | `2a54f4fc95577167d3394c92a1ced4441785d74526576568266a95bfb7f73f7e` |
-| `dist/win-unpacked/resources/app.asar` | `12743113`  | `96052fa30fcadefea3e608b9e6f3322dbcde20a7264fa05e215dd08e9492f8c8` |
+| `dist/Lattice-0.0.0-windows-x64.exe`   | `100714244` | `e222476b899e54fc058f274555db2df48ed5188183c58e2d5ede5debb60efffd` |
+| `dist/win-unpacked/Lattice.exe`        | `225486336` | `bed2669c3cb88124818c4355c395864061da8692fa7ff8c44201161e41f733a9` |
+| `dist/win-unpacked/resources/app.asar` | `12743609`  | `d2a95adc68444b4184a2432d1b082a6516d46f2a8f0f2b15e876a69ec0efe86d` |
 | `build/brand/lattice-icon-256.png`     | `2754`      | `4317ae0aecca27dddd570e511b073bc8b6963e46a49fe025d2c4c98775036014` |
 | `build/brand/lattice.ico`              | `2776`      | `06e6f68ec6f11a92e6df43e35c83f72abe1f6eeff6fa378328fc17a3ff36896c` |
 
-The first package rebuild after adding complete application metadata was
-excluded because its Electron download connection timed out. One bounded
-retry of the unchanged command completed, emitted no missing-metadata warning,
-and produced the candidate above; no retry loop or acceptance relaxation was
-introduced.
+Two bounded package attempts that depended on electron-builder's redundant
+Electron download path were excluded after GitHub network timeouts. A TDD fix
+then bound electron-builder to the already installed exact
+`node_modules/electron/dist` runtime. One sandbox diagnostic subsequently
+failed because pnpm's SQLite store was not writable there; the same finite
+package command ran once in the normal Windows environment, used the custom
+unpacked Electron distribution without downloading Electron, and produced the
+candidate above. No retry loop or acceptance relaxation was introduced.
+
+## GitHub exact-candidate evidence (2026-08-15)
+
+The public PR head was
+`3c4ae5d7f268165409570da5dc5d603e4149fda0`. The local and remote Git trees
+were both `8b38bd10bf3ef74f08eb3beb801ac4c488d46db7` before these report-only state
+changes.
+
+| Gate                    | Result | Evidence                                                                                                                                                                                                                                                                                             |
+| ----------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Quality                 | passed | [Run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255): planning verification; `445/445` unit and `38/38` integration tests; Electron E2E `3/3`; security `2/2`; Windows package; packaged application `1/1`; six-step M0 audit; evidence artifact `9248010039`.            |
+| CodeQL                  | passed | [Run 31888333231](https://github.com/dctorwho/lattice/actions/runs/31888333231) completed successfully for the same PR head.                                                                                                                                                                         |
+| Dependency Review       | passed | [Run 31888333221](https://github.com/dctorwho/lattice/actions/runs/31888333221) completed successfully with no moderate-or-higher vulnerability and the exact reviewed permissive toolchain-license allowlist.                                                                                       |
+| Main ruleset            | passed | [Ruleset 20752831](https://github.com/dctorwho/lattice/rules/20752831) is active, has no bypass actors, preserves PR/thread/deletion/non-fast-forward protection, and requires `quality`, `codeql` and `dependency-review` from GitHub Actions app `15368`.                                          |
+| Required-check pressure | passed | [Earlier Dependency Review run 31887390234](https://github.com/dctorwho/lattice/actions/runs/31887390234) failed on the incomplete license policy and the PR was observed `BLOCKED`; after the reviewed fix, all required contexts passed and PR #1 was observed `MERGEABLE / CLEAN` without bypass. |
 
 ## Blockers
 
-- The new GitHub quality, CodeQL and Dependency Review workflows have not yet
-  executed against the published exact candidate.
-- The main ruleset has not yet been updated and pressure-tested with all three
-  real required-check contexts.
-- MAN-M0-001 has not been handed to a designated evaluator because its
-  automated prerequisites are incomplete.
+- MAN-M0-001 requires a conclusion from the user or another designated
+  Windows 11 ordinary-user evaluator. The agent does not self-approve this
+  manual gate.
 
 ## Unexecuted verification
 
-The following M0 gates are not complete and must not be inferred from earlier
-foundation evidence:
-
-- CI workflow execution from a clean checkout with the documented Windows
-  command set, plus CodeQL and Dependency Review results for the same PR head.
-- GitHub branch ruleset and required-check enforcement on the public
-  repository.
-- A failed proof PR/check that is demonstrably blocked, followed by a repaired
-  candidate that becomes mergeable without bypassing the ruleset.
-- MAN-M0-001 by the user or another designated evaluator.
-- Applicable Electron E2E/security suites and final exact-candidate
-  verification if remote-gate corrections change the branch.
+The only unexecuted M0 gate is MAN-M0-001 by the user or another designated
+evaluator. Any later code, dependency, packaging, workflow or security change
+invalidates the affected automated evidence and must rerun the applicable
+exact-candidate gates before manual acceptance.
 
 ## Coverage
 
-| Test contract area                              | Current evidence state                    | Remaining work                                                                                                   |
-| ----------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| TC-M0-001 reproducible bootstrap                | Historical automated evidence recorded    | Re-run only if the final dependency/packaging integration changes bootstrap inputs.                              |
-| TC-M0-002 quality failure sensitivity           | Historical automated evidence recorded    | Include in the final exact-candidate quality gate.                                                               |
-| TC-M0-008 cold bootstrap                        | Historical automated evidence recorded    | Re-run after dependency admission if required by the final test contract.                                        |
-| TC-M0-003 secure renderer boundary              | Historical automated evidence recorded    | Confirm again against the packaged candidate.                                                                    |
-| TC-M0-004 navigation and external-link policy   | Historical automated evidence recorded    | Confirm again against the exact candidate; the exact 2,081 UTF-16-code-unit acceptance edge remains unproved.    |
-| TC-M0-005 shared contracts and preload API      | Historical automated evidence recorded    | Confirm the exact preload surface after packaging integration.                                                   |
-| TC-M0-006 command registry and window shell     | Historical automated evidence recorded    | Include in the final Electron regression run.                                                                    |
-| TC-M0-007 CI, audit, SBOM and packaged artifact | Local implementation and execution passed | Publish the exact candidate and retain passing quality, CodeQL, Dependency Review and ruleset-pressure evidence. |
-| MAN-M0-001 ordinary-user production review      | Not executed                              | Designated evaluator must record screenshots, hashes, audit artifacts and a signed conclusion.                   |
+| Test contract area                              | Current evidence state | Remaining work                                                                                       |
+| ----------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| TC-M0-001 reproducible bootstrap                | passed                 | Historical repeated offline bootstrap plus frozen clean-checkout Quality installation.               |
+| TC-M0-002 quality failure sensitivity           | passed                 | Fault-injection integration matrix and final Quality run passed.                                     |
+| TC-M0-008 cold bootstrap                        | passed                 | Controlled empty-store `pnpm test:bootstrap:cold` passed `1/1` with two builds.                      |
+| TC-M0-003 secure renderer boundary              | passed                 | Final clean-checkout Electron security run passed `2/2`.                                             |
+| TC-M0-004 navigation and external-link policy   | passed                 | Final Electron E2E passed `3/3`; exact 2,081 UTF-16-unit acceptance is mutation-backed.              |
+| TC-M0-005 shared contracts and preload API      | passed                 | Final unit, Electron security and packaged-app gates passed.                                         |
+| TC-M0-006 command registry and window shell     | passed                 | Final unit and Electron E2E gates passed.                                                            |
+| TC-M0-007 CI, audit, SBOM and packaged artifact | passed                 | Quality, CodeQL, Dependency Review and ruleset-pressure evidence passed for the published candidate. |
+| MAN-M0-001 ordinary-user production review      | pending                | Designated evaluator must record screenshots, hashes, audit artifacts and a signed conclusion.       |
 
 ## Residual risks
 
-- Local runs prove the current worktree, while the public PR still points to an
-  earlier candidate until the new commits are published.
-- Earlier pnpm evidence included an ambiguous root `ignored-builds` rendering.
-  The integrated fail-closed parser and successful frozen-install verification
-  reduce that interpretation risk; later dependency changes still require the
-  same exact-candidate check.
-- Exact acceptance at the external-URL policy limit of 2,081 UTF-16 code units
-  remains unproved even though over-limit rejection is covered.
-- The local SBOM, license decision and packaged installer proof exist, but no
-  updated GitHub workflow/ruleset proof or human production sign-off exists
-  yet.
+- The Windows package is not represented as publicly trusted or code-signed;
+  MAN-M0-001 must record any operating-system warning and the evaluator's
+  decision rather than suppress it.
+- The SBOM, audit reports and package hashes prove the recorded candidate, not
+  future dependency or packaging changes.
+- Human visual/ordinary-user inspection remains intentionally unautomated and
+  is the only reason M0 has not passed.
 
-## Manual results
+## Automated case results
+
+| Case ID   | Result | Evidence                                                                                                                                                                                                                                                                                                       | Notes                                                                                                         |
+| --------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| TC-M0-001 | passed | Historical bootstrap record and [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255)                                                                                                                                                                                        | Frozen dependency installation and repeatability evidence are complete.                                       |
+| TC-M0-002 | passed | Fault-injection integration suite and [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255)                                                                                                                                                                                  | Format, lint, type, unit, integration and build failures are fail-closed without recursive check execution.   |
+| TC-M0-008 | passed | `pnpm.cmd test:bootstrap:cold` (`1/1`)                                                                                                                                                                                                                                                                         | Empty-store network bootstrap in the controlled Chinese-and-space path completed two builds and cleanup.      |
+| TC-M0-003 | passed | [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255) security step (`2/2`)                                                                                                                                                                                                  | Production renderer privilege and window-policy boundaries passed.                                            |
+| TC-M0-004 | passed | [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255) E2E step (`3/3`) and exact-limit mutation regression                                                                                                                                                                   | Navigation, permission and external-link policy passed, including the 2,081 UTF-16-unit accepted boundary.    |
+| TC-M0-005 | passed | [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255) unit/security/package evidence                                                                                                                                                                                         | Strict IPC contracts, sender ownership, bounded/redacted results and frozen preload API passed.               |
+| TC-M0-006 | passed | [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255) unit and E2E evidence                                                                                                                                                                                                  | Registry, native menu, renderer entry paths, focus and preload surface passed.                                |
+| TC-M0-007 | passed | [Quality](https://github.com/dctorwho/lattice/actions/runs/31888333255), [CodeQL](https://github.com/dctorwho/lattice/actions/runs/31888333231), [Dependency Review](https://github.com/dctorwho/lattice/actions/runs/31888333221), and [ruleset 20752831](https://github.com/dctorwho/lattice/rules/20752831) | Clean-checkout CI, package launch, audit, SBOM, hashes and required-check pressure all passed without bypass. |
+
+## Manual case results
 
 No M0 manual procedure has been executed, and no manual pass/fail conclusion is
-recorded. MAN-M0-001 remains blocked on the automated prerequisites listed
-above.
+recorded. The table remains empty until the designated evaluator returns a
+signed pass/fail conclusion.
+
+| Case ID | Result | Evaluator | Evidence |
+| ------- | ------ | --------- | -------- |
 
 ## Manual-gate handoff
 
-| Manual case | Required evaluator                                                     | Evidence location                                                                                                       | Current handoff status                                                                                                 |
-| ----------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| MAN-M0-001  | User or designated release evaluator on Windows 11 as an ordinary user | This working report, final package hashes, screenshots, dependency/license audit, SBOM and GitHub check/ruleset records | Not ready: local audit/package evidence exists, but updated GitHub checks and repository-rule proof remain incomplete. |
+| Manual case | Required evaluator                                                     | Evidence location                                                                                                       | Current handoff status                                                        |
+| ----------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| MAN-M0-001  | User or designated release evaluator on Windows 11 as an ordinary user | This working report, final package hashes, screenshots, dependency/license audit, SBOM and GitHub check/ruleset records | Ready: all automated prerequisites have passed; manual conclusion is pending. |
 
 The agent preparing this report does not supply the manual conclusion.
 
 ## Exit-readiness statement
 
-M0 remains `in_progress`. This report records execution evidence only and does
-not conclude that M0 has passed. No `05-exit-report.md` should be created from
-this evidence set. The final completion decision, delivery summary and M1
-inputs belong exclusively in `05-exit-report.md` after every automated gate and
-MAN-M0-001 have passed.
+M0 is `awaiting_manual`. This report records complete automated evidence but
+does not conclude that M0 has passed. No `05-exit-report.md` should be created
+from this evidence set. The final completion decision, delivery summary and M1
+inputs belong exclusively in `05-exit-report.md` after MAN-M0-001 has passed.

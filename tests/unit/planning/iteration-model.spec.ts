@@ -128,13 +128,12 @@ describe('validateIterationState', () => {
     expect(validateIterationState(makeValidState(), schema)).toEqual([])
   })
 
-  test('ships an initial state that keeps only M0 active and later iterations blocked', () => {
-    const initialState: unknown = JSON.parse(
+  test('ships a state accepted by the schema and lifecycle model', () => {
+    const shippedState: unknown = JSON.parse(
       readFileSync(join(process.cwd(), 'iterations/state.json'), 'utf8')
     )
 
-    expect(validateIterationState(initialState, schema)).toEqual([])
-    expect(initialState).toEqual(makeValidState())
+    expect(validateIterationState(shippedState, schema)).toEqual([])
   })
 
   test.each(['M0', 'M1', 'M2', 'M5', 'M6', 'M8'])(

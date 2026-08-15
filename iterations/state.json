@@ -6,7 +6,7 @@
   "iterations": [
     {
       "id": "M0",
-      "status": "in_progress",
+      "status": "awaiting_manual",
       "depends_on": [],
       "manual_gate": true,
       "entry": {
@@ -18,7 +18,20 @@
         "test_report": "iterations/M0-foundation/04-test-report.md",
         "iteration_report": "iterations/M0-foundation/05-exit-report.md"
       },
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "test",
+          "summary": "All eight M0 automated cases passed on the final local and GitHub candidate.",
+          "path": "iterations/M0-foundation/04-test-report.md",
+          "recorded_at": "2026-08-15T14:05:09Z"
+        },
+        {
+          "kind": "report",
+          "summary": "GitHub Quality, CodeQL, Dependency Review, and the active main ruleset were verified without bypass.",
+          "path": "iterations/M0-foundation/04-test-report.md",
+          "recorded_at": "2026-08-15T14:05:09Z"
+        }
+      ]
     },
     {
       "id": "M1",
