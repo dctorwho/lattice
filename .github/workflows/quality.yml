@@ -19,8 +19,8 @@ concurrency:
 jobs:
   quality:
     name: quality
-    runs-on: windows-latest
-    timeout-minutes: 30
+    runs-on: windows-2025
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
@@ -29,28 +29,55 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.10.0
+          node-version: 24.18.0
 
-      - name: Activate the pinned pnpm version
-        shell: pwsh
-        run: |
-          corepack enable
-          corepack install --global pnpm@11.12.0
-          pnpm --version
+      - name: Enable Corepack
+        run: corepack enable
 
-      - name: Install frozen dependencies and Electron runtime
-        shell: pwsh
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm exec electron --version
+      - name: Activate pinned pnpm
+        run: corepack install --global pnpm@11.12.0
 
-      - name: Verify planning documentation
-        shell: pwsh
+      - name: Report pnpm version
+        run: pnpm --version
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Electron runtime
+        run: pnpm exec electron --version
+
+      - name: Verify dependency build-script policy
+        run: pnpm ignored-builds
+
+      - name: Verify iteration planning
         run: node scripts/verify-planning-docs.mjs
 
       - name: Run the project quality gate
-        shell: pwsh
         env:
           TEMP: ${{ runner.temp }}
           TMP: ${{ runner.temp }}
         run: pnpm check
+
+      - name: Run Electron end-to-end tests
+        run: pnpm test:e2e
+
+      - name: Run Electron security tests
+        run: pnpm test:security
+
+      - name: Build Windows package
+        run: pnpm package:win
+
+      - name: Test packaged application
+        run: pnpm test:packaged
+
+      - name: Run M0 audit and evidence gate
+        run: pnpm audit:m0
+
+      - name: Upload M0 evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: m0-evidence
+          path: artifacts/m0
+          if-no-files-found: warn
+          retention-days: 14

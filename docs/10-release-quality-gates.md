@@ -21,7 +21,7 @@
 
 ## 3. Alpha 门禁
 
-- M0–M2 所有任务 passed。
+- M0–M2 所有迭代 passed。
 - DATA、EDIT、基础 MD 和 SEC 套件全绿。
 - 连续两周内部日用，无数据不变量失败。
 - 已知限制在欢迎页和发布说明中明确，不放置不可用按钮。
@@ -65,3 +65,15 @@
 5. Stable 分批发布；发现 P0/P1 立即撤回制品并发布已签名回滚版本。
 
 自用阶段可以不签名，但不能跳过数据、安全、安装和回滚验证。
+
+## 9. M0 工程基础出口
+
+M0 不是公开发布门禁，但必须为后续迭代建立可审计的候选链路：
+
+1. 干净 Windows 检出使用 Node 24.18.0、pnpm 11.12.0 和冻结 lockfile，执行 `quality`、CodeQL 与 Dependency Review。
+2. `pnpm check`、普通 E2E、安全、Windows x64 NSIS 打包和专用 packaged 测试全部通过。
+3. `pnpm audit:m0` 生成生产依赖、MIT 许可证、零 high/critical 漏洞、CycloneDX 1.6、工作流、品牌、包哈希和六步门禁证据。
+4. main 规则集要求 PR、`quality`、`codeql` 和 `dependency-review`，并以失败 PR/修复后 PR 证明门禁真正阻断而非仅存在配置文件。
+5. MAN-M0-001 由普通 Windows 11 用户验证 unpacked/NSIS 启动、Lattice 品牌、未签名提示、DevTools/导航阻断、冻结 preload 表面和证据包，并显式签署通过或失败。
+
+前四项完成后 M0 才能进入 `awaiting_manual`；第五项通过并形成 `05-exit-report.md` 后才可将 M0 设为 `passed` 并解锁 M1。M0 的未签名状态不得被解释为 M8 发布签名已完成。

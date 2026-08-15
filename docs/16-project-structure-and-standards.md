@@ -46,10 +46,18 @@
 │  ├─ e2e/
 │  ├─ security/
 │  └─ performance/
+├─ .github/
+│  ├─ workflows/            SHA-pinned quality, CodeQL, dependency review
+│  └─ dependabot.yml        bounded weekly dependency update policy
+├─ build/brand/             original deterministic Lattice package assets
+├─ artifacts/m0/            ignored, machine-readable audit evidence
 ├─ resources/              icons, licenses, sidecars, export templates
 ├─ docs/
 ├─ iterations/
 └─ scripts/
+   ├─ assets/               deterministic committed asset generation/check
+   ├─ audit/                dependency, SBOM, package hash and M0 gate
+   └─ planning/             iteration model and planning verification
 ```
 
 ### M0 current executable ownership
@@ -63,8 +71,11 @@
 | Frozen preload and renderer declaration      | `src/preload/api/create-app-api.ts`, `create-command-api.ts`, `src/preload/index.ts`, and `src/renderer/src/lattice-api.d.ts`                                                                                          |
 | Localized accessible renderer shell          | `src/renderer/src/commands/`, `components/`, `i18n/`, `app.tsx`, and `styles.css`                                                                                                                                      |
 | Sandbox preload dependency bundling          | `electron.vite.config.ts` inlines only `zod` instead of leaving a runtime `require("zod")`                                                                                                                             |
+| Dependency and package evidence              | `scripts/audit/` owns normalized production inventory/licenses/vulnerabilities, CycloneDX 1.6, path-safe SHA-256 manifests and the finite six-step M0 gate                                                             |
+| GitHub automation policy                     | `scripts/verify-workflows.mjs`, `.github/workflows/` and `.github/dependabot.yml` own exact action pins, least privilege, command parity and bounded update policy                                                     |
+| Windows package                              | `package.json` electron-builder configuration owns x64 unpacked/per-user NSIS output; `build/brand/` supplies deterministic Lattice assets                                                                             |
 | Unit proof                                   | `tests/unit/shared/contracts.spec.ts`, `tests/unit/main/ipc-value-budget.spec.ts`, `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`, `ipc-router.spec.ts`, and `tests/unit/preload/app-api.spec.ts` |
-| Real Electron proof                          | `tests/e2e/command-window-shell.spec.ts`, `app-launch.spec.ts`, and `tests/security/electron-boundary.spec.ts`; M0 regression ownership remains in `navigation-policy.spec.ts`                                         |
+| Real Electron proof                          | Ordinary `playwright.config.ts` owns app/command/navigation E2E; `playwright.packaged.config.ts` owns only `packaged-app.spec.ts`; `tests/security/electron-boundary.spec.ts` owns the production privilege boundary   |
 
 No file/workspace/settings/recovery/import/export service or preload method is
 implemented by M0. Those entries in the target tree remain owned by later
@@ -127,6 +138,8 @@ main 与 renderer 不互相 import。renderer 不 import `electron` 或 Node bui
 - 纯领域测试可与模块相邻或集中 tests/unit，但同类保持一致。
 - 每个回归测试名包含需求/测试 ID 或在 fixture metadata 引用。
 - E2E 通过 test-only adapter 控制对话框/路径，不在生产构建保留任意调试 IPC。
+- 打包前 E2E 与 packaged E2E 使用不同配置；普通 E2E 不得依赖 `dist/`，packaged E2E 不得退回开发入口或未打包 Electron。
+- `tests/integration/m0-gate.spec.ts` 对工作流策略和六步审计编排使用真实临时文件与真实子进程；外部网络查询只在显式本地/CI 门禁中执行，不用 mock 结果冒充出口证据。
 - 性能测试只运行打包构建并记录环境。
 
 ## 9. 注释和文档

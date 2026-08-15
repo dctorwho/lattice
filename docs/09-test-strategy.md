@@ -82,7 +82,8 @@
 - HTML/SVG/Math/Mermaid 载荷、超时、内存预算和远程资源阻断。
 - Pandoc/上传器使用参数数组并验证 `shell:false`。
 - M0 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
-- `test:e2e` 验证导航、窗口、权限、CSP 与生产 DevTools；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
+- `test:e2e` 使用 `playwright.config.ts` 验证导航、窗口、权限、CSP 与生产 DevTools，并明确排除需要现成 `dist/` 的 packaged 用例；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
+- `test:packaged` 使用独立的 `playwright.packaged.config.ts`，只从 `dist/win-unpacked/Lattice.exe` 启动 `packaged-app.spec.ts`。它要求真实 `app.asar`、`app.isPackaged`、file URL、关闭 DevTools、无开发 URL、冻结 `{ app, commands }` 表面和 renderer 中 Node/Electron 全局不可得。Playwright 为控制通道注入的两个零值调试参数必须是进程唯一附加参数，不能被误记为产品参数。
 - M0 不伪造 IPC handler；它持续拥有 Node/Electron/裸 IPC 不可得、sandbox、真实 `app.getInfo()` invoke、request ID、sender 拒绝，以及当前冻结 `{ app, commands }` preload 快照、严格 command event/state 路由和四入口统一命令证明。
 
 M0 security evidence separates pure-policy assertions from runtime behavior:
@@ -171,11 +172,20 @@ pnpm test:e2e
 pnpm test:security
 pnpm test:performance
 pnpm test:bootstrap:cold
+pnpm audit:deps
+pnpm audit:sbom
+pnpm verify:workflows
+pnpm audit:m0
+pnpm package:dir
+pnpm package:win
+pnpm test:packaged
 pnpm build
 pnpm check
 ```
 
 `pnpm check` 至少包含 format:check、lint、typecheck、unit、integration 和 build，并且不得访问网络。E2E、安全、性能按迭代入口和退出门禁显式运行。`pnpm test:bootstrap:cold` 是使用空项目级 store 的显式、允许联网冷自举门禁，不进入 `check`。
+
+TC-M0-007 的本地顺序是：冻结安装/基础质量与 Electron 套件 → `package:win` → `test:packaged` → `audit:m0`。综合审计要求安装包、unpacked executable、`app.asar` 和品牌图标已存在；它随后重建生产依赖/许可证/漏洞报告、CycloneDX SBOM、工作流证明、品牌校验、artifact 哈希和六步门禁报告。`tests/integration/m0-gate.spec.ts` 使用真实临时目录和真实子进程覆盖成功顺序、浮动 Action、越权权限、危险触发器、缺失 frozen install、命令漂移、越界上传、无界循环、各审计错误和超时。
 
 TC-M0-002 在临时项目副本中启动嵌套 `pnpm check` 时必须设置 `LATTICE_QUALITY_META_CHILD=1`。集成测试配置仅在该变量存在时排除 `quality-scripts.spec.ts` 自身，仍运行其余集成测试；顶层 `test:integration` 不设置该变量，因此持续覆盖 TC-M0-002，避免递归而不跳过真实集成验证。
 
@@ -191,7 +201,7 @@ M0 建立质量脚本；在它退出前，`pnpm check`、构建和与范围相�
 
 - 开发中：运行当前能力的聚焦测试，失败时留在当前迭代并修复根因。
 - 迭代退出：在 Windows 当前主环境运行 `pnpm check`，并运行当前 `03-test-cases.md` 要求的 E2E、安全、性能和集成套件。
-- M1、M2、M5、M6、M8 有强制人工门禁。结果记录在迭代状态 evidence 中，不能由 Codex 自评代替。
+- M0、M1、M2、M5、M6、M8 有强制人工门禁。结果记录在迭代状态 evidence 中，不能由 Codex 自评代替。
 
 ## 14. 可执行用例规格
 

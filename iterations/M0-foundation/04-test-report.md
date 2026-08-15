@@ -24,12 +24,13 @@ the remaining M0 gates run. It is not an iteration-completion record.
 The report currently covers the reproducible project bootstrap, executable
 quality toolchain, secure Electron shell, strict shared IPC contracts, command
 registry and accessible window shell. It also records the integrated
-dependency admission, deterministic branding assets and fail-closed
-ignored-build parser work.
+dependency admission, deterministic branding assets, fail-closed ignored-build
+parser, production dependency/license/vulnerability audit, CycloneDX SBOM,
+Windows packaging, packaged-artifact launch and the local TC-M0-007 gate.
 
-The remaining scope is the CI-equivalent gate, complete dependency and license
-audit, SBOM generation, packaged-artifact inspection and launch, GitHub
-ruleset verification, and the M0 manual review.
+The remaining scope is clean-checkout GitHub execution of the new quality,
+CodeQL and Dependency Review workflows, proof that the main ruleset blocks
+failed checks and permits the repaired candidate, and the M0 manual review.
 
 ## Baseline and environment
 
@@ -45,6 +46,12 @@ ruleset verification, and the M0 manual review.
 - Integrated fail-closed ignored-build parser commit:
   `644ad699384cfe608a84132b44ebbb43af950817`, derived from preserved commit
   `a82f9369d958fbcd9c9c91a7dc410436f5205d35`.
+- Deterministic dependency/license/vulnerability and CycloneDX implementation:
+  `defe45c`.
+- Windows x64 unpacked/NSIS, package-hash and packaged-app implementation:
+  `95c975f`.
+- Finite TC-M0-007 gate and SHA-pinned GitHub automation implementation:
+  `e6433a9`.
 - Legacy task-state and task-documentation commits `9a286ad` and `c50a8e0`
   were intentionally excluded from integration.
 
@@ -143,10 +150,55 @@ production build. These are correction-development results, not M0 exit
 evidence; the GitHub CI gate and remaining M0 exit work listed below still
 govern acceptance.
 
+## Current local exit evidence (2026-08-15)
+
+The following commands ran from the active Windows worktree after the audit,
+packaging and workflow implementations were integrated. They prove the local
+candidate only; they do not substitute for clean-checkout GitHub execution or
+MAN-M0-001.
+
+| Command / boundary                                   | Exit code | Result                                                                                                                        |
+| ---------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Focused audit, package-config and TC-M0-007 suites   | `0`       | Audit/package unit regressions passed; TC-M0-007 passed `16/16`, including workflow mutations and real child timeout/failure. |
+| `pnpm.cmd check`                                     | `0`       | Format, lint, strict typecheck, `441/441` unit tests, `34/34` integration tests and production build passed.                  |
+| `pnpm.cmd test:e2e`                                  | `0`       | The pre-package configuration ran only app, command and navigation cases: `3/3` passed.                                       |
+| `pnpm.cmd test:security`                             | `0`       | Real Electron privilege-boundary cases passed `2/2`.                                                                          |
+| `pnpm.cmd test:performance`                          | `0`       | The currently applicable M0 performance harness passed `2/2`.                                                                 |
+| `pnpm.cmd test:bootstrap:cold`                       | `0`       | Network-enabled empty-store bootstrap in the controlled path passed `1/1`, including two builds.                              |
+| `pnpm.cmd package:win` then `pnpm.cmd test:packaged` | `0`       | x64 per-user NSIS and unpacked application were produced; the dedicated packaged case passed `1/1`.                           |
+| `pnpm.cmd verify:workflows`                          | `0`       | Exactly `3` workflows and `9` reviewed, SHA-pinned Action references passed policy verification.                              |
+| `pnpm.cmd audit:m0`                                  | `0`       | Planning, dependency audit, CycloneDX, workflows, brand assets and artifact hashes passed all `6` finite steps.               |
+| `node scripts/verify-planning-docs.mjs`              | `0`       | Verified `9` iterations, `86` automated cases, `13` manual cases, `83` requirements and `36` compatibility items.             |
+
+The ignored `artifacts/m0/` evidence set contains six JSON files:
+`dependency-inventory.json`, `licenses.json`, `audit.json`, `sbom.cdx.json`,
+`artifact-hashes.json` and `m0-gate.json`. The production graph contains four
+components (`react`, `react-dom`, `scheduler`, `zod`), all four have MIT license
+coverage, high and critical vulnerability counts are zero, and the CycloneDX
+document uses spec version 1.6 with exact component/dependency coverage.
+
+The rebuilt local candidate hashes are:
+
+| Artifact                               | Bytes       | SHA-256                                                            |
+| -------------------------------------- | ----------- | ------------------------------------------------------------------ |
+| `dist/Lattice-0.0.0-windows-x64.exe`   | `100631100` | `0b3bcbd7ecfc24f2c910fb492859d4f020a13e880f9053d94d5286244b3ed259` |
+| `dist/win-unpacked/Lattice.exe`        | `225485824` | `2a54f4fc95577167d3394c92a1ced4441785d74526576568266a95bfb7f73f7e` |
+| `dist/win-unpacked/resources/app.asar` | `12743113`  | `96052fa30fcadefea3e608b9e6f3322dbcde20a7264fa05e215dd08e9492f8c8` |
+| `build/brand/lattice-icon-256.png`     | `2754`      | `4317ae0aecca27dddd570e511b073bc8b6963e46a49fe025d2c4c98775036014` |
+| `build/brand/lattice.ico`              | `2776`      | `06e6f68ec6f11a92e6df43e35c83f72abe1f6eeff6fa378328fc17a3ff36896c` |
+
+The first package rebuild after adding complete application metadata was
+excluded because its Electron download connection timed out. One bounded
+retry of the unchanged command completed, emitted no missing-metadata warning,
+and produced the candidate above; no retry loop or acceptance relaxation was
+introduced.
+
 ## Blockers
 
-- The CI, full audit, SBOM, packaged-artifact and GitHub ruleset gates do not
-  yet have passing evidence.
+- The new GitHub quality, CodeQL and Dependency Review workflows have not yet
+  executed against the published exact candidate.
+- The main ruleset has not yet been updated and pressure-tested with all three
+  real required-check contexts.
 - MAN-M0-001 has not been handed to a designated evaluator because its
   automated prerequisites are incomplete.
 
@@ -156,46 +208,42 @@ The following M0 gates are not complete and must not be inferred from earlier
 foundation evidence:
 
 - CI workflow execution from a clean checkout with the documented Windows
-  command set.
-- Complete direct and transitive dependency, permission and license audit.
-- CycloneDX SBOM generation and validation against production dependencies.
-- Final installer/package generation, packaged-artifact inspection, hash
-  capture and ordinary-user launch verification.
-- Verification that the packaged renderer has no development URL, Node access,
-  raw IPC or unapproved preload capability.
+  command set, plus CodeQL and Dependency Review results for the same PR head.
 - GitHub branch ruleset and required-check enforcement on the public
   repository.
-- TC-M0-007 as the consolidated CI/audit/package gate.
+- A failed proof PR/check that is demonstrably blocked, followed by a repaired
+  candidate that becomes mergeable without bypassing the ruleset.
 - MAN-M0-001 by the user or another designated evaluator.
 - Applicable Electron E2E/security suites and final exact-candidate
-  verification after the remaining CI/audit/package work changes the branch.
+  verification if remote-gate corrections change the branch.
 
 ## Coverage
 
-| Test contract area                              | Current evidence state                 | Remaining work                                                                                                |
-| ----------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| TC-M0-001 reproducible bootstrap                | Historical automated evidence recorded | Re-run only if the final dependency/packaging integration changes bootstrap inputs.                           |
-| TC-M0-002 quality failure sensitivity           | Historical automated evidence recorded | Include in the final exact-candidate quality gate.                                                            |
-| TC-M0-008 cold bootstrap                        | Historical automated evidence recorded | Re-run after dependency admission if required by the final test contract.                                     |
-| TC-M0-003 secure renderer boundary              | Historical automated evidence recorded | Confirm again against the packaged candidate.                                                                 |
-| TC-M0-004 navigation and external-link policy   | Historical automated evidence recorded | Confirm again against the exact candidate; the exact 2,081 UTF-16-code-unit acceptance edge remains unproved. |
-| TC-M0-005 shared contracts and preload API      | Historical automated evidence recorded | Confirm the exact preload surface after packaging integration.                                                |
-| TC-M0-006 command registry and window shell     | Historical automated evidence recorded | Include in the final Electron regression run.                                                                 |
-| TC-M0-007 CI, audit, SBOM and packaged artifact | Not complete                           | Implement and execute the full consolidated gate.                                                             |
-| MAN-M0-001 ordinary-user production review      | Not executed                           | Designated evaluator must record screenshots, hashes, audit artifacts and a signed conclusion.                |
+| Test contract area                              | Current evidence state                    | Remaining work                                                                                                   |
+| ----------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| TC-M0-001 reproducible bootstrap                | Historical automated evidence recorded    | Re-run only if the final dependency/packaging integration changes bootstrap inputs.                              |
+| TC-M0-002 quality failure sensitivity           | Historical automated evidence recorded    | Include in the final exact-candidate quality gate.                                                               |
+| TC-M0-008 cold bootstrap                        | Historical automated evidence recorded    | Re-run after dependency admission if required by the final test contract.                                        |
+| TC-M0-003 secure renderer boundary              | Historical automated evidence recorded    | Confirm again against the packaged candidate.                                                                    |
+| TC-M0-004 navigation and external-link policy   | Historical automated evidence recorded    | Confirm again against the exact candidate; the exact 2,081 UTF-16-code-unit acceptance edge remains unproved.    |
+| TC-M0-005 shared contracts and preload API      | Historical automated evidence recorded    | Confirm the exact preload surface after packaging integration.                                                   |
+| TC-M0-006 command registry and window shell     | Historical automated evidence recorded    | Include in the final Electron regression run.                                                                    |
+| TC-M0-007 CI, audit, SBOM and packaged artifact | Local implementation and execution passed | Publish the exact candidate and retain passing quality, CodeQL, Dependency Review and ruleset-pressure evidence. |
+| MAN-M0-001 ordinary-user production review      | Not executed                              | Designated evaluator must record screenshots, hashes, audit artifacts and a signed conclusion.                   |
 
 ## Residual risks
 
-- The historical runs prove their recorded commits, not the future exact M0
-  candidate after the remaining gate implementation is integrated.
+- Local runs prove the current worktree, while the public PR still points to an
+  earlier candidate until the new commits are published.
 - Earlier pnpm evidence included an ambiguous root `ignored-builds` rendering.
   The integrated fail-closed parser and successful frozen-install verification
   reduce that interpretation risk; later dependency changes still require the
   same exact-candidate check.
 - Exact acceptance at the external-URL policy limit of 2,081 UTF-16 code units
   remains unproved even though over-limit rejection is covered.
-- No SBOM, complete license decision, packaged installer proof, GitHub ruleset
-  proof or human production sign-off exists yet.
+- The local SBOM, license decision and packaged installer proof exist, but no
+  updated GitHub workflow/ruleset proof or human production sign-off exists
+  yet.
 
 ## Manual results
 
@@ -205,9 +253,9 @@ above.
 
 ## Manual-gate handoff
 
-| Manual case | Required evaluator                                                     | Evidence location                                                                                                       | Current handoff status                                                                       |
-| ----------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| MAN-M0-001  | User or designated release evaluator on Windows 11 as an ordinary user | This working report, final package hashes, screenshots, dependency/license audit, SBOM and GitHub check/ruleset records | Not ready: automated CI, audit, package and repository-rule prerequisites remain incomplete. |
+| Manual case | Required evaluator                                                     | Evidence location                                                                                                       | Current handoff status                                                                                                 |
+| ----------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| MAN-M0-001  | User or designated release evaluator on Windows 11 as an ordinary user | This working report, final package hashes, screenshots, dependency/license audit, SBOM and GitHub check/ruleset records | Not ready: local audit/package evidence exists, but updated GitHub checks and repository-rule proof remain incomplete. |
 
 The agent preparing this report does not supply the manual conclusion.
 

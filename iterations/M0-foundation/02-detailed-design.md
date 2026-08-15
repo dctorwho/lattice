@@ -61,6 +61,16 @@ dependency versions and licenses, generate a parseable SBOM, verify command
 documentation matches executable scripts, and prove the packaged artifact
 launches without development URLs or privilege regressions.
 
+The local gate is intentionally composed from narrow boundaries. Dependency,
+license and vulnerability normalization produces path-free JSON; CycloneDX
+generation requires exact component/license/dependency coverage; package
+hashing accepts only explicit repository-relative regular files. The finite
+orchestrator runs planning, dependency audit, SBOM, workflow verification,
+brand verification and artifact hashing in order with a per-step timeout and
+output budget. GitHub automation retains the existing `quality` check identity,
+adds CodeQL and Dependency Review, uses only reviewed commit SHAs and least
+privilege, and uploads only `artifacts/m0`.
+
 ## Module responsibilities
 
 - `src/main/bootstrap` composes sandbox setup and the immutable main-window
@@ -72,6 +82,11 @@ launches without development URLs or privilege regressions.
 - `src/preload/api` exposes frozen validated methods only.
 - `src/domain/commands`, `src/shared/commands`, and `src/shared/i18n` own
   command behavior, metadata, and localized labels.
+- `scripts/audit` owns normalized production dependency evidence, CycloneDX,
+  artifact hashes and the finite M0 gate; it does not become a product runtime
+  dependency.
+- `scripts/verify-workflows.mjs` owns the exact GitHub automation allowlist,
+  action pins, permissions, command parity and artifact-upload boundary.
 
 ## Interfaces and data flow
 
@@ -149,4 +164,5 @@ the gate.
 - [x] Add strict shared contracts, sender ownership, bounded values, and redacted errors.
 - [x] Deliver the shared command metadata, registry, menu projection, and accessible shell.
 - [x] Admit the exact packaging dependency, deterministic brand assets, and fail-closed ignored-build parser.
-- [ ] Run CI/audit/SBOM/packaging checks and hand the manual evaluation to its evaluator.
+- [x] Implement and locally verify dependency/license/vulnerability audit, CycloneDX SBOM, Windows packaging, packaged launch, artifact hashes, and the TC-M0-007 finite gate.
+- [ ] Publish and prove the clean-checkout GitHub checks and main ruleset, then hand MAN-M0-001 to its evaluator.

@@ -1,6 +1,10 @@
 {
   "name": "lattice",
   "version": "0.0.0",
+  "description": "A local-first Markdown desktop editor.",
+  "author": {
+    "name": "Lattice contributors"
+  },
   "private": true,
   "type": "module",
   "main": "./out/main/index.js",
@@ -22,6 +26,13 @@
     "test:security": "pnpm build && playwright test --config playwright.security.config.ts",
     "test:performance": "vitest run --config vitest.performance.config.ts",
     "test:bootstrap:cold": "vitest run --config vitest.bootstrap.config.ts",
+    "audit:deps": "node scripts/audit/run-dependency-audit.mjs",
+    "audit:sbom": "node scripts/audit/generate-sbom.mjs",
+    "audit:m0": "node scripts/audit/run-m0-audit.mjs",
+    "verify:workflows": "node scripts/verify-workflows.mjs",
+    "package:dir": "pnpm build && electron-builder --win dir --x64 --publish never",
+    "package:win": "pnpm build && electron-builder --win nsis --x64 --publish never",
+    "test:packaged": "playwright test --config playwright.packaged.config.ts",
     "build": "electron-vite build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build"
   },
@@ -54,5 +65,43 @@
     "typescript-eslint": "8.64.0",
     "vite": "7.2.6",
     "vitest": "4.1.10"
+  },
+  "build": {
+    "appId": "io.github.dctorwho.lattice",
+    "productName": "Lattice",
+    "artifactName": "Lattice-${version}-windows-${arch}.${ext}",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json",
+      "!out/**/*.map"
+    ],
+    "win": {
+      "icon": "build/brand/lattice.ico",
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

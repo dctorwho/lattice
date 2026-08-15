@@ -81,22 +81,37 @@
 
 `app-builder-lib@26.15.3` 上游声明了可选的 `electron-builder-squirrel-windows` peer，但 Lattice 只锁定 Windows x64 `dir` 与 NSIS，不使用 Squirrel。根级 `pnpm-workspace.yaml` 因此使用精确版本和精确父包作用域的 override，仅删除 `app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` 这一条未使用的依赖边；`electron-builder-squirrel-windows` 与 `electron-winstaller` 不再进入实际解析和安装图，其他 peer 仍按 pnpm 默认规则处理。安装脚本准入只保留既有 `esbuild: true`，不得为已移除的包增加许可。升级 `electron-builder` 时必须重新审阅该 override；若未来采用 Squirrel，须另行完成需求、依赖、脚本和打包安全评审。
 
+### M0 GitHub Action 准入台账
+
+GitHub Action 不是 npm 生产依赖，但它们会在受信 CI 中执行，因此按供应链代码处理。2026-08-15 通过各官方 GitHub 仓库的 tag/ref 与 license API 核对以下版本；工作流只使用 40 位提交 SHA，版本号仅作审计注释。升级必须重新核对标签解引用后的提交、许可证、权限和行为。
+
+| Action                             | 审阅版本 | 固定提交                                   | 许可证 | 用途                       |
+| ---------------------------------- | -------- | ------------------------------------------ | ------ | -------------------------- |
+| `actions/checkout`                 | v7.0.1   | `3d3c42e5aac5ba805825da76410c181273ba90b1` | MIT    | 检出受审分支               |
+| `actions/setup-node`               | v7.0.0   | `820762786026740c76f36085b0efc47a31fe5020` | MIT    | 安装 Node 24.18.0          |
+| `actions/upload-artifact`          | v7.0.1   | `043fb46d1a93c77aae656e7c1c64a875d1fc6a0a` | MIT    | 上传受限的 M0 证据目录     |
+| `github/codeql-action`             | v4.37.4  | `f205ea1c3313d32999d8d6a48b4f6530d4437b38` | MIT    | 初始化、构建和分析 JS/TS   |
+| `actions/dependency-review-action` | v5.0.0   | `a1d282b36b6f3519aa1f3fc636f609c47dddb294` | MIT    | 审查 PR 引入的依赖与许可证 |
+
 ## 4. 测试和质量
 
 - Vitest：领域、解析、命令和组件单元测试。
 - Testing Library：React 行为测试。
-- Playwright Electron：打包前桌面端到端测试和截图回归。
+- Playwright Electron：`playwright.config.ts` 运行打包前桌面端到端测试并排除 packaged 用例；`playwright.packaged.config.ts` 只从 `dist/win-unpacked/Lattice.exe` 启动真实制品。
 - fast-check：编辑序列、编码、EOL 和补丁性质测试。
 - axe-core：自动无障碍检查。
 - ESLint + typescript-eslint：静态规则。
 - Prettier：仅格式化项目源码和自有文档；绝不格式化用户 Markdown fixture 输出。
 - `tsc --noEmit`：严格类型门禁。
 - `pnpm check`：无网络的日常质量门禁；冷自举另由显式、允许联网的 `pnpm test:bootstrap:cold` 执行，不进入 `check`。
+- `pnpm audit:m0`：顺序执行规划、依赖/许可证/漏洞、CycloneDX 1.6 SBOM、工作流、品牌资产和包哈希六个有限步骤；每个子步骤有 300 秒上限和 4 MiB 输出上限。
 
 ## 5. 构建与发布
 
 - pnpm 为唯一包管理器。
-- electron-builder 生成 Windows NSIS 安装包和 unpacked 测试包。
+- `pnpm package:dir` 与 `pnpm package:win` 分别生成 Windows x64 unpacked 目录和 per-user NSIS 安装包；输出位于忽略的 `dist/`。
+- `artifacts/m0/` 只保存可解析的依赖、许可证、漏洞、CycloneDX SBOM、门禁和 SHA-256 清单；报告禁止绝对路径。
+- M0 制品不签名、不发布、不自动更新；普通用户安装时的未签名提示属于 MAN-M0-001 的明确风险，代码签名和公开发布由 M8 负责。
 - 首发不启用自动更新；公开发布时使用签名制品和 `electron-updater`。
 - Pandoc 不随核心包强绑定。导入和高级导出先检测用户配置路径；未来是否捆绑需要单独许可证、体积和更新评审。
 
@@ -112,6 +127,6 @@
 
 ## 7. 依赖准入
 
-新增生产依赖必须在本文件补充：用途、许可证、是否包含原生二进制、是否执行安装脚本、替代方案和包体影响。禁止为了单个小工具函数引入大依赖。每个里程碑结束执行许可证和漏洞审计；安全更新不得跳过回归测试。
+新增生产依赖必须在本文件补充：用途、许可证、是否包含原生二进制、是否执行安装脚本、替代方案和包体影响。禁止为了单个小工具函数引入大依赖。每个迭代结束执行许可证和漏洞审计；安全更新不得跳过回归测试。
 
 M0 手工建立最小骨架，不运行 `@quick-start/electron@latest` 或其他生成器，避免未固定版本带入未审阅依赖、脚本和 Electron 权限配置。
