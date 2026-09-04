@@ -1,62 +1,60 @@
-# {{ITERATION_ID}} test report
+# {{ITERATION_ID}} 测试报告
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `{{ITERATION_ID}}`
-- State authority: `iterations/state.json`
-- Test contract: `03-test-cases.md`
+- 迭代：`{{ITERATION_ID}}`
+- 状态权威：`iterations/state.json`
+- 测试契约：`03-test-cases.md`
 
-## Report status
+## 报告状态
 
-This controlled working report may be updated throughout `{{ITERATION_ID}}`.
-It is complete before the iteration enters `awaiting_manual`.
+这份受控工作报告可以在 `{{ITERATION_ID}}` 期间持续更新，并且必须在迭代进入 `passed` 或适用的 `awaiting_manual` 前完整。
 
-## Baseline and environment
+## 基线与环境
 
-## Existing validation
+## 已有验证
 
-## Executed commands and results
+## 已执行命令与结果
 
-| Date | Environment | Command or procedure | Exit code | Cases or coverage | Result | Evidence |
-| ---- | ----------- | -------------------- | --------- | ----------------- | ------ | -------- |
+| 日期 | 环境 | 命令或步骤 | 退出码 | 用例或覆盖范围 | 结果 | 证据 |
+| ---- | ---- | ---------- | ------ | -------------- | ---- | ---- |
 
-## Automated case results
+## 自动化用例结果
 
-Before `awaiting_manual`, list every `TC-{{ITERATION_ID}}-*` declared in
-`03-test-cases.md` exactly once. `Result` must be `passed`, and `Evidence` must
-identify the command output or artifact that proves the result.
+在进入 `passed` 或适用的 `awaiting_manual` 前，必须把 `03-test-cases.md` 声明的每个 `TC-{{ITERATION_ID}}-*` 恰好列出一次。`结果` 必须为 `passed`，`证据` 必须指出能够证明结果的命令输出或制品。
 
-| Case ID | Result | Evidence | Notes |
-| ------- | ------ | -------- | ----- |
+| 用例 ID | 结果 | 证据 | 备注 |
+| ------- | ---- | ---- | ---- |
 
-## Manual case results
+## 人工用例结果
 
-Before `passed`, list every `MAN-{{ITERATION_ID}}-*` declared in
-`03-test-cases.md` exactly once. `Result` must be `passed`; `Evaluator` and
-`Evidence` must both be non-empty. Leave the table empty while manual
-evaluation is pending. Iterations with no declared manual cases keep the empty
-table.
+仅当 `manual_gate:true` 时，在进入 `passed` 前必须把 `03-test-cases.md` 声明的每个有效 `MAN-{{ITERATION_ID}}-*` 恰好列出一次。`结果` 必须为 `passed`，`评估人` 和 `证据` 均不得为空。`manual_gate:false` 时保留空表并注明不适用；迁移记录中的旧人工用例不得作为绕过自动覆盖的依据。
 
-| Case ID | Result | Evaluator | Evidence |
-| ------- | ------ | --------- | -------- |
+| 用例 ID | 结果 | 评估人 | 证据 |
+| ------- | ---- | ------ | ---- |
 
-## Failures, fixes, and regression evidence
+## 失败、修复与回归证据
 
-| Finding | Impact | Resolution | Regression evidence | Status |
-| ------- | ------ | ---------- | ------------------- | ------ |
+| 问题 | 影响 | 解决方法 | 回归证据 | 状态 |
+| ---- | ---- | -------- | -------- | ---- |
 
-## Unexecuted verification
+## 未执行验证
 
-## Residual risks
+## 剩余风险
 
-## Manual-gate handoff
+## 复刻证据与差异结果
 
-List the manual cases, required evaluator, evidence location, and current
-handoff status. A manual conclusion is recorded by the user or designated
-evaluator, not by the agent preparing this report.
+逐项列出本迭代所属 `REF-*` 和 `COMP-*`。进入 `passed` 前所有已确认差异必须关闭，关键证据缺口必须补足；只有 `manual_gate:true` 时才可在 `awaiting_manual` 阶段保留待人工评估状态。
 
-## Exit-readiness statement
+| 公开证据 | 复刻项 | Windows 条件 | 自动化结果 | 人工结果 | 差异结论 | 证据 |
+| -------- | ------ | ------------ | ---------- | -------- | -------- | ---- |
 
-This report records execution evidence only. The final completion decision,
-delivery summary, and next-iteration inputs belong exclusively in
-`05-exit-report.md`.
+## 人工门禁交接
+
+`manual_gate:false` 时填写“不适用，自动化结果为阻断性出口证据”。
+
+列出人工用例、所需评估人、证据位置和当前交接状态。人工结论由用户或指定评估人记录，不得由编写本报告的代理代为记录。
+
+## 退出就绪声明
+
+本报告只记录执行证据。最终完成结论、交付摘要和下一迭代输入只记录在 `05-exit-report.md` 中。

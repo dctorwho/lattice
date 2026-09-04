@@ -8,7 +8,7 @@
 | ------------------------- | ---------------------- | ------------------------------------------ |
 | FILE_NOT_FOUND            | 打开/保存目标不存在    | 重新选择、从最近项移除或另存               |
 | FILE_PERMISSION_DENIED    | 权限不足/只读          | 另存、调整权限，不建议管理员运行           |
-| FILE_UNSUPPORTED_ENCODING | 无法安全解码           | 只读查看、显式选择编码或取消               |
+| FILE_UNSUPPORTED_ENCODING | 无法安全解码           | 只读查看、保留原文件并转换副本或取消       |
 | FILE_CHANGED_EXTERNALLY   | 磁盘版本变化           | 比较、重载、保留本地另存、确认覆盖         |
 | FILE_DELETED_EXTERNALLY   | 文件被删除             | 重新创建或另存                             |
 | FILE_ATOMIC_SAVE_FAILED   | 临时写/替换失败        | 保留原文件，显示临时/备份是否存在和另存    |
@@ -81,17 +81,29 @@
 | UPDATE_FAILED            | 下载/安装失败                    | 保持当前版本，稍后重试                   |
 | INTERNAL_UNEXPECTED      | 未知异常                         | 提供 request ID、保存/恢复建议和打开日志 |
 
-## 8. M0 active IPC errors
+## 8. M1 活跃错误契约
 
-M0 当前可执行契约只启用以下四项；目录中其他 code 是后续能力的目标错误，
+M1 当前严格 schema 启用以下错误。目录中未列入本表的 code 仍是后续能力目标，
 不表示当前 preload 可以调用对应功能。
 
-| Code                      | 固定 message key                | 当前触发                                                               | retryable |
-| ------------------------- | ------------------------------- | ---------------------------------------------------------------------- | --------- |
-| `IPC_INVALID_REQUEST`     | `errors.ipc.invalidRequest`     | 未知频道、value budget/序列化拒绝或请求 schema 非法                    | `false`   |
-| `IPC_UNAUTHORIZED_SENDER` | `errors.ipc.unauthorizedSender` | sender frame、销毁状态、主 frame、窗口登记、对象身份或窗口存活校验失败 | `false`   |
-| `APP_VERSION_MISMATCH`    | `errors.app.versionMismatch`    | 接收的有界整数 contract version 不是 1                                 | `false`   |
-| `INTERNAL_UNEXPECTED`     | `errors.internal.unexpected`    | handler 抛出、响应 schema/序列化失败或 preload 本地边界失败            | `false`   |
+| Code                        | 固定 message key                  | 当前触发                                                               | retryable |
+| --------------------------- | --------------------------------- | ---------------------------------------------------------------------- | --------- |
+| `IPC_INVALID_REQUEST`       | `errors.ipc.invalidRequest`       | 未知频道、value budget/序列化拒绝或请求 schema 非法                    | `false`   |
+| `IPC_UNAUTHORIZED_SENDER`   | `errors.ipc.unauthorizedSender`   | sender frame、销毁状态、主 frame、窗口登记、对象身份或窗口存活校验失败 | `false`   |
+| `APP_VERSION_MISMATCH`      | `errors.app.versionMismatch`      | 接收的有界整数 contract version 不是 1                                 | `false`   |
+| `INTERNAL_UNEXPECTED`       | `errors.internal.unexpected`      | handler 抛出、响应 schema/序列化失败或 preload 本地边界失败            | `false`   |
+| `FILE_NOT_FOUND`            | `errors.file.notFound`            | 已授权会话的打开或保存目标不存在                                       | `false`   |
+| `FILE_PERMISSION_DENIED`    | `errors.file.permissionDenied`    | 已授权路径没有所需读取或写入权限                                       | `false`   |
+| `FILE_UNSUPPORTED_ENCODING` | `errors.file.unsupportedEncoding` | 字节不能按受支持编码安全解码，只创建只读诊断会话                       | `false`   |
+| `FILE_CHANGED_EXTERNALLY`   | `errors.file.changedExternally`   | 保存前磁盘版本与会话预期版本不一致，需要冲突选择                       | `false`   |
+| `FILE_DELETED_EXTERNALLY`   | `errors.file.deletedExternally`   | 保存前已授权目标被外部删除                                             | `false`   |
+| `FILE_ATOMIC_SAVE_FAILED`   | `errors.file.atomicSaveFailed`    | 临时写入、刷新、替换或清理阶段失败，原文件仍受保护                     | `true`    |
+| `FILE_PATH_TOO_LONG`        | `errors.file.pathTooLong`         | 选择或保存路径超过 Windows/契约预算                                    | `false`   |
+| `DOCUMENT_STALE_PATCH`      | `errors.document.stalePatch`      | 保存快照修订或单次冲突 token 已过期                                    | `false`   |
+| `DOCUMENT_READ_ONLY`        | `errors.document.readOnly`        | 尝试编辑或保存未知编码的只读诊断会话                                   | `false`   |
+| `RECOVERY_WRITE_FAILED`     | `errors.recovery.writeFailed`     | 恢复快照无法原子写入                                                   | `true`    |
+| `RECOVERY_CORRUPT`          | `errors.recovery.corrupt`         | 快照校验或 schema 失败并回退到较早有效版本                             | `false`   |
+| `SEARCH_INVALID_PATTERN`    | `errors.search.invalidPattern`    | 当前文档查找收到非法正则；不得修改正文                                 | `false`   |
 
 main 返回的每个错误都使用当前 request ID；preload 对失败 Result 再次要求
 `error.requestId` 与其本地 UUID 相等，不相等时返回本地

@@ -1,84 +1,65 @@
-# M7 requirements
+# M7 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M7`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md)
+- 迭代： `M7`
+- 状态权威： `iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全策略](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Harden the product for release-candidate readiness through real settings, configurable
-shortcuts, bilingual accessibility, complete compatibility traceability, performance and
-large-document validation, privacy-safe diagnostics, and extended real-world use.
+通过真实设置、可配置快捷键、双语与无障碍、完整复刻追踪、性能和大文档验证、隐私安全诊断及长期真实使用，使产品达到发布候选准备状态。本迭代只汇总已由所属迭代关闭的复刻项，不接收或掩盖前序差异。
 
-## User-observable outcomes
+## 用户可观察结果
 
-- Every setting and shortcut works predictably, survives supported migrations, and explains
-  conflicts or restart behavior.
-- Simplified Chinese and English UI paths are accessible by keyboard and screen reader across
-  supported scales and high-contrast modes.
-- Users can work with large documents and workspaces within recorded budgets; diagnostics do
-  not expose their content or private paths.
+- 每项设置和快捷键均可预测地工作、通过受支持迁移，并明确说明冲突或重启要求。
+- 简体中文和英文界面路径在受支持缩放及高对比模式下均可通过键盘和屏幕阅读器访问。
+- 用户可在已记录预算内处理大文档和工作区；诊断信息不暴露正文或私有路径。
 
-## Scope
+## 范围
 
-- UI-005..008 settings, shortcuts, localization, and accessibility; DOC-010 large-file mode;
-  NFR-001..006 and NFR-009..010 reliability, response, scale, privacy, and Windows support.
-- Evidence for every COMP-001..036 item, including documented gaps with provenance and a
-  user-approved release-candidate audit.
+- UI-005..008 设置、快捷键、本地化和无障碍；DOC-010 大文件模式；NFR-001..006 与 NFR-009..010 的可靠性、响应、规模、隐私和 Windows 支持。
+- 核对 COMP-001..036 的完整追踪和用户批准的发布候选审计；任何已知差异或证据缺口都必须回到所属迭代关闭，不能作为 M7 通过项。
 
-## Non-goals
+## 非目标
 
-- Adding unplanned product features, treating a category smoke test as compatibility proof,
-  or claiming manual daily-use/RC approval without an evaluator.
-- Relaxing data/security invariants to meet performance targets or logging document data for
-  diagnosis.
+- 增加计划外产品功能、把类别冒烟测试当作复刻证明，或在没有评估人的情况下声称日用/发布候选人工批准。
+- 为达到性能目标放宽数据/安全不变量，或记录文档数据用于诊断。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID     | Iteration outcome                                                                                    | Acceptance evidence                             |
-| ------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| UI-005..008   | Versioned settings, shortcuts, localization, and accessible controls work end-to-end.                | Settings, accessibility, and evaluator evidence |
-| DOC-010       | Large files enter a safe source-priority degradation mode.                                           | Packaged performance and soak evidence          |
-| NFR-001..006  | Data safety, responsiveness, startup, large-document/workspace, and memory budgets are demonstrated. | Compatibility, benchmark, and soak evidence     |
-| NFR-009..010  | Logs are private and Windows scale/IME environments are covered.                                     | Privacy scan and manual-environment evidence    |
-| COMP-001..036 | Each compatibility item is passed or has sourced, reproducible, approved documented-gap evidence.    | Traceability, audit, and evaluator evidence     |
+复刻证据范围为 `REF-024..026` 与 `REF-030`，对应 `COMP-030..032` 与 `COMP-036`。M7 负责设置、快捷键、语言、无障碍、最近状态和全局复刻追踪的整体验证，不接收前序迭代未完成的功能；`REF-025` 的关键证据缺口必须在出口前关闭。
 
-## Preconditions and external dependencies
+| 全局 ID       | 迭代结果                                                         | 验收证据                 |
+| ------------- | ---------------------------------------------------------------- | ------------------------ |
+| UI-005..008   | 版本化设置、快捷键、本地化和可访问控件端到端工作。               | 设置、无障碍和评估人证据 |
+| DOC-010       | 大文件进入安全的源码优先降级模式。                               | 打包性能和浸泡证据       |
+| NFR-001..006  | 证明数据安全、响应、启动、大文档/工作区和内存预算。              | 复刻、基准和浸泡证据     |
+| NFR-009..010  | 日志保持私密并覆盖 Windows 缩放和 IME 环境。                     | 隐私扫描和人工环境证据   |
+| COMP-001..036 | 每个复刻项均有来源、可复现且通过；已知差异或证据缺口一律不通过。 | 追踪、审计和评估人证据   |
 
-- M6 is `passed` in `iterations/state.json`.
-- All earlier capability fixtures, commands, settings consumers, and packaged build harnesses
-  are available for traceability and performance measurement.
-- A reference Windows environment, screen reader, accessibility tooling, and evaluator-owned
-  four-week daily-use/RC evidence process are available.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+- `iterations/state.json` 中 M6 为 `passed`。
+- 所有前序能力夹具、命令、设置消费者和打包构建工具均可用于追踪与性能测量。
+- 具备参考 Windows 环境、屏幕阅读器、无障碍工具，以及由评估人负责的四周日用和发布候选证据流程。
 
-- Broad compatibility claims can hide gaps: require one evidence path per COMP ID and retain
-  sourced documented gaps.
-- Large-file work can harm editing: favor source-first degradation, worker isolation, budgets,
-  and P50/P95 data.
-- Settings migration or diagnostics can lose/leak user data: use versioned Zod validation,
-  atomic backups, canary scans, and redaction.
-- Accessibility/localization can regress at scale: test keyboard/Narrator and all required
-  scaling modes rather than relying on screenshots alone.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+- 宽泛复刻结论可能隐藏缺口：每个 COMP ID 必须有独立证据路径，差异立即阻断并回到所属迭代。
+- 大文件处理可能损害编辑体验：优先采用源码优先降级、工作线程隔离、预算及 P50/P95 数据。
+- 设置迁移或诊断可能丢失/泄露用户数据：使用版本化 Zod 校验、原子备份、金丝雀扫描和脱敏。
+- 无障碍/本地化可能随规模回退：测试键盘、Narrator 和全部要求缩放模式，不能只依赖截图。
 
-1. All mapped requirements and every COMP item have traceable automated or approved
-   documented-gap evidence, with no category-level substitution.
-2. Packaged performance results meet the stated NFR budgets and do not regress reference
-   baselines by more than the documented threshold.
-3. Logs and diagnostics contain no document text, absolute paths, search terms, clipboard,
-   YAML values, or export custom content.
-4. State-defined automated completion includes the four-week and RC manual evidence required
-   by the inherited cases before release-candidate conclusions are used.
+## 迭代级验收标准
 
-## Entry completeness
+1. 所有映射需求和每个 COMP 项都有可追踪自动证据与必要人工证据，不允许类别级替代，也不允许差异或证据缺口通过。
+2. 打包性能结果满足 NFR 预算，相对参考基线的回退不超过既定阈值。
+3. 日志和诊断不包含文档正文、绝对路径、搜索词、剪贴板、YAML 值或导出自定义内容。
+4. 使用发布候选结论前，状态定义的自动完成必须包含继承用例要求的四周日用和发布候选人工证据。
 
-This document, the detailed design, and the test cases are the three entry documents. All
-three must be complete and predecessor iterations must be `passed` before `M7` may become
-`ready` or `in_progress`.
+## 入口完整性
 
-No subtask, task-level status, or task-level ownership belongs in this document.
+本文档、详细设计和测试用例是三个迭代入口。三者必须完整且前置迭代均为 `passed`，M7 才能进入 `ready` 或 `in_progress`。
+
+本文档不包含子任务、任务级状态或任务级所有权。

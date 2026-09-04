@@ -29,6 +29,30 @@ export function collectReferenceIds(
   allowedPrefixes: ReadonlySet<string>
 ): ReadonlySet<string>
 
+export interface ReplicaEvidenceRecord {
+  readonly id: `REF-${string}`
+  readonly source: string
+  readonly collectedAt: string
+  readonly sourceType:
+    'official-release' | 'official-doc' | 'official-image' | 'public-video' | 'review'
+  readonly versionBasis: string
+  readonly windowsApplicability: string
+  readonly observation: string
+  readonly confidence: 'high' | 'medium' | 'low'
+  readonly requirements: readonly string[]
+  readonly compatibility: readonly `COMP-${string}`[]
+  readonly iteration: `M${number}`
+  readonly tests: readonly string[]
+  readonly status: '未实现' | '已实现' | '存在差异' | '证据不足'
+}
+
+export interface ReplicaEvidenceParseResult {
+  readonly records: readonly ReplicaEvidenceRecord[]
+  readonly errors: readonly string[]
+}
+
+export function parseReplicaEvidenceBaseline(text: string): ReplicaEvidenceParseResult
+
 export function parseIterationTestCases(
   text: string,
   iterationId: string

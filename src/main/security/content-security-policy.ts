@@ -9,7 +9,7 @@ const staticDirectives = [
   "img-src 'self' data:",
   "object-src 'none'",
   "script-src 'self'",
-  "style-src 'self'"
+  "style-src 'self' 'unsafe-inline'"
 ] as const
 
 export function buildContentSecurityPolicy(development: boolean): string {

@@ -40,6 +40,43 @@ export interface CommandController {
 export interface CommandControllerRefs {
   readonly mainRef: RefObject<HTMLElement | null>
   readonly sidebarRef: RefObject<HTMLElement | null>
+  readonly document?: DocumentCommandBindings
+}
+
+export interface DocumentCommandBindings {
+  readonly hasSession: boolean
+  readonly isSessionDirty: boolean
+  readonly isSessionReadOnly: boolean
+  readonly hasEditor: boolean
+  readonly canUndo: boolean
+  readonly canRedo: boolean
+  readonly newDocument: () => void | Promise<void>
+  readonly openDocument: () => void | Promise<void>
+  readonly saveDocument: () => void | Promise<void>
+  readonly saveDocumentAs: () => void | Promise<void>
+  readonly closeDocument: () => void | Promise<void>
+  readonly undo: () => void
+  readonly redo: () => void
+  readonly openFind: () => void
+  readonly openReplace: () => void
+}
+
+const unavailableDocumentBindings: DocumentCommandBindings = {
+  hasSession: false,
+  isSessionDirty: false,
+  isSessionReadOnly: false,
+  hasEditor: false,
+  canUndo: false,
+  canRedo: false,
+  newDocument: () => undefined,
+  openDocument: () => undefined,
+  saveDocument: () => undefined,
+  saveDocumentAs: () => undefined,
+  closeDocument: () => undefined,
+  undo: () => undefined,
+  redo: () => undefined,
+  openFind: () => undefined,
+  openReplace: () => undefined
 }
 
 function focusElement(element: HTMLElement | null): void {
@@ -52,12 +89,17 @@ function currentElement(): HTMLElement | undefined {
 
 function matchesShortcut(event: KeyboardEvent, shortcut: FoundationCommandShortcut): boolean {
   if (shortcut === 'F1') return event.key === 'F1'
-  return event.code === 'KeyL' && event.shiftKey && (event.ctrlKey || event.metaKey)
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return false
+  const expected = shortcut.replace('CommandOrControl+', '')
+  const expectsShift = expected.startsWith('Shift+')
+  const key = expectsShift ? expected.slice('Shift+'.length) : expected
+  return event.shiftKey === expectsShift && event.key.toLocaleUpperCase('en-US') === key
 }
 
 export function useCommandController({
   mainRef,
-  sidebarRef
+  sidebarRef,
+  document: documentBindings = unavailableDocumentBindings
 }: CommandControllerRefs): CommandController {
   const desktopApi = useMemo(() => window.lattice, [])
   const registry = useMemo(() => new CommandRegistry(createFoundationCommands()), [])
@@ -75,11 +117,14 @@ export function useCommandController({
       isSidebarVisible,
       isDialogOpen,
       isWindowFocused,
-      hasSession: false,
-      isSessionDirty: false,
-      hasEditor: false
+      hasSession: documentBindings.hasSession,
+      isSessionDirty: documentBindings.isSessionDirty,
+      isSessionReadOnly: documentBindings.isSessionReadOnly,
+      hasEditor: documentBindings.hasEditor,
+      canUndo: documentBindings.canUndo,
+      canRedo: documentBindings.canRedo
     }),
-    [isDialogOpen, isSidebarVisible, isWindowFocused]
+    [documentBindings, isDialogOpen, isSidebarVisible, isWindowFocused]
   )
   const commandStates = useMemo(() => registry.getStates(context), [context, registry])
 
@@ -128,7 +173,16 @@ export function useCommandController({
       const executionContext: CommandExecutionContext = {
         ...context,
         toggleSidebar: () => toggleSidebar(invocationTrigger),
-        openAbout: () => openAbout(invocationTrigger)
+        openAbout: () => openAbout(invocationTrigger),
+        newDocument: documentBindings.newDocument,
+        openDocument: documentBindings.openDocument,
+        saveDocument: documentBindings.saveDocument,
+        saveDocumentAs: documentBindings.saveDocumentAs,
+        closeDocument: documentBindings.closeDocument,
+        undo: documentBindings.undo,
+        redo: documentBindings.redo,
+        openFind: documentBindings.openFind,
+        openReplace: documentBindings.openReplace
       }
       void registry.execute(id, executionContext).then((result) => {
         switch (result.status) {
@@ -146,7 +200,7 @@ export function useCommandController({
         }
       })
     },
-    [context, openAbout, registry, toggleSidebar]
+    [context, documentBindings, openAbout, registry, toggleSidebar]
   )
   const executeRef = useRef(execute)
   useEffect(() => {

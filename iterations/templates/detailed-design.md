@@ -1,35 +1,35 @@
-# {{ITERATION_ID}} detailed design
+# {{ITERATION_ID}} 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `{{ITERATION_ID}}`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules:
-  [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`{{ITERATION_ID}}`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
+- 复刻依据：[Typora 1.13.8 Windows 公开证据基线](../../docs/22-typora-1.13.8-windows-evidence-baseline.md)
 
-## Architecture boundaries
+## 架构边界
 
-## Capability design
+## 能力设计
 
-Use unnumbered capability sections below. Each section states the module
-responsibilities, interfaces, data flow, and observable behavior it needs to
-preserve.
+在下方使用不编号的能力章节。每个章节说明必须保留的模块职责、接口、数据流和可观察行为。
 
-## Module responsibilities
+## 模块职责
 
-## Interfaces and data flow
+## 接口与数据流
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-## Dependency admission
+说明如何用独立代码和资源实现所属 `REF-*` 的可观察结果，如何处理证据冲突、`evidence_gap`、视觉对照和已知差异；不得复制 Typora 私有实现或主题源文件。
 
-## Manual-gate design
+## 依赖准入
 
-## Implementation order
+## 人工门禁设计
 
-- [ ] Describe an implementation step or verification checkpoint.
+默认写明“不适用，`manual_gate:false`”，并说明对应能力如何由自动测试覆盖。只有经独立设计证明存在无法自动观察的物理边界并将状态设为 `manual_gate:true` 时，才定义 Windows 对照条件、评估人、操作步骤、截图或录屏、行为结果和差异结论；代理不得代替人工评估人批准。
 
-The checklist orders work only. Its items do not have individual status,
-dependencies, evidence, reports, or unlock behavior; `{{ITERATION_ID}}` is the
-sole execution and acceptance unit.
+## 实施顺序
+
+- [ ] 描述一个实施步骤或验证检查点。
+
+此清单只规定工作顺序。清单项没有独立状态、依赖、证据、报告或解锁行为；`{{ITERATION_ID}}` 是唯一的执行和验收单元。

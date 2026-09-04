@@ -2,7 +2,7 @@
 
 ## 1. 质量模型
 
-测试按风险而非文件数量设计。最高优先级依次为：数据完整性、安全边界、编辑事务/IME、导出正确性、性能、视觉一致性。测试通过只能证明其明确覆盖的行为。
+测试按风险而非文件数量设计。最高优先级依次为：数据完整性、安全边界、编辑事务/IME、导出正确性、性能、视觉与交互复刻一致性。测试通过只能证明其明确覆盖的行为；完整产品结论必须同时闭合“公开证据 `REF-*` → 复刻项 `COMP-*` → 迭代需求 → `TC-*`/`MAN-*` → 测试与出口报告”。
 
 ## 2. 测试层级
 
@@ -64,7 +64,7 @@
 
 ## 6. 编辑与 IME
 
-自动测试 compositionstart/update/end、beforeinput、selection 和 transaction 分组。人工门禁覆盖微软拼音、至少一种第三方中文输入法、全角标点、候选翻页、长按退格、跨行选词和撤销。组合期间不得重建活动 DOM 或显示重复文字。
+自动测试通过真实 Electron 与 CDP 覆盖 compositionstart/update/end、beforeinput、selection 和 transaction 分组，并覆盖多阶段候选、全角标点、长退格等价输入、跨行选词和撤销重做。输入法厂商候选窗口属于 Chromium 和操作系统上游，不作为应用验收代理指标。组合期间不得重建活动 DOM 或显示重复文字。
 
 ## 7. 导出验证
 
@@ -83,69 +83,30 @@
 - Pandoc/上传器使用参数数组并验证 `shell:false`。
 - M0 的外链 E2E 必须在 Electron main process 替换 `dialog.showMessageBox` 和 `shell.openExternal`，记录调用后随应用进程销毁；不得唤起真实浏览器或邮件客户端。
 - `test:e2e` 使用 `playwright.config.ts` 验证导航、窗口、权限、CSP 与生产 DevTools，并明确排除需要现成 `dist/` 的 packaged 用例；`test:security` 验证 renderer/preload/沙箱边界和恶意 payload。两者均从无 `ELECTRON_RENDERER_URL` 的生产构建启动。
-- `test:packaged` 使用独立的 `playwright.packaged.config.ts`，只从 `dist/win-unpacked/Lattice.exe` 启动 `packaged-app.spec.ts`。它要求真实 `app.asar`、`app.isPackaged`、file URL、关闭 DevTools、无开发 URL、冻结 `{ app, commands }` 表面和 renderer 中 Node/Electron 全局不可得。Playwright 为控制通道注入的两个零值调试参数必须是进程唯一附加参数，不能被误记为产品参数。
-- M0 不伪造 IPC handler；它持续拥有 Node/Electron/裸 IPC 不可得、sandbox、真实 `app.getInfo()` invoke、request ID、sender 拒绝，以及当前冻结 `{ app, commands }` preload 快照、严格 command event/state 路由和四入口统一命令证明。
+- `test:packaged` 使用独立的 `playwright.packaged.config.ts`，只从 `dist/win-unpacked/Lattice.exe` 启动 `packaged-app.spec.ts`。它要求真实 `app.asar`、`app.isPackaged`、file URL、关闭 DevTools、无开发 URL、冻结 `{ app, commands, files, recovery }` 表面和 renderer 中 Node/Electron 全局不可得。Playwright 为控制通道注入的两个零值调试参数必须是进程唯一附加参数，不能被误记为产品参数。
+- M0 不伪造 IPC handler；其历史证据继续拥有 Node/Electron/裸 IPC 不可得、sandbox、真实 `app.getInfo()` invoke、request ID、sender 拒绝和四入口统一命令证明。M1 在相同边界上把当前 preload 精确扩展为 `{ app, commands, files, recovery }`，并由严格 schema 与真实 Electron 安全套件验证。
 
-M0 security evidence separates pure-policy assertions from runtime behavior:
+M0 安全证据把纯策略断言与运行时行为分开：
 
-- `external-url-policy` unit coverage rejects inputs over 2,081 UTF-16 code
-  units, plus leading/trailing whitespace, control characters, parse failures,
-  credentials, empty targets, and non-`https:`/`mailto:` protocols. The
-  invariant's maximum remains 2,081 code units; there is not yet a unit test
-  that accepts an input exactly at that boundary.
-- `web-contents-security-policy` unit coverage proves synchronous denial of
-  navigation, redirects, new windows, and webview attachment.
-- `content-security-policy` unit coverage asserts the exact CSP directive
-  string. The `resolve-main-window-options` factory/unit test proves that a
-  packaged app ignores a development URL. M0 provides final
-  packaged-artifact coverage.
-- The M0 E2E covers confirmed and cancelled `https:`/`mailto:` handoff,
-  runtime denial of disallowed protocols and credentials, no navigation/new
-  window/redirect request, inline-script and `connect-src` behavioral blocking,
-  permission denial, and effective DevTools denial from a no-development-URL
-  launch.
+- `external-url-policy` 单元覆盖拒绝超过 2,081 个 UTF-16 代码单元的输入，以及首尾空白、控制字符、解析失败、凭据、空目标和非 `https:`/`mailto:` 协议。不变量上限仍是 2,081 个代码单元；目前尚无恰好接受边界值的单元测试。
+- `web-contents-security-policy` 单元覆盖证明同步拒绝导航、重定向、新窗口和 webview 附加。
+- `content-security-policy` 单元覆盖断言精确 CSP 指令字符串。`resolve-main-window-options` 工厂/单元测试证明打包应用忽略开发 URL；M0 提供最终打包产物覆盖。
+- M0 E2E 覆盖确认和取消 `https:`/`mailto:` 移交、运行时拒绝非允许协议与凭据、无导航/新窗口/重定向请求、内联脚本和 `connect-src` 行为阻断、权限拒绝，以及从无开发 URL 启动时有效禁用 DevTools。
 
-M0 evidence is separated by layer:
+M0 证据按层分离：
 
-- M0 unit tests cover strict contract version 1 schemas, the four stable
-  error codes/message keys, request-ID correlation, six sender rejection
-  reasons, fail-closed destroyed-state callbacks, the 65,536-character /
-  depth-8 / 256-entry value budget, JSON-like serialization, fixed routing,
-  bounded safe-stack redaction, and local preload response validation.
-- `tests/unit/preload/app-api.spec.ts` proves the testable preload factory uses
-  only the approved channel and exposes only `getInfo`; it does not substitute
-  for an Electron boundary test.
-- `tests/security/electron-boundary.spec.ts` launches real production Electron
-  and proves the current frozen `{ app: { getInfo }, commands: { onInvoke,
-updateStates } }` surface, absence of raw
-  Electron/Node and generic/file/export methods, and a real schema-valid
-  `AppInfo` Result. `zod` must be inline in the sandbox preload bundle for this
-  proof; an external `require("zod")` is a failed preload boundary.
-- `tests/e2e/navigation-policy.spec.ts` remains M0 navigation/external-link
-  ownership and is rerun with the remaining M0 security composition.
+- M0 单元测试覆盖严格契约版本 1 schema、四个稳定错误代码/消息键、请求 ID 关联、六种 sender 拒绝原因、销毁状态回调失败关闭、65,536 字符/深度 8/256 条目值预算、类似 JSON 的序列化、固定路由、受限安全堆栈脱敏和本地 preload 响应校验。
+- `tests/unit/preload/app-api.spec.ts` 证明可测试 preload 工厂只使用批准通道且只暴露 `getInfo`；它不能替代 Electron 边界测试。
+- `tests/security/electron-boundary.spec.ts` 启动真实生产 Electron，证明当前冻结的 `{ app, commands, files, recovery }` 精确表面、不存在原始 Electron/Node、通用 IPC、对话框或导出方法，并返回真实且 schema 有效的 `AppInfo` Result。为完成此证明，`zod` 必须内联到沙箱 preload bundle；外部 `require("zod")` 表示 preload 边界失败。
+- `tests/e2e/navigation-policy.spec.ts` 继续由 M0 拥有导航/外链验证，并与 M0 其余安全组合一起重跑。
 
-M0 command evidence is separated by behavior boundary:
+M0 命令证据按行为边界分离：
 
-- `tests/unit/domain/command-registry.spec.ts` proves duplicate/unknown ID
-  handling, stable snapshots, guarded execution, safe handler failure, and the
-  complete COMMAND-M0 session/editor/dialog/focus state matrix.
-- `command-contracts.spec.ts`, `command-api.spec.ts`, and
-  `application-menu.spec.ts` prove exact state/event schemas, request-ID
-  correlation, invalid-event dropping, idempotent unsubscribe, sender-derived
-  per-window snapshots, fail-closed projection, and fixed menu relay.
-- `tests/unit/component/command-registry.spec.tsx` proves buttons, validated
-  native events, renderer context menu, and shortcuts call the real registry;
-  it also covers About data/error behavior, pending-request cancellation,
-  disabled-attempt focus provenance, Escape/outside-click focus restoration,
-  sidebar-origin focus transfer, and viewport-clamped context-menu placement.
-- `tests/unit/shared/command-contracts.spec.ts` additionally freezes the one
-  layer-neutral command metadata/localization table used by domain, main, and
-  renderer. `application-menu.spec.ts` covers blur/no-target and removal after
-  the destroyed window is no longer resolvable.
-- `tests/e2e/command-window-shell.spec.ts` launches production Electron and
-  executes all four entry paths plus real AppInfo. The security suite verifies
-  exact frozen keys and proves a malformed `files.open` event never reaches an
-  added renderer listener.
+- `tests/unit/domain/command-registry.spec.ts` 证明重复/未知 ID 处理、稳定快照、受保护执行、安全的处理器失败，以及完整 COMMAND-M0 会话/编辑器/对话框/焦点状态矩阵。
+- `command-contracts.spec.ts`、`command-api.spec.ts` 和 `application-menu.spec.ts` 证明精确状态/事件 schema、请求 ID 关联、无效事件丢弃、幂等取消订阅、sender 派生的逐窗口快照、失败关闭投影和固定菜单转发。
+- `tests/unit/component/command-registry.spec.tsx` 证明按钮、已校验原生事件、渲染器右键菜单和快捷键调用真实注册表；同时覆盖 About 数据/错误行为、待处理请求取消、禁用尝试的焦点来源、Escape/外部点击后的焦点恢复、侧栏来源焦点转移和受 viewport 限制的右键菜单位置。
+- `tests/unit/shared/command-contracts.spec.ts` 额外冻结 domain、main 和 renderer 共用的唯一层无关命令元数据/本地化表。`application-menu.spec.ts` 覆盖 blur/无目标以及已销毁窗口无法再解析后的移除。
+- `tests/e2e/command-window-shell.spec.ts` 启动生产 Electron，执行四个入口路径并读取真实 AppInfo。安全套件校验精确冻结键，并证明畸形 `files.open` 事件不会到达新增的渲染器监听器。
 
 ## 9. 性能测试
 
@@ -153,9 +114,15 @@ M0 command evidence is separated by behavior boundary:
 
 基线回退超过 20% 或违反 NFR 指标时阻断；更新基线必须解释硬件、依赖或功能变化。
 
-## 10. 视觉和无障碍
+## 10. 视觉、交互与无障碍复刻
 
-截图只用于自身 UI 回归，不作为数据或交互正确性证据。覆盖 100/150/200/250% 缩放、浅/深/高对比、窄窗口、长中文文案和焦点状态。axe 自动检查后仍需键盘与屏幕阅读器人工冒烟。
+- 截图既用于自身 UI 回归，也用于与公开证据进行视觉复刻对照，但不能替代数据、交互步骤或人工观察证据。
+- 每份对照证据必须记录 `REF-*`、`COMP-*`、应用构建标识、Windows 版本、显示分辨率、缩放比例、窗口尺寸、主题、语言、文档夹具和交互状态；缺少任一关键条件时不得签署视觉通过。
+- 覆盖 100/150/200/250% 缩放、六套内置主题、系统浅/深/高对比、窄窗口、长中文文案、菜单/侧栏/设置/弹层、编辑器空闲/选区/光标/悬停/错误等关键状态。
+- 视觉对照同时检查布局、间距、字体层级、颜色、边框、阴影、控件密度、可见内容和状态反馈。容差必须由当前迭代测试用例预先定义，不能在看到结果后放宽。
+- 交互对照按照公开证据复现入口、步骤、焦点、键盘、鼠标、状态变化和退出行为；结果相同但路径或反馈不同仍记为差异。
+- axe、键盘导航自动化、语义树与受控截图共同形成默认无障碍和界面证据。只有独立设计确认存在不可自动观察的物理边界并启用 `manual_gate:true` 时，才增加人工评估；人工观察不得替代可自动化的断言。
+- 资料不足时把项目标为 `evidence_gap` 并继续补证；已知差异、替代流程和证据缺口都不能记为 `passed`。
 
 ## 11. 命令契约
 
@@ -172,6 +139,7 @@ pnpm test:e2e
 pnpm test:security
 pnpm test:performance
 pnpm test:bootstrap:cold
+pnpm test:acceptance:m1
 pnpm audit:deps
 pnpm audit:sbom
 pnpm verify:workflows
@@ -184,6 +152,8 @@ pnpm check
 ```
 
 `pnpm check` 至少包含 format:check、lint、typecheck、unit、integration 和 build，并且不得访问网络。E2E、安全、性能按迭代入口和退出门禁显式运行。`pnpm test:bootstrap:cold` 是使用空项目级 store 的显式、允许联网冷自举门禁，不进入 `check`。
+
+M1 使用有限时、可重放的 Windows Electron 自动验收套件，不进入 `pnpm check`，由 `TC-M1-013` 覆盖 CDP 组合输入、冻结字节夹具、冲突各分支、强制终止恢复和关闭决策，并生成不含正文或绝对路径的 JSON 证据。所有等待和子进程均有明确超时，禁止无限循环与重试掩盖。
 
 `pnpm audit:deps` 是显式联网门禁：生产图保留 high/critical 阈值并生成许可证/SBOM 输入，完整开发与构建工具链使用与 Dependency Review 一致的 moderate 阈值并生成 `toolchain-audit.json`。pnpm 结构化 audit 因发现阈值内公告而返回 `1` 时仍必须解析并验证报告；超时、输出超限、其他退出码、无效 JSON 或未知 schema 一律失败。
 
@@ -199,11 +169,12 @@ M0 建立质量脚本；在它退出前，`pnpm check`、构建和与范围相�
 - 禁止 `.skip`、`.only`、宽泛 snapshot、吞异常、无断言测试和为了通过而删除 fixture。
 - flaky 测试先隔离根因；不可长期重试掩盖。任何 quarantine 必须有迭代 ID、负责人和期限。
 
-## 13. CI 和人工门禁
+## 13. CI 和验收门禁
 
 - 开发中：运行当前能力的聚焦测试，失败时留在当前迭代并修复根因。
 - 迭代退出：在 Windows 当前主环境运行 `pnpm check`，并运行当前 `03-test-cases.md` 要求的 E2E、安全、性能和集成套件。
-- M0、M1、M2、M5、M6、M8 有强制人工门禁。结果记录在迭代状态 evidence 中，不能由 Codex 自评代替。
+- 自动化是默认且阻断性的迭代出口证据。M0 保留既有历史人工结论；M1–M8 当前 `manual_gate:false`，在 `04-test-report.md` 和 `05-exit-report.md` 形成逐项自动证据。只有独立设计证明存在不可自动观察的物理边界时才能启用人工门禁，且不得用人工自评替代缺失的自动覆盖。
+- 任一已到达范围的 `COMP-*` 存在已知差异、未实现项或关键证据缺口时，当前迭代不得进入 `passed`，后续迭代也不得以汇总名义接收该缺口。
 
 ## 14. 可执行用例规格
 

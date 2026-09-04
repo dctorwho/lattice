@@ -2,6 +2,7 @@ import {
   COMMAND_INVOKED_CHANNEL,
   IPC_CONTRACT_VERSION,
   commandInvokedEventSchema,
+  commandIds,
   commandStateCollectionSchema,
   type CommandId,
   type CommandState
@@ -62,10 +63,12 @@ export interface ApplicationMenuDependencies<TMenu> {
   readonly locale?: FoundationLocale
 }
 
-const failClosedStates: readonly CommandState[] = [
-  { id: 'app.about', isVisible: true, isEnabled: false, isChecked: false },
-  { id: 'view.toggleSidebar', isVisible: true, isEnabled: false, isChecked: false }
-]
+const failClosedStates: readonly CommandState[] = commandIds.map((id) => ({
+  id,
+  isVisible: true,
+  isEnabled: false,
+  isChecked: false
+}))
 
 function safeFocusedTarget(resolve: () => CommandTarget | undefined): CommandTarget | undefined {
   try {
@@ -108,10 +111,12 @@ export function createApplicationMenu<TMenu>(
   }
 
   const menuGroups = [
+    { id: 'file', labelKey: 'menus.file' },
+    { id: 'edit', labelKey: 'menus.edit' },
     { id: 'view', labelKey: 'menus.view' },
     { id: 'help', labelKey: 'menus.help' }
   ] as const satisfies readonly {
-    readonly id: 'view' | 'help'
+    readonly id: 'edit' | 'file' | 'view' | 'help'
     readonly labelKey: FoundationMenuLabelKey
   }[]
   const template: readonly ApplicationMenuTemplate[] = menuGroups.map((group) => ({

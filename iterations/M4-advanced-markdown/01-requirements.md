@@ -1,61 +1,49 @@
-# M4 requirements
+# M4 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M4`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md).
+- 迭代：`M4`
+- 状态权威：`iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Add advanced Markdown capabilities through source-safe, cancellable, sandboxed
-adapters: metadata/TOC/alerts, advanced code, tables, academic links, MathJax,
-Mermaid, and safe HTML/media/embed presentation.
+通过源码安全、可取消且沙箱化的适配器增加高级 Markdown 能力：元数据、目录、警告块、高级代码、表格、学术链接、MathJax、Mermaid，以及安全的 HTML、媒体和嵌入展示。
 
-## User-observable outcomes
+## 用户可观察结果
 
-Complex blocks remain editable and return to source on error. Table operations
-are minimal and undoable; math/diagrams work offline within budgets; unsafe
-HTML, SVG, URLs, and embeds do not gain script, network, or host privilege.
+复杂块保持可编辑，出错时返回源码。表格操作最小且可撤销；数学公式和图表在预算内离线工作；不安全的 HTML、SVG、URL 和嵌入内容不能获得脚本、网络或宿主权限。
 
-## Scope
+## 范围
 
-Feature registration; source fallback; YAML/TOC/alerts; code configuration;
-table projection/operations; footnotes/references/anchors; MathJax 4; Mermaid;
-sanitized HTML/video/embed; advanced corpus/security/performance gate.
+功能注册；源码回退；YAML、目录和警告块；代码配置；表格投影与操作；脚注、引用和锚点；MathJax 4；Mermaid；净化后的 HTML、视频和嵌入；高级语料、安全和性能门禁。
 
-## Non-goals
+## 非目标
 
-Saving a rich-text AST, automatic reformatting of unrelated source, allowing
-untrusted script/network access, or making advanced extensions mandatory for
-core Markdown editing.
+保存富文本 AST、自动重排无关源码、允许不可信脚本或网络访问，或让高级扩展成为核心 Markdown 编辑的强制依赖。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID     | Iteration outcome                                                                    | Acceptance evidence      |
-| ------------- | ------------------------------------------------------------------------------------ | ------------------------ |
-| MD-003..012   | Advanced inline/blocks, metadata, tables, academic links, code, math, diagrams, HTML | Advanced cases           |
-| EDT-004       | Minimal source-range patches                                                         | Table/property cases     |
-| COMP-014..020 | Advanced Markdown compatibility                                                      | Gate and manual evidence |
+复刻证据范围为 `REF-012..017`，对应 `COMP-014..020`。M4 的每类复杂块必须同时证明公开可观察编辑行为、源码保真、安全回退和视觉结果；本迭代不得把表格、公式、图表或 HTML 的已知差异推迟到 M7。
 
-## Preconditions and external dependencies
+| 全局 ID       | 迭代结果                                                      | 验收证据       |
+| ------------- | ------------------------------------------------------------- | -------------- |
+| MD-003..012   | 高级行内与块、元数据、表格、学术链接、代码、数学、图表和 HTML | 高级功能用例   |
+| EDT-004       | 最小源码范围补丁                                              | 表格与属性用例 |
+| COMP-014..020 | 高级 Markdown 兼容性                                          | 门禁与人工证据 |
 
-Requires M3 shell, M2 patch/adaptor framework, locally packaged MathJax and
-Mermaid assets, sanitized isolated rendering, and advanced/security fixtures.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+依赖 M3 外壳、M2 补丁与适配器框架、本地打包的 MathJax 和 Mermaid 资源、净化并隔离的渲染环境，以及高级和安全夹具。
 
-Parser/render divergence, unrelated reformatting, stale patches, unbounded
-math/diagram work, XSS, remote access, and adapter crashes are mitigated by
-range/revision validation, source fallback, time/node/output budgets,
-`securityLevel:'strict'`, sanitization, isolation, and cancellation.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+通过范围与修订验证、源码回退、时间、节点和输出预算、`securityLevel:'strict'`、内容净化、隔离和取消，缓解解析与渲染分歧、无关重排、过期补丁、数学或图表工作无上限、XSS、远程访问和适配器崩溃。
 
-All advanced cases pass with source/range/revision/patch/undo and security
-evidence. Every complex block has source fallback; no source drift, privilege
-escape, resource exhaustion, P0/P1, or manual safety failure remains.
+## 迭代级验收标准
 
-## Entry completeness
+全部高级用例通过，并具备源码、范围、修订、补丁、撤销和安全证据。每个复杂块都有源码回退；不存在源码漂移、权限逃逸、资源耗尽、P0/P1 或人工安全验证失败。
 
-This document, the detailed design, and the test cases are the three entry documents. All three must be complete and predecessor iterations must be `passed` before `M4` may become `ready` or `in_progress`.
+## 入口完整性
+
+本文档、详细设计和测试用例是三份入口文档。三者必须完整，且前置迭代均为 `passed`，M4 才能进入 `ready` 或 `in_progress`。

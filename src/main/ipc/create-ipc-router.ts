@@ -15,7 +15,7 @@ import {
 } from '../../shared/errors'
 import { type AuthorizedWindowRegistry } from './authorized-window-registry'
 import { createSafeStack, type IpcErrorLogEvent } from './ipc-error-logger'
-import { validateIpcValue } from './ipc-value-budget'
+import { validateIpcValue, type IpcValueLimits } from './ipc-value-budget'
 import {
   validateIpcSender,
   type IpcSenderEvent,
@@ -31,6 +31,8 @@ export interface IpcRoute<TRequest, TValue> {
   readonly requestSchema: z.ZodType<TRequest>
   readonly responseSchema: z.ZodType<Result<TValue>>
   readonly handle: (request: TRequest, context: ValidatedIpcContext) => Promise<Result<TValue>>
+  readonly requestValueLimits?: IpcValueLimits
+  readonly responseValueLimits?: IpcValueLimits
 }
 
 type RouteExecution =
@@ -40,6 +42,8 @@ type RouteExecution =
 
 interface ErasedRoute {
   readonly channel: ApprovedIpcChannel
+  readonly requestValueLimits: IpcValueLimits | undefined
+  readonly responseValueLimits: IpcValueLimits | undefined
   readonly execute: (input: unknown, context: ValidatedIpcContext) => Promise<RouteExecution>
 }
 
@@ -61,6 +65,8 @@ export interface IpcRouterOptions<TSender extends object> {
 export function defineIpcRoute<TRequest, TValue>(route: IpcRoute<TRequest, TValue>): ErasedRoute {
   return {
     channel: route.channel,
+    requestValueLimits: route.requestValueLimits,
+    responseValueLimits: route.responseValueLimits,
     execute: async (input, context) => {
       const request = route.requestSchema.safeParse(input)
       if (!request.success) {
@@ -193,18 +199,25 @@ export function createIpcRouter<TSender extends object, TFrame extends object>(
         })
       }
 
-      const inputBudget = validateIpcValue(input)
-      if (!inputBudget.ok) {
-        return createFailure(options.log, {
-          code: 'IPC_INVALID_REQUEST',
-          requestId,
-          channel: 'unknown',
-          reason: inputBudget.reason,
-          context: sender.context
-        })
+      const defaultInputBudget = validateIpcValue(input)
+      const candidateRoute = options.routes.find((candidate) => candidate.channel === channel)
+      if (!defaultInputBudget.ok) {
+        const expandedInputBudget =
+          candidateRoute?.requestValueLimits === undefined
+            ? defaultInputBudget
+            : validateIpcValue(input, candidateRoute.requestValueLimits)
+        if (!expandedInputBudget.ok) {
+          return createFailure(options.log, {
+            code: 'IPC_INVALID_REQUEST',
+            requestId,
+            channel: 'unknown',
+            reason: expandedInputBudget.reason,
+            context: sender.context
+          })
+        }
       }
 
-      const route = options.routes.find((candidate) => candidate.channel === channel)
+      const route = candidateRoute
       if (route === undefined) {
         return createFailure(options.log, {
           code: 'IPC_INVALID_REQUEST',
@@ -265,7 +278,7 @@ export function createIpcRouter<TSender extends object, TFrame extends object>(
         })
       }
 
-      const responseBudget = validateIpcValue(execution.value)
+      const responseBudget = validateIpcValue(execution.value, route.responseValueLimits)
       if (!responseBudget.ok) {
         return createFailure(options.log, {
           code: 'INTERNAL_UNEXPECTED',

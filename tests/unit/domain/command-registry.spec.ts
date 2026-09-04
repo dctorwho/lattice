@@ -17,7 +17,10 @@ function createContext(overrides: Partial<CommandContext> = {}): CommandContext 
     isWindowFocused: true,
     hasSession: false,
     isSessionDirty: false,
+    isSessionReadOnly: false,
     hasEditor: false,
+    canUndo: false,
+    canRedo: false,
     ...overrides
   }
 }
@@ -29,6 +32,15 @@ function createExecutionContext(
     ...createContext(),
     toggleSidebar: vi.fn(),
     openAbout: vi.fn(() => Promise.resolve()),
+    newDocument: vi.fn(),
+    openDocument: vi.fn(),
+    saveDocument: vi.fn(),
+    saveDocumentAs: vi.fn(),
+    closeDocument: vi.fn(),
+    undo: vi.fn(),
+    redo: vi.fn(),
+    openFind: vi.fn(),
+    openReplace: vi.fn(),
     ...overrides
   }
 }
@@ -56,12 +68,32 @@ describe('CommandRegistry', () => {
 
   it('returns a stable ID-sorted snapshot derived from the current context', () => {
     const registry = new CommandRegistry(createFoundationCommands())
+    const states = registry.getStates(createContext({ isSidebarVisible: false }))
 
-    expect(registry.getStates(createContext({ isSidebarVisible: false }))).toEqual([
-      { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
-      { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: false }
+    expect(states.map(({ id }) => id)).toEqual([
+      'app.about',
+      'edit.find',
+      'edit.redo',
+      'edit.replace',
+      'edit.undo',
+      'file.close',
+      'file.new',
+      'file.open',
+      'file.save',
+      'file.saveAs',
+      'view.toggleSidebar'
     ])
-    expect(registry.getStates(createContext({ isSidebarVisible: true }))[1]).toEqual({
+    expect(states.find(({ id }) => id === 'file.new')).toEqual({
+      id: 'file.new',
+      isVisible: true,
+      isEnabled: true,
+      isChecked: false
+    })
+    expect(
+      registry
+        .getStates(createContext({ isSidebarVisible: true }))
+        .find(({ id }) => id === 'view.toggleSidebar')
+    ).toEqual({
       id: 'view.toggleSidebar',
       isVisible: true,
       isEnabled: true,
@@ -132,30 +164,42 @@ describe('CommandRegistry', () => {
   })
 })
 
-describe('M0 foundation command state', () => {
+describe('M1 unified command state', () => {
   const registry = new CommandRegistry(createFoundationCommands())
 
-  it.each([
-    { hasSession: false, isSessionDirty: false, hasEditor: false },
-    { hasSession: true, isSessionDirty: false, hasEditor: false },
-    { hasSession: true, isSessionDirty: true, hasEditor: false },
-    { hasSession: true, isSessionDirty: false, hasEditor: true }
-  ])('does not invent session or editor restrictions for %o', (sessionState) => {
-    expect(registry.getStates(createContext(sessionState))).toEqual([
-      { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
-      { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
-    ])
+  it('按会话、编辑器、只读和历史状态启用文档命令', () => {
+    const unavailable = registry.getStates(createContext())
+    expect(unavailable.find(({ id }) => id === 'file.open')?.isEnabled).toBe(true)
+    expect(unavailable.find(({ id }) => id === 'file.save')?.isEnabled).toBe(false)
+    expect(unavailable.find(({ id }) => id === 'edit.find')?.isEnabled).toBe(false)
+
+    const editable = registry.getStates(
+      createContext({ hasSession: true, hasEditor: true, canUndo: true, canRedo: true })
+    )
+    expect(editable.find(({ id }) => id === 'file.save')?.isEnabled).toBe(true)
+    expect(editable.find(({ id }) => id === 'file.saveAs')?.isEnabled).toBe(true)
+    expect(editable.find(({ id }) => id === 'edit.undo')?.isEnabled).toBe(true)
+    expect(editable.find(({ id }) => id === 'edit.redo')?.isEnabled).toBe(true)
+
+    const readOnly = registry.getStates(
+      createContext({ hasSession: true, hasEditor: true, isSessionReadOnly: true })
+    )
+    expect(readOnly.find(({ id }) => id === 'file.save')?.isEnabled).toBe(false)
+    expect(readOnly.find(({ id }) => id === 'file.saveAs')?.isEnabled).toBe(true)
   })
 
   it('disables background commands while the About dialog is open', () => {
-    expect(registry.getStates(createContext({ isDialogOpen: true }))).toEqual([
-      { id: 'app.about', isVisible: true, isEnabled: false, isChecked: false },
-      { id: 'view.toggleSidebar', isVisible: true, isEnabled: false, isChecked: true }
-    ])
+    expect(
+      registry.getStates(createContext({ isDialogOpen: true })).every((state) => !state.isEnabled)
+    ).toBe(true)
   })
 
   it('disables sidebar keyboard behavior when the window is unfocused', () => {
-    expect(registry.getStates(createContext({ isWindowFocused: false }))[1]).toEqual({
+    expect(
+      registry
+        .getStates(createContext({ isWindowFocused: false }))
+        .find(({ id }) => id === 'view.toggleSidebar')
+    ).toEqual({
       id: 'view.toggleSidebar',
       isVisible: true,
       isEnabled: false,
@@ -163,12 +207,32 @@ describe('M0 foundation command state', () => {
     })
   })
 
-  it('defines only the two working M0 shortcuts', () => {
+  it('defines the exact working M1 shortcuts', () => {
     expect(
       createFoundationCommands().map(({ id, defaultShortcut }) => ({ id, defaultShortcut }))
     ).toEqual([
+      { id: 'file.new', defaultShortcut: 'CommandOrControl+N' },
+      { id: 'file.open', defaultShortcut: 'CommandOrControl+O' },
+      { id: 'file.save', defaultShortcut: 'CommandOrControl+S' },
+      { id: 'file.saveAs', defaultShortcut: 'CommandOrControl+Shift+S' },
+      { id: 'file.close', defaultShortcut: 'CommandOrControl+W' },
+      { id: 'edit.undo', defaultShortcut: 'CommandOrControl+Z' },
+      { id: 'edit.redo', defaultShortcut: 'CommandOrControl+Y' },
+      { id: 'edit.find', defaultShortcut: 'CommandOrControl+F' },
+      { id: 'edit.replace', defaultShortcut: 'CommandOrControl+H' },
       { id: 'view.toggleSidebar', defaultShortcut: 'CommandOrControl+Shift+L' },
       { id: 'app.about', defaultShortcut: 'F1' }
     ])
+  })
+
+  it('executes the shared file-save command through the supplied document binding', async () => {
+    const saveDocument = vi.fn()
+    await expect(
+      registry.execute(
+        'file.save',
+        createExecutionContext({ hasSession: true, hasEditor: true, saveDocument })
+      )
+    ).resolves.toEqual({ status: 'executed' })
+    expect(saveDocument).toHaveBeenCalledOnce()
   })
 })

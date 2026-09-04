@@ -6,9 +6,12 @@ allowBuilds:
 
 overrides:
   'app-builder-lib@26.15.3>electron-builder-squirrel-windows': '-'
+  '@xmldom/xmldom@>=0.7.0 <0.8.15': 0.8.15
   'brace-expansion@>=1.0.0 <1.1.18': 1.1.18
   'brace-expansion@>=2.0.0 <2.1.4': 2.1.4
   'brace-expansion@>=5.0.0 <5.0.9': 5.0.9
+  'browserslist@<=4.28.6': 4.28.7
+  'fast-uri@>=3.0.0 <3.1.6': 3.1.6
   'nanoid@>=3.0.0 <3.3.18': 3.3.18
   'postcss@>=8.0.0 <8.5.23': 8.5.23
   'undici@>=6.0.0 <6.28.0': 6.28.0

@@ -1,73 +1,53 @@
-# M0 test report
+# M0 测试报告
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M0`
-- Current status: `passed`
-- State authority: [`iterations/state.json`](../state.json)
-- Test contract: [`03-test-cases.md`](03-test-cases.md)
-- Manual gate: required
+- 迭代： `M0`
+- 当前状态：`passed`
+- 状态权威： [`iterations/state.json`](../state.json)
+- 测试契约： [`03-test-cases.md`](03-test-cases.md)
+- 人工门禁：必需
 
-Historical `Mx-Tnn` names below are evidence labels only. They do not define
-active work ownership or an active planning hierarchy.
-The five linked legacy records are historical inputs in the read-only
-task-model archive.
+下文历史 `Mx-Tnn` 名称只是证据标签，不定义活跃工作所有权或活跃规划层级。五条链接的旧记录是只读任务模型归档中的历史输入。
 
-## Report status
+## 报告状态
 
-This is the completed controlled test report for M0. It consolidates historical
-evidence, final automated-gate evidence, and the user-supplied MAN-M0-001
-conclusion recorded on 2026-08-15. Every declared automated and manual case has
-passed. The final delivery decision is recorded separately in
-`05-exit-report.md`.
+这是 M0 已完成的受控测试报告，汇总历史证据、最终自动门禁证据和用户于 2026-08-15 提供的 MAN-M0-001 结论。所有声明的自动和人工用例均已通过。最终交付结论另行记录在 `05-exit-report.md`。
 
-## Scope
+## 范围
 
-The report currently covers the reproducible project bootstrap, executable
-quality toolchain, secure Electron shell, strict shared IPC contracts, command
-registry and accessible window shell. It also records the integrated
-dependency admission, deterministic branding assets, fail-closed ignored-build
-parser, production dependency/license/vulnerability audit, CycloneDX SBOM,
-Windows packaging, packaged-artifact launch and the local TC-M0-007 gate.
+本报告覆盖可复现项目自举、可执行质量工具链、安全 Electron 外壳、严格共享 IPC 契约、命令注册表和可访问窗口外壳；还记录已集成的依赖准入、确定性品牌资源、失败关闭 ignored-build 解析器、生产依赖/许可证/漏洞审计、CycloneDX SBOM、Windows 打包、打包产物启动和本地 TC-M0-007 门禁。
 
-The remaining scope is the M0 manual review by the user or another designated
-Windows 11 ordinary-user evaluator.
+原剩余范围是由用户或另一名指定 Windows 11 普通用户评估人执行的 M0 人工审阅；该项现已完成。
 
-## Baseline and environment
+## 基线与环境
 
-- Main baseline: `6db91f13f88f5349f4afea24525fcf64b7d00d82`.
-- Historical Windows evidence used Node.js `v24.18.0`, Corepack `0.35.0`,
-  pnpm `11.12.0`, and Electron `v43.1.1`.
-- PowerShell evidence used `pnpm.cmd` or `corepack pnpm` where the host
-  execution policy blocked the generated `pnpm.ps1` shim.
-- Preserved implementation branch: `codex/m0-t06-ci-audit-gate`.
-- Integrated dependency and brand-asset commit:
+- main 基线：`6db91f13f88f5349f4afea24525fcf64b7d00d82`。
+- 历史 Windows 证据使用 Node.js `v24.18.0`、Corepack `0.35.0`、pnpm `11.12.0` 和 Electron `v43.1.1`。
+- 当主机执行策略阻止生成的 `pnpm.ps1` shim 时，PowerShell 证据使用 `pnpm.cmd` 或 `corepack pnpm`。
+- 保留实施分支：`codex/m0-t06-ci-audit-gate`。
+- 已集成依赖和品牌资源提交：
   `3ae487861f0535f2d17e8558aebc5f15bb37cb78`, derived from preserved commit
   `ea8aac1a94d89d0ffdb61f91882b661c8f5eb856`.
-- Integrated fail-closed ignored-build parser commit:
+- 已集成失败关闭 ignored-build 解析器提交：
   `644ad699384cfe608a84132b44ebbb43af950817`, derived from preserved commit
   `a82f9369d958fbcd9c9c91a7dc410436f5205d35`.
-- Deterministic dependency/license/vulnerability and CycloneDX implementation:
+- 确定性依赖/许可证/漏洞和 CycloneDX 实现：
   `defe45c`.
-- Windows x64 unpacked/NSIS, package-hash and packaged-app implementation:
+- Windows x64 unpacked/NSIS、包哈希和打包应用实现：
   `95c975f`.
-- Finite TC-M0-007 gate and SHA-pinned GitHub automation implementation:
+- 有限 TC-M0-007 门禁和固定 SHA 的 GitHub 自动化实现：
   `e6433a9`.
-- Toolchain-vulnerability and offline Electron-distribution packaging fix:
-  local commit `a1d60b7`, published as
+- 工具链漏洞和离线 Electron 分发打包修复：本地提交 `a1d60b7`，发布为
   `f42559688f4d90d1dea9bb1da2ff939da7387cd0`.
-- Reviewed toolchain-license admission fix: local commit `0661f87`, published
-  as `ccd06f0d604429e1ebfc70fad211967bb0cd8830`.
-- Exact external-URL boundary regression: local commit `7d429c0`, published as
-  final automated candidate
+- 已审阅工具链许可证准入修复：本地提交 `0661f87`，发布为 `ccd06f0d604429e1ebfc70fad211967bb0cd8830`。
+- 精确外部 URL 边界回归：本地提交 `7d429c0`，发布为最终自动候选
   `3c4ae5d7f268165409570da5dc5d603e4149fda0`.
-- Legacy task-state and task-documentation commits `9a286ad` and `c50a8e0`
-  were intentionally excluded from integration.
+- 旧任务状态和任务文档提交 `9a286ad` 与 `c50a8e0` 有意未集成。
 
-No fresh product, packaging or manual verification is claimed merely because
-this report consolidates earlier records.
+本报告只是汇总既有记录，不因此声称新增产品、打包或人工验证。
 
-## Existing validation
+## 已有验证
 
 | Capability                                    | Historical evidence                                                                                                                          | Recorded result                                                                                                                                                                                                                                                         |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -78,11 +58,9 @@ this report consolidates earlier records.
 | Command registry and window shell             | [Legacy M0-T05 command-shell evidence](../../docs/archive/task-model-v1/evidence/M0-T05-command-window-shell-2026-08-02.md)                  | The full quality gate passed with 324 unit and 18 integration tests; real-Electron E2E passed 3/3 and security passed 2/2, covering one command authority, native-menu projection, shared entry paths, localization, focus and preload boundaries.                      |
 | Dependency, brand assets and parser hardening | Integrated commits `3ae487861f0535f2d17e8558aebc5f15bb37cb78` and `644ad699384cfe608a84132b44ebbb43af950817`; retained-work execution record | `electron-builder@26.15.3`, reviewed Lattice assets and dependency metadata are integrated. Frozen installation, asset verification, focused unit, standalone integration and full quality verification exited `0`; malformed `pnpm ignored-builds` output is rejected. |
 
-## Executed commands and results
+## 已执行命令与结果
 
-This table reproduces commands and outcomes from the linked historical evidence
-and the preserved-work execution record. It does not represent a new M0 exit
-run.
+本表复述链接历史证据和保留工作执行记录中的命令与结果，不代表新的 M0 出口运行。
 
 | Date       | Environment                                                          | Command or procedure                                                                          | Exit code | Cases or coverage                                            | Result                                                                                          | Evidence                                                                                                    |
 | ---------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -94,11 +72,9 @@ run.
 | 2026-08-02 | Windows normal process environment                                   | Full `pnpm check`, real-Electron E2E and security commands                                    | `0`       | 324 unit, 18 integration, E2E 3/3 and security 2/2           | Command shell, lifecycle, accessibility and security regressions passed                         | [Command-shell record](../../docs/archive/task-model-v1/evidence/M0-T05-command-window-shell-2026-08-02.md) |
 | 2026-08-04 | Preserved branch, normal Windows process environment                 | Focused bootstrap helper tests, `pnpm.cmd test:integration`, `pnpm.cmd check` and diff checks | `0`       | Focused parser matrix plus full unit/integration/build chain | Malformed ignored-build output is rejected; formatting, lint, typecheck, tests and build passed | Phase 1 execution record and commit `a82f936`                                                               |
 
-### Retained-work integration verification
+### 保留工作集成验证
 
-The following finite commands were executed after the two retained
-implementation commits were integrated. They are integration evidence, not an
-M0 exit run.
+以下有限命令在两个保留实施提交集成后执行。它们属于集成证据，不是 M0 出口运行。
 
 | Command                                                                                                     | Exit code | Recorded result                                                                                                                                                                                   |
 | ----------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -110,17 +86,11 @@ M0 exit run.
 | `node scripts/verify-planning-docs.mjs`                                                                     | `0`       | Verified `9` iterations, `86` automated cases, `13` manual cases, `83` requirements and `36` compatibility items.                                                                                 |
 | `pnpm.cmd check`                                                                                            | `0`       | Format, lint, strict type checking, `400` unit tests, `18` integration tests and the production build passed.                                                                                     |
 
-The asset hash values above were also checked against the committed files and
-the exact values recorded in `build/brand/README.md`. Direct execution of a
-pnpm-managed tool shim outside pnpm's supported invocation context was treated
-only as an excluded diagnostic precondition and is not acceptance evidence.
+上述资源哈希还与已提交文件及 `build/brand/README.md` 中精确值核对。脱离 pnpm 支持的调用上下文直接执行 pnpm 管理的工具 shim，只作为排除的诊断前置条件，不属于验收证据。
 
-### Governance-gate corrections during integration
+### 集成期间的治理门禁修正
 
-Three follow-up commits were required to make the new iteration-governance
-gate accurately evaluate the integrated repository. They change governance
-formatting, verification or test-fixture behavior only and are not M0 product
-implementation:
+为使新迭代治理门禁准确评估集成仓库，需要三个后续提交。它们只改变治理格式、验证或测试夹具行为，不属于 M0 产品实现：
 
 | Commit    | Correction                                                                         | Reason                                                                                                                        |
 | --------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -128,7 +98,7 @@ implementation:
 | `99b9e53` | Remove an unnecessary initial value in the planning verifier's regular-file probe. | The iteration verifier remained fail-closed while satisfying the active no-warning lint gate.                                 |
 | `7798105` | Guard the optional regex capture before a planning-fixture target is joined.       | The fixture now fails explicitly on a missing capture and satisfies strict type checking without weakening target validation. |
 
-## Failures, fixes, and regression evidence
+## 失败、修复与回归证据
 
 | Finding                                                                                                                                           | Impact                                                                                         | Resolution                                                                                                                                                               | Regression evidence                                                                                         | Status                                               |
 | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -137,34 +107,17 @@ implementation:
 | Some malformed `pnpm ignored-builds` output could be interpreted too permissively.                                                                | Dependency-build admission could fail open on an unknown or malformed output suffix.           | Integrated commit `644ad699384cfe608a84132b44ebbb43af950817` validates the complete automatic section and optional exact explicit section, with fail-closed regressions. | Focused parser tests, integration tests and the full quality gate passed in the normal Windows environment. | Resolved and integrated.                             |
 | Sandboxed child-process cleanup reported `taskkill exited with 1` during the preserved-work check.                                                | The sandbox produced an environment-specific false failure in unrelated timeout cleanup tests. | The same finite checks were run once in the normal Windows process environment without weakening cleanup assertions.                                                     | Focused, integration and full quality gates exited `0`; `git diff --check` was clean.                       | Environment issue resolved for the preserved commit. |
 
-## Unused Squirrel peer correction (2026-08-15)
+## 未使用 Squirrel peer 修正（2026-08-15）
 
-GitHub quality run
+GitHub 质量运行
 [`31871899038`](https://github.com/dctorwho/lattice/actions/runs/31871899038)
-showed that retrying the same pnpm import operation did not resolve the
-Windows `EPERM` failure: the second bounded attempt failed on the same
-`electron-winstaller` rename. That retry is excluded from acceptance evidence
-and has been removed.
+证明重试相同 pnpm 导入操作没有解决 Windows `EPERM` 失败：第二次有限尝试仍在同一 `electron-winstaller` 重命名上失败。该重试不计入验收证据，并已移除。
 
-The replacement policy removes only the unused
-`app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` peer edge. A
-fresh offline resolution installed `489` packages with pnpm `11.12.0`, did not
-install either Squirrel package, and `pnpm peers check` reported no peer issues.
-The focused configuration and bootstrap-helper regression run passed `25/25`
-tests. The isolated offline bootstrap passed `1/1`, including a frozen install
-in a Chinese-and-space path, no automatically ignored build, and two identical
-production builds. A subsequent `pnpm.cmd check` passed formatting, lint,
-strict type checking, `423/423` unit tests, `18/18` integration tests and the
-production build. These are correction-development results, not M0 exit
-evidence; the GitHub CI gate and remaining M0 exit work listed below still
-govern acceptance.
+替代策略只移除未使用的 `app-builder-lib@26.15.3 -> electron-builder-squirrel-windows` peer 边。全新离线解析使用 pnpm `11.12.0` 安装 `489` 个包，没有安装任一 Squirrel 包，`pnpm peers check` 报告无 peer 问题。聚焦配置和自举辅助器回归通过 `25/25` 个测试。隔离离线自举通过 `1/1`，包括在中文和空格路径中冻结安装、没有自动忽略构建，以及两次相同生产构建。随后 `pnpm.cmd check` 通过格式、lint、严格类型检查、`423/423` 单元测试、`18/18` 集成测试和生产构建。这些是修正开发结果，不是 M0 出口证据；验收仍由下文 GitHub CI 门禁和剩余 M0 出口工作控制。
 
-## Current local exit evidence (2026-08-15)
+## 当前本地出口证据（2026-08-15）
 
-The following commands ran from the active Windows worktree after the audit,
-packaging and workflow implementations were integrated. GitHub subsequently
-ran the same quality, Electron, package and audit gates from a clean checkout.
-Neither automated path substitutes for MAN-M0-001.
+审计、打包和工作流实现集成后，下列命令从活跃 Windows 工作树运行。GitHub 随后从干净检出运行相同质量、Electron、打包和审计门禁。两条自动路径都不能替代 MAN-M0-001。
 
 | Command / boundary                                   | Exit code | Result                                                                                                                                                                              |
 | ---------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -180,16 +133,12 @@ Neither automated path substitutes for MAN-M0-001.
 | `pnpm.cmd audit:m0`                                  | `0`       | Planning, dependency audit, CycloneDX, workflows, brand assets and artifact hashes passed all `6` finite steps.                                                                     |
 | `node scripts/verify-planning-docs.mjs`              | `0`       | Verified `9` iterations, `86` automated cases, `13` manual cases, `83` requirements and `36` compatibility items.                                                                   |
 
-The ignored `artifacts/m0/` evidence set contains seven JSON files:
+被忽略的 `artifacts/m0/` 证据集包含七个 JSON 文件：
 `dependency-inventory.json`, `licenses.json`, `audit.json`,
 `toolchain-audit.json`, `sbom.cdx.json`, `artifact-hashes.json` and
-`m0-gate.json`. The production graph contains four components (`react`,
-`react-dom`, `scheduler`, `zod`), all four have MIT license coverage, production
-high and critical vulnerability counts are zero, and the complete toolchain
-has zero moderate, high or critical findings. The CycloneDX document uses spec
-version 1.6 with exact component/dependency coverage.
+`m0-gate.json`。生产图包含四个组件（`react`、`react-dom`、`scheduler`、`zod`），四者均有 MIT 许可证覆盖，生产 high 和 critical 漏洞数为零，完整工具链没有 moderate、high 或 critical 发现。CycloneDX 文档使用规范版本 1.6，具有精确组件/依赖覆盖。
 
-The rebuilt local candidate hashes are:
+重新构建的本地候选哈希如下：
 
 | Artifact                               | Bytes       | SHA-256                                                            |
 | -------------------------------------- | ----------- | ------------------------------------------------------------------ |
@@ -199,21 +148,11 @@ The rebuilt local candidate hashes are:
 | `build/brand/lattice-icon-256.png`     | `2754`      | `4317ae0aecca27dddd570e511b073bc8b6963e46a49fe025d2c4c98775036014` |
 | `build/brand/lattice.ico`              | `2776`      | `06e6f68ec6f11a92e6df43e35c83f72abe1f6eeff6fa378328fc17a3ff36896c` |
 
-Two bounded package attempts that depended on electron-builder's redundant
-Electron download path were excluded after GitHub network timeouts. A TDD fix
-then bound electron-builder to the already installed exact
-`node_modules/electron/dist` runtime. One sandbox diagnostic subsequently
-failed because pnpm's SQLite store was not writable there; the same finite
-package command ran once in the normal Windows environment, used the custom
-unpacked Electron distribution without downloading Electron, and produced the
-candidate above. No retry loop or acceptance relaxation was introduced.
+两次依赖 electron-builder 冗余 Electron 下载路径的有限打包尝试因 GitHub 网络超时被排除。随后 TDD 修复把 electron-builder 绑定到已安装的精确 `node_modules/electron/dist` 运行时。之后一次沙箱诊断因 pnpm SQLite 存储不可写而失败；同一有限打包命令在正常 Windows 环境运行一次，使用自定义 unpacked Electron 分发且不下载 Electron，并生成上述候选。没有引入重试循环或放宽验收。
 
-## GitHub exact-candidate evidence (2026-08-15)
+## GitHub 精确候选证据（2026-08-15）
 
-The public PR head was
-`3c4ae5d7f268165409570da5dc5d603e4149fda0`. The local and remote Git trees
-were both `8b38bd10bf3ef74f08eb3beb801ac4c488d46db7` before these report-only state
-changes.
+公开 PR head 为 `3c4ae5d7f268165409570da5dc5d603e4149fda0`；在这些仅报告状态变更前，本地和远程 Git tree 均为 `8b38bd10bf3ef74f08eb3beb801ac4c488d46db7`。
 
 | Gate                    | Result | Evidence                                                                                                                                                                                                                                                                                             |
 | ----------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -223,20 +162,15 @@ changes.
 | Main ruleset            | passed | [Ruleset 20752831](https://github.com/dctorwho/lattice/rules/20752831) is active, has no bypass actors, preserves PR/thread/deletion/non-fast-forward protection, and requires `quality`, `codeql` and `dependency-review` from GitHub Actions app `15368`.                                          |
 | Required-check pressure | passed | [Earlier Dependency Review run 31887390234](https://github.com/dctorwho/lattice/actions/runs/31887390234) failed on the incomplete license policy and the PR was observed `BLOCKED`; after the reviewed fix, all required contexts passed and PR #1 was observed `MERGEABLE / CLEAN` without bypass. |
 
-## Blockers
+## 阻断项
 
-None. The user supplied the required MAN-M0-001 conclusion after reviewing the
-current application result and conditioning acceptance on all designed
-iteration test cases passing; the automated result table and GitHub evidence
-prove that condition.
+无。用户审阅当前应用结果后提供必需 MAN-M0-001 结论，并以所有已设计迭代测试用例通过为验收条件；自动结果表和 GitHub 证据证明该条件已满足。
 
-## Unexecuted verification
+## 未执行验证
 
-None for the accepted M0 candidate. Any later code, dependency, packaging,
-workflow or security change invalidates the affected evidence and must rerun
-the applicable exact-candidate gates.
+已接受 M0 候选没有未执行验证。任何后续代码、依赖、打包、工作流或安全变更都会使受影响证据失效，必须重跑适用的精确候选门禁。
 
-## Coverage
+## 覆盖情况
 
 | Test contract area                              | Current evidence state | Remaining work                                                                                        |
 | ----------------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -250,20 +184,15 @@ the applicable exact-candidate gates.
 | TC-M0-007 CI, audit, SBOM and packaged artifact | passed                 | Quality, CodeQL, Dependency Review and ruleset-pressure evidence passed for the published candidate.  |
 | MAN-M0-001 ordinary-user production review      | passed                 | User reported no observed issue and accepted the candidate after all designed iteration cases passed. |
 
-## Residual risks
+## 剩余风险
 
-- The Windows package is not represented as publicly trusted or code-signed;
-  public signing and release trust remain M8 responsibilities rather than an
-  unrecorded M0 claim.
-- The SBOM, audit reports and package hashes prove the recorded candidate, not
-  future dependency or packaging changes.
-- M0 establishes the secure engineering and shell foundation only; document,
-  workspace, hybrid editing, export and final release behavior remain assigned
-  to M1-M8.
+- Windows 包没有被描述为公开可信或代码签名；公共签名与发布信任仍属于 M8 职责，不成为未记录的 M0 声明。
+- SBOM、审计报告和包哈希证明已记录候选，不证明未来依赖或打包变更。
+- M0 只建立安全工程和外壳基础；文档、工作区、混合编辑、导出和最终发布行为仍分配给 M1–M8。
 
-## Automated case results
+## 自动化用例结果
 
-| Case ID   | Result | Evidence                                                                                                                                                                                                                                                                                                       | Notes                                                                                                         |
+| 用例 ID   | 结果   | 证据                                                                                                                                                                                                                                                                                                           | 备注                                                                                                          |
 | --------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | TC-M0-001 | passed | Historical bootstrap record and [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255)                                                                                                                                                                                        | Frozen dependency installation and repeatability evidence are complete.                                       |
 | TC-M0-002 | passed | Fault-injection integration suite and [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255)                                                                                                                                                                                  | Format, lint, type, unit, integration and build failures are fail-closed without recursive check execution.   |
@@ -274,28 +203,22 @@ the applicable exact-candidate gates.
 | TC-M0-006 | passed | [Quality run 31888333255](https://github.com/dctorwho/lattice/actions/runs/31888333255) unit and E2E evidence                                                                                                                                                                                                  | Registry, native menu, renderer entry paths, focus and preload surface passed.                                |
 | TC-M0-007 | passed | [Quality](https://github.com/dctorwho/lattice/actions/runs/31888333255), [CodeQL](https://github.com/dctorwho/lattice/actions/runs/31888333231), [Dependency Review](https://github.com/dctorwho/lattice/actions/runs/31888333221), and [ruleset 20752831](https://github.com/dctorwho/lattice/rules/20752831) | Clean-checkout CI, package launch, audit, SBOM, hashes and required-check pressure all passed without bypass. |
 
-## Manual case results
+## 人工用例结果
 
-The user supplied the manual conclusion in this task on 2026-08-15: “目前看没什么
-问题，如果设计的迭代测试用例都通过了，那就没问题”. All declared iteration
-test cases and the final GitHub gates passed, satisfying the stated acceptance
-condition. The package hashes, dependency/license audit, SBOM and ruleset proof
-are retained above; the agent did not substitute its own manual conclusion.
+用户于 2026-08-15 在本任务提供人工结论：“目前看没什么问题，如果设计的迭代测试用例都通过了，那就没问题”。所有声明的迭代测试用例和最终 GitHub 门禁均已通过，满足所述验收条件。包哈希、依赖/许可证审计、SBOM 和 ruleset 证明保留在上文；代理没有用自己的人工结论替代。
 
-| Case ID    | Result | Evaluator                           | Evidence                                                                                                                                                                             |
+| 用例 ID    | 结果   | 评估人                              | 证据                                                                                                                                                                                 |
 | ---------- | ------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | MAN-M0-001 | passed | User / designated release evaluator | User acceptance message dated 2026-08-15, conditioned on all designed iteration cases passing; automated result table, package hashes, audit/SBOM and GitHub ruleset evidence above. |
 
-## Manual-gate handoff
+## 人工门禁交接
 
 | Manual case | Required evaluator                                                     | Evidence location                                                                                                           | Current handoff status                                                                                           |
 | ----------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | MAN-M0-001  | User or designated release evaluator on Windows 11 as an ordinary user | This report, final package hashes, user acceptance message, dependency/license audit, SBOM and GitHub check/ruleset records | Completed: user reported no observed issue and accepted the candidate after all designed iteration cases passed. |
 
-The agent preparing this report does not supply the manual conclusion.
+编写本报告的代理不提供人工结论。
 
-## Exit-readiness statement
+## 退出就绪声明
 
-M0 is `passed`. All automated cases and MAN-M0-001 have passed, no M0 blocker
-remains, and `05-exit-report.md` records the final completion decision,
-delivery summary and inputs released to M1.
+M0 为 `passed`。全部自动用例和 MAN-M0-001 均已通过，不存在 M0 阻断项；`05-exit-report.md` 记录最终完成结论、交付摘要和释放给 M1 的输入。

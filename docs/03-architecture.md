@@ -32,26 +32,20 @@ flowchart LR
 - **Workers/utility process**：全局搜索、批量解析、Mermaid 和重型导出准备。
 - **Export renderer**：只加载本地模板和净化后的文档模型，无 Node 权限。
 
-### M0 Electron security ownership
+### M0 Electron 安全职责
 
-The M0 Electron shell keeps each security boundary owned by one main-process
-module:
+M0 Electron 外壳让每个安全边界只由一个主进程模块负责：
 
-| Boundary              | Owner                                                                                                                                                                 | Responsibility                                                                                                                                                                                                                                                                      |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| App bootstrap         | `src/main/index.ts`, `src/main/bootstrap/compose-application.ts`, `src/main/bootstrap/resolve-main-window-options.ts`, and `src/main/bootstrap/create-main-window.ts` | `index.ts` adapts `app.enableSandbox()`, `app.isPackaged`, and `ELECTRON_RENDERER_URL`; composition calls the sandbox enablement before readiness; the resolver removes the development URL for packaged execution; and the factory performs the resulting `loadURL` or `loadFile`. |
-| Session policy        | `src/main/security/session-security-policy.ts` and `src/main/security/content-security-policy.ts`                                                                     | Installs CSP response headers and denies permission checks and permission requests.                                                                                                                                                                                                 |
-| WebContents policy    | `src/main/security/web-contents-security-policy.ts`                                                                                                                   | Synchronously denies navigation, redirects, new windows, and webview attachment.                                                                                                                                                                                                    |
-| External URL policy   | `src/main/security/external-url-policy.ts`                                                                                                                            | Parses and bounds input, applies protocol, credential, and target allowlists, requests confirmation, then hands only the normalized URL to the OS.                                                                                                                                  |
-| BrowserWindow factory | `src/main/bootstrap/create-main-window.ts`                                                                                                                            | Creates windows with the immutable production `webPreferences` security baseline.                                                                                                                                                                                                   |
-| Preload               | `src/preload/index.ts`, `src/preload/api/create-app-api.ts`, and `create-command-api.ts`                                                                              | M0 owns the frozen typed `{ app, commands }` surface. Generic IPC and future product capabilities remain absent until their owning iteration defines and verifies a narrow contract.                                                                                                |
+| 边界               | 负责人                                                                                                                                                              | 职责                                                                                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 应用启动           | `src/main/index.ts`、`src/main/bootstrap/compose-application.ts`、`src/main/bootstrap/resolve-main-window-options.ts` 和 `src/main/bootstrap/create-main-window.ts` | `index.ts` 适配 `app.enableSandbox()`、`app.isPackaged` 和 `ELECTRON_RENDERER_URL`；组合阶段在 ready 前启用沙箱；解析器为打包运行移除开发 URL；工厂据此执行 `loadURL` 或 `loadFile`。 |
+| 会话策略           | `src/main/security/session-security-policy.ts` 和 `src/main/security/content-security-policy.ts`                                                                    | 安装 CSP 响应头，并拒绝权限检查和权限请求。                                                                                                                                           |
+| WebContents 策略   | `src/main/security/web-contents-security-policy.ts`                                                                                                                 | 同步拒绝导航、重定向、新窗口和 webview 附加。                                                                                                                                         |
+| 外部 URL 策略      | `src/main/security/external-url-policy.ts`                                                                                                                          | 解析并限制输入，应用协议、凭据和目标白名单，请求确认，然后只把规范化 URL 交给操作系统。                                                                                               |
+| BrowserWindow 工厂 | `src/main/bootstrap/create-main-window.ts`                                                                                                                          | 使用不可变的生产 `webPreferences` 安全基线创建窗口。                                                                                                                                  |
+| Preload            | `src/preload/index.ts` 与 `src/preload/api/`                                                                                                                        | M1 拥有冻结的类型化 `{ app, commands, files, recovery }` 表面。通用 IPC 和后续产品能力继续缺席，直到其所属迭代定义并验证窄契约。                                                      |
 
-`src/main/index.ts` registers the WebContents policy through
-`web-contents-created` before readiness, so it also applies to future windows.
-That broad event coverage does not grant privileged capabilities. M0 exposes
-only one narrow invoke method and strict command event/state methods. Every
-later capability still requires its owning iteration's contract, authorization,
-implementation, and tests.
+`src/main/index.ts` 在 ready 前通过 `web-contents-created` 注册 WebContents 策略，因此策略也适用于后续窗口。广泛的事件覆盖不会授予特权能力。M1 只暴露应用生命周期、严格命令、已授权文档和恢复所需的窄方法；干净外部重载必须由主进程重新读取并核对磁盘版本后同步单调会话修订。恢复写入中的磁盘路径必须匹配主进程当前窗口已授权会话，只有无路径且无磁盘版本的新建文档可首次登记。每项后续能力仍需由所属迭代提供契约、授权、实现和测试。
 
 ## 3. 源码与会话模型
 
@@ -70,8 +64,9 @@ interface DocumentSession {
   readonly id: string
   readonly path: string | null
   readonly buffer: SourceBuffer
-  readonly revision: number
-  readonly savedRevision: number
+  readonly revision: number // 每次正文事务、撤销或重做后单调递增，用于拒绝陈旧请求
+  readonly currentContentRevision: number // 当前历史节点的稳定内容版本
+  readonly savedRevision: number // 最近成功保存的内容版本
   readonly diskVersion: DiskVersion | null
   readonly externalState: 'clean' | 'changed' | 'deleted' | 'unknown'
 }
@@ -79,11 +74,13 @@ interface DocumentSession {
 interface DiskVersion {
   readonly mtimeMs: number
   readonly size: number
-  readonly contentHash?: string
+  readonly contentHash: string
 }
 ```
 
-加载时解码字节并建立 `eolByLine`。CodeMirror 内部使用 LF；每个 transaction 同步更新文本和行结束符索引。序列化时按索引恢复未触及行的原始 EOL，新行使用相邻行，否则使用文档主导 EOL。未脏会话直接复用原始字节。
+加载时解码字节并建立 `eolByLine`。CodeMirror 内部使用 LF；每个 transaction 同步更新文本和行结束符索引。序列化时按索引恢复未触及行的原始 EOL：替换范围先顺序复用原 EOL，额外的新行依次使用前邻、后邻、文档主导 EOL，LF/CRLF 数量相同时固定选择 LF。未脏会话直接复用原始字节。
+
+`revision` 是单调操作令牌，不因撤销而回退；历史节点另由 `currentContentRevision` 标识。脏状态只比较 `currentContentRevision !== savedRevision`，因此撤销回已保存内容会恢复干净状态，同时旧的保存、监视器或块补丁请求仍会因较小 `revision` 被拒绝。M1 的 `DiskVersion.contentHash` 必填，不能只依赖 mtime 和 size 判断外部冲突。
 
 `DocumentSession` 是独立于 React 的领域对象。React 只订阅路径、脏状态、统计和命令状态；不得持有完整文档副本。
 
@@ -120,12 +117,12 @@ interface MarkdownBlockAdapter<TModel> {
 
 ## 6. 命令系统
 
-M0 的纯 TypeScript `CommandRegistry` 位于 `src/domain/commands/`，不依赖
-React、DOM、Electron 或 Node。当前 `CommandId` 仅包含
-`view.toggleSidebar` 和 `app.about`；context 已包含 session/dirty/editor 维度，
-但这两个基础命令不会虚构尚不存在的产品限制。
+纯 TypeScript `CommandRegistry` 位于 `src/domain/commands/`，不依赖 React、DOM、
+Electron 或 Node。M1 的 `CommandId` 包含关于、切换侧栏、新建、打开、保存、另存为、
+关闭、撤销、重做、查找和替换共 11 项；状态由 session、dirty、read-only、editor 和
+undo/redo 深度派生。
 
-`src/shared/commands/` 是这两个命令的层无关元数据权威，集中固定 ID、label
+`src/shared/commands/` 是命令的层无关元数据权威，集中固定 ID、label
 key、快捷键、菜单分组和菜单类型；`src/shared/i18n/` 集中提供原生菜单与
 renderer 共用的中英文基础命令文案。domain 定义、main 原生菜单和 renderer
 快捷键适配器均从这张冻结台账派生，不再各自硬编码快捷键或标签。
@@ -135,7 +132,7 @@ registry 在构造时拒绝重复 ID，输出按 ID 排序的只读
 renderer 按钮、右键菜单和快捷键直接调用该 registry；原生菜单通过严格的
 main-to-preload event 回传同一 command ID。禁止在 UI 或 main 内复制命令逻辑。
 
-main 的应用菜单只是投影：renderer 把恰好两个批准 ID 的严格状态快照通过
+main 的应用菜单只是投影：renderer 把恰好 11 个批准 ID 的严格状态快照通过
 现有 sender/window 验证路由同步；main 按派生的窗口 ID 保存快照，只对当前
 focused 且已登记窗口应用。窗口 blur、销毁或无 focused target 时立即重新
 应用失败关闭状态；无快照、发送异常同样失败关闭。
@@ -148,7 +145,7 @@ focused 且已登记窗口应用。窗口 blur、销毁或无 focused target 时
 - 结果使用 `Result<T, AppError>` 形状，错误包含稳定 code、可本地化 message key 和安全 details。
 - 长任务支持进度、取消和超时；取消必须终止子进程或 worker。
 
-### M0 implemented IPC flow
+### M0 已实现 IPC 流程
 
 ```text
 renderer window.lattice.app.getInfo()
@@ -162,14 +159,9 @@ renderer window.lattice.app.getInfo()
 → renderer
 ```
 
-M0 derives `windowId` and `webContentsId` from the application-owned
-registry. Its `sessionId` is explicitly `null`; no renderer-controlled window
-or session context crosses the boundary. The current handler returns only
-contract version 1 application name, version, and `win32 | darwin | linux`
-platform metadata. File, workspace, settings, import, and export capabilities
-belong to their owning iterations and are not callable in M0.
+M0 从应用拥有的注册表派生 `windowId` 和 `webContentsId`。`sessionId` 明确为 `null`；渲染器控制的窗口或会话上下文不会跨越边界。M1 的 `files.open()` 仍先完成相同 sender/window 校验，再由主进程针对该窗口打开选择器。renderer 不能提供路径。主进程读取规范真实路径、完整字节、stat 与 SHA-256，建立并按窗口保存 `DocumentSession`，renderer 只接收经过 schema 验证的文档描述。打开响应、保存请求、恢复写入和恢复列表分别使用路由专属大文档预算，不放宽其他 IPC 的 M0 默认预算。M1 已启用严格的保存、另存为、单次 token 确认覆盖、外部变化订阅、恢复写入/列出/放弃和窗口关闭决定；工作区、设置、导入和导出仍须在各自迭代实现并验证后才可调用。
 
-### M0 command projection flow
+### M0 命令投影流程
 
 ```text
 renderer CommandRegistry state
@@ -185,10 +177,7 @@ native menu click
 → renderer CommandRegistry.execute(id, context)
 ```
 
-`commands.onInvoke()` returns an idempotent unsubscribe. Invalid event payloads
-and renderer listener exceptions are contained without exposing the Electron
-event or raw payload. Buttons, renderer context menu, and shortcuts never cross
-IPC; they call the same registry directly.
+`commands.onInvoke()` 返回幂等取消订阅函数。无效事件载荷和渲染器监听器异常会被隔离，不暴露 Electron 事件或原始载荷。按钮、渲染器右键菜单和快捷键不跨越 IPC，而是直接调用同一注册表。
 
 ## 8. 工作区与搜索
 

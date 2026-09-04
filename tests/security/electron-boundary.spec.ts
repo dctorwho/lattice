@@ -106,12 +106,31 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
       if (typeof onInvoke !== 'function' || typeof updateStates !== 'function') {
         throw new Error('Expected approved command methods')
       }
+      const files: unknown = Reflect.get(lattice, 'files')
+      const recovery: unknown = Reflect.get(lattice, 'recovery')
+      if (typeof files !== 'object' || files === null) throw new Error('Expected files API')
+      if (typeof recovery !== 'object' || recovery === null)
+        throw new Error('Expected recovery API')
       const result: unknown = await Reflect.apply(getInfo, app, [])
       const stateResult: unknown = await Reflect.apply(updateStates, commands, [
         [
-          { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
-          { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
-        ]
+          'app.about',
+          'edit.find',
+          'edit.redo',
+          'edit.replace',
+          'edit.undo',
+          'file.close',
+          'file.new',
+          'file.open',
+          'file.save',
+          'file.saveAs',
+          'view.toggleSidebar'
+        ].map((id) => ({
+          id,
+          isVisible: true,
+          isEnabled: true,
+          isChecked: id === 'view.toggleSidebar'
+        }))
       ])
       const unsubscribe: unknown = Reflect.apply(onInvoke, commands, [() => {}])
       if (typeof unsubscribe !== 'function') {
@@ -122,17 +141,21 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
         latticeKeys: Object.keys(lattice),
         appKeys: Object.keys(app),
         commandKeys: Object.keys(commands),
+        fileKeys: Object.keys(files),
+        recoveryKeys: Object.keys(recovery),
         frozen: {
           lattice: Object.isFrozen(lattice),
           app: Object.isFrozen(app),
-          commands: Object.isFrozen(commands)
+          commands: Object.isFrozen(commands),
+          files: Object.isFrozen(files),
+          recovery: Object.isFrozen(recovery)
         },
         result,
         stateResult,
         absent: {
           invoke: typeof Reflect.get(lattice, 'invoke'),
           send: typeof Reflect.get(lattice, 'send'),
-          files: typeof Reflect.get(lattice, 'files'),
+          dialogs: typeof Reflect.get(lattice, 'dialogs'),
           exports: typeof Reflect.get(lattice, 'exports'),
           openExternal: typeof Reflect.get(app, 'openExternal'),
           commandInvoke: typeof Reflect.get(commands, 'invoke'),
@@ -143,13 +166,24 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
     })
 
     expect(preloadSurface).toEqual({
-      latticeKeys: ['app', 'commands'],
-      appKeys: ['getInfo'],
+      latticeKeys: ['app', 'commands', 'files', 'recovery'],
+      appKeys: ['onCloseRequested', 'confirmClose', 'getInfo'],
       commandKeys: ['onInvoke', 'updateStates'],
+      fileKeys: [
+        'open',
+        'save',
+        'saveAs',
+        'confirmedOverwrite',
+        'reloadExternal',
+        'onExternalChange'
+      ],
+      recoveryKeys: ['write', 'list', 'discard'],
       frozen: {
         lattice: true,
         app: true,
-        commands: true
+        commands: true,
+        files: true,
+        recovery: true
       },
       result: {
         ok: true,
@@ -170,7 +204,7 @@ test('TC-M0-003 denies renderer privileges and preserves the global sandbox boun
       absent: {
         invoke: 'undefined',
         send: 'undefined',
-        files: 'undefined',
+        dialogs: 'undefined',
         exports: 'undefined',
         openExternal: 'undefined',
         commandInvoke: 'undefined',

@@ -8,16 +8,22 @@ function productionLaunchEnvironment(): Record<string, string> {
   return environment
 }
 
-test('M0-T05 launches and closes the production Electron window shell', async () => {
+test('M1 launches the production Electron window with an editable source session', async () => {
   const application = await electron.launch({ args: ['.'], env: productionLaunchEnvironment() })
   try {
     const page = await application.firstWindow()
     await expect(page.getByRole('heading', { name: 'Lattice' })).toBeVisible()
-    await expect(page.getByRole('status')).toContainText('工程基础已就绪')
+    await expect(page.getByRole('status')).toContainText('0 词')
+    await expect(page.getByRole('status')).toContainText('UTF-8')
     await expect(page.getByRole('complementary', { name: '侧栏' })).toBeVisible()
     await expect(page.getByRole('main')).toBeVisible()
-    await expect(page.getByRole('textbox')).toHaveCount(0)
+    await expect(page.getByRole('textbox')).toBeVisible()
     expect(new URL(page.url()).protocol).toBe('file:')
+    const closed = page.waitForEvent('close', { timeout: 5_000 })
+    await application.evaluate((electronApi) => {
+      electronApi.BrowserWindow.getFocusedWindow()?.close()
+    })
+    await closed
   } finally {
     await application.close()
   }

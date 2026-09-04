@@ -73,26 +73,37 @@ changes 按旧文档坐标、不重叠并从后向前应用。range/hash/revisio
 interface DiskVersion {
   mtimeMs: number
   size: number
-  contentHash?: string
+  contentHash: string
 }
 
-interface OpenedFile {
+interface OpenedFileIdentity {
+  documentId: string
   path: string
   bytesHash: string
+  diskVersion: DiskVersion
+}
+
+interface EditableOpenedFile extends OpenedFileIdentity {
+  accessMode: 'editable'
   text: string
   encoding: 'utf8' | 'utf8-bom' | 'utf16le' | 'utf16be'
   eolByLine: readonly ('\n' | '\r\n')[]
-  diskVersion: DiskVersion
-  readOnlyReason?: 'unsupported-encoding' | 'permission' | 'policy'
 }
+
+interface ReadOnlyOpenedFile extends OpenedFileIdentity {
+  accessMode: 'read-only'
+  reason: 'unsupported-encoding'
+}
+
+type OpenedFile = EditableOpenedFile | ReadOnlyOpenedFile
 
 interface SaveFileRequest {
   documentId: string
   path: string
   revision: number
   text: string
-  encoding: OpenedFile['encoding']
-  eolByLine: OpenedFile['eolByLine']
+  encoding: EditableOpenedFile['encoding']
+  eolByLine: EditableOpenedFile['eolByLine']
   expectedDiskVersion: DiskVersion | null
 }
 
@@ -106,7 +117,7 @@ interface SavedFile {
 
 renderer 不提供“忽略冲突”布尔值。覆盖冲突使用单独 `files.confirmedOverwrite()`，携带主进程生成的一次性 conflict token。
 
-## 4. 当前 Preload API（M0 已实现）
+## 4. 当前 Preload API（M1 已启用部分）
 
 ```ts
 interface AppInfo {
@@ -119,6 +130,10 @@ interface AppInfo {
 interface LatticeDesktopApi {
   readonly app: {
     readonly getInfo: () => Promise<Result<AppInfo, AppError>>
+    readonly onCloseRequested: (listener: () => void) => () => void
+    readonly confirmClose: (
+      decision: 'close' | 'cancel'
+    ) => Promise<Result<{ readonly applied: true }, AppError>>
   }
   readonly commands: {
     readonly onInvoke: (listener: (id: CommandId) => void) => () => void
@@ -126,20 +141,61 @@ interface LatticeDesktopApi {
       states: readonly CommandState[]
     ) => Promise<Result<CommandStateSync, AppError>>
   }
+  readonly files: {
+    readonly open: () => Promise<Result<OpenedFile | null, AppError>>
+    readonly save: (request: SaveFileRequest) => Promise<Result<FileSaveOutcome, AppError>>
+    readonly saveAs: (
+      request: DocumentSaveSnapshot
+    ) => Promise<Result<FileSaveOutcome | null, AppError>>
+    readonly confirmedOverwrite: (
+      request: DocumentSaveSnapshot & { readonly conflictToken: string }
+    ) => Promise<Result<FileSaveOutcome, AppError>>
+    readonly reloadExternal: (
+      request: FilesReloadExternalRequest
+    ) => Promise<Result<ReloadedExternalFile, AppError>>
+    readonly onExternalChange: (listener: (event: FilesExternalChangeEvent) => void) => () => void
+  }
+  readonly recovery: {
+    readonly write: (
+      snapshot: RecoverySnapshot
+    ) => Promise<Result<{ readonly applied: true }, AppError>>
+    readonly list: () => Promise<Result<readonly RecoveryRecord[], AppError>>
+    readonly discard: (documentId: string) => Promise<Result<{ readonly applied: true }, AppError>>
+  }
 }
 ```
 
-当前 renderer 公共表面精确为冻结的 `{ app, commands }`。`getInfo()` 发送契约
-版本 1、preload 生成的 UUID 和空 payload。`commands.onInvoke()` 只传批准 ID
-并返回幂等 unsubscribe；`commands.updateStates()` 发送 preload UUID 和恰好
-两个批准状态。频道仅是 main/preload 内部映射。root、`app` 和 `commands`
-均不含通用 `invoke`、`send`、`on` 或其他能力。
+当前 renderer 公共表面精确为冻结的 `{ app, commands, files, recovery }`。`getInfo()`
+发送契约版本 1、preload 生成的 UUID 和空 payload。`commands.onInvoke()` 只传批准 ID
+并返回幂等 unsubscribe；`commands.updateStates()` 发送 preload UUID 和完整的 11 个
+批准命令状态。窗口关闭事件只通知“用户请求关闭”，renderer 完成未保存门禁后必须通过
+`confirmClose('close' | 'cancel')` 回应；主进程不得在回应前销毁窗口。
+
+`files.open()` 不接收 renderer 路径，只发送空 payload，由主进程针对已验证窗口打开原生
+文件选择器；取消返回 `ok:true, value:null`。可编辑响应包含文档 ID、规范路径、LF 文本、
+编码、逐行 EOL、字节哈希与强制含哈希的磁盘版本；未知编码只返回只读原因、大小与哈希，
+不跨 IPC 传原始二进制。保存、另存为和确认覆盖均传严格快照；确认覆盖只能使用主进程
+签发且一次性消费的冲突 token。外部变化订阅只接收主进程已授权会话的严格事件，并返回
+幂等 unsubscribe；干净重载通过 `reloadExternal()` 让主进程重新读取规范路径、核对事件中的
+磁盘版本并返回单调修订，renderer 不能自行推进主进程磁盘基线。恢复接口只允许按当前会话
+写入、列出和放弃经过 schema 验证的快照；
+带路径快照必须匹配当前窗口的主进程授权会话，只有无路径、无磁盘版本且保存修订为零的
+新建文档可首次登记。受控恢复记录列出时由主进程为当前窗口重建授权，renderer 自报路径
+不能创建磁盘写权限。首次另存为不要求预先写恢复快照，但目标路径仍只能来自主进程选择器。
+主进程按窗口保存完整 `DocumentSession`，窗口销毁时清理授权会话和监视器。
+
+频道仅是 main/preload 内部映射。root、`app`、`commands`、`files` 和 `recovery` 均不含
+通用 `invoke`、`send`、`on`、`readAnyPath` 或其他能力。
+
+普通通道继续使用 65,536 字符、深度 8、256 条目的值预算。打开响应、保存请求、恢复写入
+和恢复列表因 M1 需要验证 10 MiB 文档而使用各自路由专属的 12 MiB 字符与约 10 Mi 条目
+上限；其他方向和通道不继承该额度。所有请求与响应仍须同时通过严格 Zod schema、
+JSON-like 检查和 preload 请求 ID 相关性校验。
 
 ### 后续迭代目标表面（当前不可调用）
 
-下列接口继续约束未来设计，但不属于 M0 的运行时
-`LatticeDesktopApi`。外链/对话框、文件、workspace、recovery、settings、
-import 和 export 必须由对应后续迭代逐项授权、实现和测试后才能加入。
+下列接口继续约束未来设计。外链、独立对话框、工作区、设置、导入和导出必须由对应迭代
+逐项授权、实现和测试后才能加入；M1 已启用的保存、覆盖和恢复接口以上文精确表面为准。
 
 ```ts
 interface TargetLatticeDesktopApi {
@@ -153,7 +209,6 @@ interface TargetLatticeDesktopApi {
     chooseSavePath(options: SavePathOptions): Promise<Result<string | null>>
   }
   files: {
-    openAuthorized(path: string): Promise<Result<OpenedFile>>
     save(request: SaveFileRequest): Promise<Result<SavedFile>>
     overwriteWithToken(request: ConfirmedSaveRequest): Promise<Result<SavedFile>>
     statAuthorized(path: string): Promise<Result<DiskVersion>>
@@ -217,7 +272,7 @@ interface SearchRequest {
 
 前端只持有 workspace ID 与相对 entry ID；绝对根路径仅在需要展示/设置时通过脱敏视图返回。搜索结果携带 workspace-relative path、line/column、match range 和有限 context。
 
-## 6. Command ID
+## 6. 命令 ID
 
 命名为 `<domain>.<verb>`，一旦发布保持稳定：
 

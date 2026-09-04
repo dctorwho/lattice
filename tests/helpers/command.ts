@@ -57,6 +57,23 @@ function createTimeoutTerminationAttempt(child: ChildProcess): TimeoutTerminatio
       })
       terminator.once('close', (exitCode) => {
         if (exitCode !== 0) {
+          if (child.exitCode !== null || child.pid === undefined) {
+            resolve()
+            return
+          }
+          try {
+            process.kill(child.pid, 0)
+          } catch (error) {
+            if (
+              typeof error === 'object' &&
+              error !== null &&
+              'code' in error &&
+              error.code === 'ESRCH'
+            ) {
+              resolve()
+              return
+            }
+          }
           reject(new Error(`taskkill exited with ${exitCode ?? 'no exit code'}.`))
           return
         }

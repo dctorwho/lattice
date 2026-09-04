@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
-  "product_baseline": "Typora 1.13.8 documented feature compatibility",
-  "current_iteration": "M1",
+  "product_baseline": "Typora 1.13.8 Windows observable product replica",
+  "current_iteration": "M2",
   "allowed_statuses": ["blocked", "ready", "in_progress", "awaiting_manual", "passed", "failed"],
   "iterations": [
     {
@@ -41,9 +41,9 @@
     },
     {
       "id": "M1",
-      "status": "ready",
+      "status": "passed",
       "depends_on": ["M0"],
-      "manual_gate": true,
+      "manual_gate": false,
       "entry": {
         "requirements": "iterations/M1-document-core/01-requirements.md",
         "detailed_design": "iterations/M1-document-core/02-detailed-design.md",
@@ -53,13 +53,26 @@
         "test_report": "iterations/M1-document-core/04-test-report.md",
         "iteration_report": "iterations/M1-document-core/05-exit-report.md"
       },
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "test",
+          "summary": "M1 自动化门禁通过：537 个单元、62 个集成、14 个 Electron 端到端、2 个安全、3 个性能用例和 11 个固定自动验收场景通过。",
+          "path": "iterations/M1-document-core/04-test-report.md",
+          "recorded_at": "2026-09-04T11:19:47Z"
+        },
+        {
+          "kind": "report",
+          "summary": "M1 的 22 个需求与兼容性项均有通过证据，REF-001..005 已确认无已知复刻差异。",
+          "path": "iterations/M1-document-core/05-exit-report.md",
+          "recorded_at": "2026-09-04T11:19:47Z"
+        }
+      ]
     },
     {
       "id": "M2",
-      "status": "blocked",
+      "status": "ready",
       "depends_on": ["M1"],
-      "manual_gate": true,
+      "manual_gate": false,
       "entry": {
         "requirements": "iterations/M2-hybrid-editor/01-requirements.md",
         "detailed_design": "iterations/M2-hybrid-editor/02-detailed-design.md",
@@ -107,7 +120,7 @@
       "id": "M5",
       "status": "blocked",
       "depends_on": ["M4"],
-      "manual_gate": true,
+      "manual_gate": false,
       "entry": {
         "requirements": "iterations/M5-media-theme/01-requirements.md",
         "detailed_design": "iterations/M5-media-theme/02-detailed-design.md",
@@ -123,7 +136,7 @@
       "id": "M6",
       "status": "blocked",
       "depends_on": ["M5"],
-      "manual_gate": true,
+      "manual_gate": false,
       "entry": {
         "requirements": "iterations/M6-export/01-requirements.md",
         "detailed_design": "iterations/M6-export/02-detailed-design.md",
@@ -155,7 +168,7 @@
       "id": "M8",
       "status": "blocked",
       "depends_on": ["M7"],
-      "manual_gate": true,
+      "manual_gate": false,
       "entry": {
         "requirements": "iterations/M8-windows-release/01-requirements.md",
         "detailed_design": "iterations/M8-windows-release/02-detailed-design.md",

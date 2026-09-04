@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "id": "empty",
+      "fileName": "empty.md",
+      "encoding": "utf8",
+      "eolProfile": "none",
+      "editable": false,
+      "baselineBase64": "",
+      "expectedBase64": "",
+      "baselineSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "utf8-lf",
+      "fileName": "utf8-lf.md",
+      "encoding": "utf8",
+      "eolProfile": "LF",
+      "editable": true,
+      "baselineBase64": "IyBVVEYtOCBMRgrliY3nvIAKTTFfRURJVF9PTEQK5ZCO57yACg==",
+      "expectedBase64": "IyBVVEYtOCBMRgrliY3nvIAKTTFfRURJVF9ORVcK5ZCO57yACg==",
+      "baselineSha256": "aad64d64ee9497931003c3fd2597d900506de1849fcedbf35a2501b0c39b805c",
+      "expectedSha256": "baed57225d274879275780fd6a9f18c4c7001e015c52acd09c29ea24633fd4ca"
+    },
+    {
+      "id": "utf8-crlf",
+      "fileName": "utf8-crlf.md",
+      "encoding": "utf8",
+      "eolProfile": "CRLF",
+      "editable": true,
+      "baselineBase64": "IyBVVEYtOCBDUkxGDQrliY3nvIANCk0xX0VESVRfT0xEDQrlkI7nvIANCg==",
+      "expectedBase64": "IyBVVEYtOCBDUkxGDQrliY3nvIANCk0xX0VESVRfTkVXDQrlkI7nvIANCg==",
+      "baselineSha256": "1d90813f78e21ef2b598be00a44cd00b3fe565270a0615c6469ab38b05b6e5be",
+      "expectedSha256": "9fe91c823c6c2e6bc5217873b01a9764341c3236e2069231abc478fe04459880"
+    },
+    {
+      "id": "utf8-no-final-eol",
+      "fileName": "utf8-no-final-eol.md",
+      "encoding": "utf8",
+      "eolProfile": "LF, no final EOL",
+      "editable": true,
+      "baselineBase64": "IyDml6DmnKvlsL7mjaLooYwKTTFfRURJVF9PTEQ=",
+      "expectedBase64": "IyDml6DmnKvlsL7mjaLooYwKTTFfRURJVF9ORVc=",
+      "baselineSha256": "9d1918570f898880e24530dc43c49efaf8fd932370dad657e848e8580388ad2b",
+      "expectedSha256": "fa4924fcaa84cd663bb9895033b60e39429b063afe641dbab1add57b431593fe"
+    },
+    {
+      "id": "utf8-bom-crlf",
+      "fileName": "utf8-bom-crlf.md",
+      "encoding": "utf8-bom",
+      "eolProfile": "CRLF",
+      "editable": true,
+      "baselineBase64": "77u/IyBVVEYtOCBCT00gQ1JMRg0K5YmN57yADQpNMV9FRElUX09MRA0K5ZCO57yADQo=",
+      "expectedBase64": "77u/IyBVVEYtOCBCT00gQ1JMRg0K5YmN57yADQpNMV9FRElUX05FVw0K5ZCO57yADQo=",
+      "baselineSha256": "cdb16e0313214a93a3e27197f979d3963068aafdfd1f59e40c0c8deb270e6a85",
+      "expectedSha256": "d9bb2c9292fa90431885327691ab3edd4827b6ba4c639db57ed0da35b2a4396a"
+    },
+    {
+      "id": "utf16le-bom-lf",
+      "fileName": "utf16le-bom-lf.md",
+      "encoding": "utf16le",
+      "eolProfile": "LF",
+      "editable": true,
+      "baselineBase64": "//4jACAAVQBUAEYALQAxADYATABFACAAQgBPAE0AIABMAEYACgBNUgB/CgBNADEAXwBFAEQASQBUAF8ATwBMAEQACgAOVAB/CgA=",
+      "expectedBase64": "//4jACAAVQBUAEYALQAxADYATABFACAAQgBPAE0AIABMAEYACgBNUgB/CgBNADEAXwBFAEQASQBUAF8ATgBFAFcACgAOVAB/CgA=",
+      "baselineSha256": "581d5253be7c7975281a53eb7e6e3a5ca34106240fe96052d4f7a8d578deb2d4",
+      "expectedSha256": "3c49a0c9948fcbdf3ce342258109855a6ad7f6a844db7cc282ceea9dcc921bb8"
+    },
+    {
+      "id": "utf16be-bom-crlf",
+      "fileName": "utf16be-bom-crlf.md",
+      "encoding": "utf16be",
+      "eolProfile": "CRLF",
+      "editable": true,
+      "baselineBase64": "/v8AIwAgAFUAVABGAC0AMQA2AEIARQAgAEIATwBNACAAQwBSAEwARgANAApSTX8AAA0ACgBNADEAXwBFAEQASQBUAF8ATwBMAEQADQAKVA5/AAANAAo=",
+      "expectedBase64": "/v8AIwAgAFUAVABGAC0AMQA2AEIARQAgAEIATwBNACAAQwBSAEwARgANAApSTX8AAA0ACgBNADEAXwBFAEQASQBUAF8ATgBFAFcADQAKVA5/AAANAAo=",
+      "baselineSha256": "6699b778a4a6ba92c04a2823fa36e389cc4f1f86a70b579a93498be87b37f692",
+      "expectedSha256": "8fd82574ddbf714a9eb97fdf4209c5f563a587a37445acc361d33b6d2dfe59f9"
+    },
+    {
+      "id": "utf8-mixed-eol",
+      "fileName": "utf8-mixed-eol.md",
+      "encoding": "utf8",
+      "eolProfile": "mixed LF/CRLF",
+      "editable": true,
+      "baselineBase64": "IyDmt7flkIjmjaLooYwNCuWJjee8gApNMV9FRElUX09MRA0K5ZCO57yACg==",
+      "expectedBase64": "IyDmt7flkIjmjaLooYwNCuWJjee8gApNMV9FRElUX05FVw0K5ZCO57yACg==",
+      "baselineSha256": "ffd807be3a8c8dbd1edec89417ab5f7907523c524585c66a37ed5884cc37208b",
+      "expectedSha256": "e034172c92391baea4711fb7096c244f4bbf63f103a173470b418d9aec556c82"
+    },
+    {
+      "id": "invalid-utf8-readonly",
+      "fileName": "invalid-utf8-readonly.md",
+      "encoding": "unknown",
+      "eolProfile": "LF with invalid UTF-8",
+      "editable": false,
+      "baselineBase64": "IyBNMQrDKAo=",
+      "expectedBase64": "IyBNMQrDKAo=",
+      "baselineSha256": "a5e3ddcdef49b2b1b0799c52e9ec9a6999f0672b333a20a32a25b6e26da27a34",
+      "expectedSha256": "a5e3ddcdef49b2b1b0799c52e9ec9a6999f0672b333a20a32a25b6e26da27a34"
+    }
+  ]
+}

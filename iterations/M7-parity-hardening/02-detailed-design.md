@@ -1,88 +1,61 @@
-# M7 detailed design
+# M7 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M7`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M7`
+- 状态权威： `iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全规则：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-Settings, commands, localization, diagnostics, and performance probes operate through typed
-services, not renderer-held document copies or privileged shortcuts. Markdown stays the sole
-authority; large-file degradation changes projections only. Observability stays local,
-structured, bounded, and content/path redacted.
+设置、命令、本地化、诊断和性能探针通过类型化服务运行，不使用渲染器持有的文档副本或特权捷径。Markdown 仍是唯一权威；大文件降级只改变投影。可观测信息保持本地、结构化、受限，并对内容和路径脱敏。
 
-## Capability design
+## 能力设计
 
-### Settings and keybindings
+### 设置和快捷键
 
-A versioned Zod settings model retains all categories and unknown future fields safely.
-Migration makes a backup, validates in memory, atomically writes only validated results, and
-falls back without replacing a bad file. Each setting has one consumer and immediate/restart
-semantics. The shared command metadata produces Windows defaults, user overrides, visible
-conflicts, reserved-key explanations, reset, reload, and multi-window consistency.
+版本化 Zod 设置模型安全保留所有类别和未知未来字段。迁移先备份、在内存中校验，只原子写入有效结果；失败时回退且不替换坏文件。每项设置有唯一消费者和即时/重启语义。共享命令元数据产生 Windows 默认键位、用户覆盖、可见冲突、保留键说明、重置、重载和多窗口一致性。
 
-### Localization and accessibility
+### 本地化和无障碍
 
-Shared catalogs provide complete zh-CN/en-US strings, plural/date/number behavior, localized
-errors, and rebuilt native menus. Pseudo-localization exposes truncation. Semantic controls
-have names, visible/stable focus, live status, keyboard paths, reduced-motion and high-contrast
-behavior; visual checks complement axe and Narrator verification.
+共享词条提供完整 zh-CN/en-US 字符串、复数/日期/数字行为、本地化错误和重建的原生菜单。伪本地化用于暴露截断。语义控件具有名称、可见且稳定的焦点、实时状态、键盘路径、减少动画和高对比行为；视觉检查补充 axe 与 Narrator 验证。
 
-### Compatibility, scale, and privacy hardening
+### 复刻、规模和隐私加固
 
-A traceability ledger binds every COMP item to requirements, fixture/environment, commands or
-settings, test result, and difference record. Large files select source-priority behavior and
-pause expensive projections; workers handle costly work. Packaged benchmarks record P50/P95
-and peaks for startup, 1/5/10MB open, input, switching, 10k workspaces, charts, search,
-exports, and soak cycles. Logs store only stable codes, bounded safe context, hashes or
-relative paths, and user-previewed diagnostics.
+追踪台账把每个 COMP 项绑定到需求、夹具/环境、命令或设置、测试结果和差异记录。大文件选择源码优先行为并暂停昂贵投影；工作线程处理高成本工作。打包基准记录启动、打开 1/5/10MB 文件、输入、切换、1 万文件工作区、图表、搜索、导出和浸泡周期的 P50/P95 与峰值。日志只保存稳定代码、受限安全上下文、哈希或相对路径，以及经过用户预览的诊断。
 
-## Module responsibilities
+## 模块职责
 
-- Main process: settings atomic storage, log rotation/redaction, lifecycle performance probes.
-- Renderer: settings UI, command display, localized accessible shell, large-file projection
-  state, and user-visible diagnostics.
-- Workers: bounded parsing/search/rendering performance work with cancellation.
-- Shared modules: schemas, catalogs, command metadata, compatibility evidence contracts.
+- 主进程：设置原子存储、日志轮转/脱敏、生命周期性能探针。
+- 渲染器：设置界面、命令显示、本地化可访问外壳、大文件投影状态和用户可见诊断。
+- 工作线程：可取消且受限的解析、搜索和渲染性能工作。
+- 共享模块：schema、词条、命令元数据和复刻证据契约。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`settings file -> backup/migrate/Zod -> typed snapshot -> single consumer`; `command metadata
--> keybinding resolver -> conflict result -> menu/renderer projection`; `measurement harness ->
-bounded raw metrics -> P50/P95 report`; and `error -> redaction -> local log/previewed
-diagnostic` are the allowed paths. Compatibility records link to evidence without importing
-private documents into logs.
+允许的数据流只有：`设置文件 -> 备份/迁移/Zod -> 类型化快照 -> 唯一消费者`；`命令元数据 -> 快捷键解析器 -> 冲突结果 -> 菜单/渲染器投影`；`测量工具 -> 受限原始指标 -> P50/P95 报告`；以及 `错误 -> 脱敏 -> 本地日志/已预览诊断`。复刻记录关联证据时不得把私有文档导入日志。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Invalid or future settings never trigger an overwrite; the retained file/backup and recovery
-action remain visible. Large-file fallback never normalizes source or changes undo/selection.
-Performance regressions block release-candidate readiness. Compatibility gaps retain source,
-reproduction, impact, and alternative path, and cannot be marked resolved by an unapproved
-smoke test. Privacy failures are security failures and preserve only safe diagnostic context.
+`REF-024..026` 与 `REF-030` 驱动设置、快捷键、语言、无障碍和状态恢复对照。M7 只能汇总已经由所属迭代关闭的复刻项，不得把 `documented_gap`、`evidence_gap` 或替代流程转换成通过结论。
 
-## Dependency admission
+无效或未来设置绝不触发覆盖；保留文件/备份，并显示恢复操作。大文件回退绝不规范化源码，也不改变撤销/选择。性能回退阻断发布候选准备。复刻差异记录来源、复现和影响，并且不能被未经批准的冒烟测试标为解决。隐私失败属于安全失败，只保留安全诊断上下文。
 
-Accessibility, benchmark, and logging tools require license review and must run locally with
-bounded output. No telemetry, network analytics, generic IPC, or document-content logger is
-admitted.
+## 依赖准入
 
-## Manual-gate design
+无障碍、基准和日志工具必须经过许可证审查，并在本地以受限输出运行。不准入遥测、网络分析、通用 IPC 或文档内容记录器。
 
-`M7` has no state-defined manual gate, but inherited manual cases are required evidence for
-accessibility, four-week daily use, and release-candidate audit conclusions. Their approval
-remains evaluator-owned and cannot be supplied by an agent.
+## 人工门禁设计
 
-## Implementation order
+`M7` 具有状态定义的强制人工门禁。无障碍、四周日用和发布候选审计结论必须包含人工用例证据；批准权属于评估人，代理不能代为提供。
 
-- [ ] Establish settings schema/migration/consumer evidence and keybinding resolution.
-- [ ] Complete catalogs, localization checks, semantic accessibility, and keyboard paths.
-- [ ] Build COMP-level traceability and reproduce every declared gap.
-- [ ] Add large-file degradation, packaged benchmarks, leak soak, and privacy diagnostics.
-- [ ] Collect four-week and RC audit materials after automated regression evidence is complete.
+## 实施顺序
 
-The checklist orders work only. Its items do not have individual status, dependencies,
-evidence, reports, or independent gating behavior; `M7` is the sole execution and acceptance unit.
+- [ ] 建立设置 schema、迁移、消费者证据和快捷键解析。
+- [ ] 完成词条、本地化检查、语义无障碍和键盘路径。
+- [ ] 建立 COMP 级追踪，并把发现的每项差异退回所属迭代关闭。
+- [ ] 增加大文件降级、打包基准、泄漏浸泡和隐私诊断。
+- [ ] 自动回归证据完整后，收集四周日用和 RC 审计材料。
+
+此清单只规定工作顺序，各项没有独立状态、依赖、证据、报告或门禁行为；`M7` 是唯一执行和验收单元。

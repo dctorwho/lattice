@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  dialog,
   ipcMain,
   Menu,
   session,
@@ -9,28 +10,53 @@ import {
   type WebFrameMain
 } from 'electron'
 import { randomUUID } from 'node:crypto'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { composeApplication } from './bootstrap/compose-application'
 import { createMainWindow, type CreateMainWindowOptions } from './bootstrap/create-main-window'
 import { resolveMainWindowOptions } from './bootstrap/resolve-main-window-options'
 import { createApplicationMenu, type CommandTarget } from './commands/application-menu'
+import type { DocumentSession } from '../domain/documents'
+import { createAtomicDocumentSaveService } from './documents/atomic-document-save-service'
+import { createDocumentOpenService } from './documents/document-open-service'
+import {
+  createFilesConfirmedOverwriteRoute,
+  createFilesOpenRoute,
+  createFilesReloadExternalRoute,
+  createFilesSaveAsRoute,
+  createFilesSaveRoute,
+  type FileConflictRecord
+} from './documents/files-open-route'
+import { createNodeAtomicFileSaver } from './documents/node-atomic-file-saver'
+import { createNodeDocumentSnapshotReader } from './documents/node-document-snapshot-reader'
+import { createNodeFileWatcherManager } from './documents/node-file-watcher'
+import { createNodeRecoveryStore } from './documents/node-recovery-store'
+import { createRecoveryRoutes } from './documents/recovery-routes'
 import { AuthorizedWindowRegistry } from './ipc/authorized-window-registry'
 import { createAppInfo } from './ipc/create-app-info'
 import { createIpcRouter, defineIpcRoute } from './ipc/create-ipc-router'
 import { createConsoleIpcErrorLogSink } from './ipc/ipc-error-logger'
 import { registerAppInfoIpc } from './ipc/register-app-info-ipc'
 import { registerCommandStateIpc } from './ipc/register-command-state-ipc'
+import { registerFilesOpenIpc, registerFilesSaveIpc } from './ipc/register-files-open-ipc'
+import { registerRecoveryIpc } from './ipc/register-recovery-ipc'
+import { registerWindowLifecycleIpc } from './ipc/register-window-lifecycle-ipc'
 import { installSessionSecurityPolicy } from './security/session-security-policy'
 import { installWebContentsSecurityPolicy } from './security/web-contents-security-policy'
 import {
   APP_GET_INFO_CHANNEL,
   COMMAND_UPDATE_STATES_CHANNEL,
+  FILES_EXTERNAL_CHANGE_EVENT,
   appGetInfoRequestSchema,
   appGetInfoResultSchema,
   commandStateSyncRequestSchema,
-  commandStateSyncResultSchema
+  commandStateSyncResultSchema,
+  WINDOW_CLOSE_DECISION_CHANNEL,
+  WINDOW_CLOSE_REQUESTED_EVENT,
+  windowCloseDecisionRequestSchema,
+  windowCloseDecisionResultSchema,
+  windowCloseRequestedEventSchema
 } from '../shared/contracts'
 
 function appInfoPlatform(platform: NodeJS.Platform): 'win32' | 'darwin' | 'linux' {
@@ -55,6 +81,48 @@ const mainWindowOptions = resolveMainWindowOptions(
 )
 
 const authorizedWindows = new AuthorizedWindowRegistry<WebContents>()
+const documentSessionsByWindow = new Map<number, Map<string, DocumentSession>>()
+const fileConflictsByToken = new Map<string, FileConflictRecord>()
+const windowsAuthorizedToClose = new Set<number>()
+const windowsAwaitingCloseDecision = new Set<number>()
+const readDocumentSnapshot = createNodeDocumentSnapshotReader({ maxBytes: 10 * 1024 * 1024 })
+const saveDocument = createAtomicDocumentSaveService({
+  saveFile: createNodeAtomicFileSaver({ createTemporaryId: randomUUID })
+})
+const fileWatcherManager = createNodeFileWatcherManager({
+  readSnapshot: readDocumentSnapshot,
+  findSession: (windowId, documentId) => documentSessionsByWindow.get(windowId)?.get(documentId),
+  emit: (windowId, event) => {
+    const window = BrowserWindow.fromId(windowId)
+    if (window === null || window.isDestroyed() || window.webContents.isDestroyed()) return
+    window.webContents.send(FILES_EXTERNAL_CHANGE_EVENT, event)
+  }
+})
+const recoveryStore = createNodeRecoveryStore({
+  rootDirectory: join(app.getPath('userData'), 'recovery-v1'),
+  createTemporaryId: randomUUID,
+  now: Date.now
+})
+
+function rememberWindowSession(windowId: number, documentSession: DocumentSession): void {
+  const sessions = documentSessionsByWindow.get(windowId)
+  if (sessions === undefined) {
+    throw new Error('Authorized document window is unavailable')
+  }
+  sessions.set(documentSession.id, documentSession)
+  fileWatcherManager.watchDocument(windowId, documentSession)
+}
+
+async function inspectOptionalTarget(path: string) {
+  try {
+    return await readDocumentSnapshot(path)
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
+      return null
+    }
+    throw error
+  }
+}
 const applicationMenu = createApplicationMenu({
   locale: 'zh-CN',
   adapter: {
@@ -133,9 +201,128 @@ const commandStateRoute = defineIpcRoute({
     })
   }
 })
+const windowCloseDecisionRoute = defineIpcRoute({
+  channel: WINDOW_CLOSE_DECISION_CHANNEL,
+  requestSchema: windowCloseDecisionRequestSchema,
+  responseSchema: windowCloseDecisionResultSchema,
+  handle: (request, context) => {
+    windowsAwaitingCloseDecision.delete(context.windowId)
+    if (request.payload.decision === 'close') {
+      const window = BrowserWindow.fromId(context.windowId)
+      if (window === null || window.isDestroyed()) {
+        throw new Error('Authorized window is unavailable for close completion')
+      }
+      windowsAuthorizedToClose.add(context.windowId)
+      window.close()
+    }
+    return Promise.resolve({ ok: true, value: { applied: true as const } })
+  }
+})
+const filesOpenRoute = defineIpcRoute(
+  createFilesOpenRoute({
+    openFromPicker: async (context) => {
+      const window = BrowserWindow.fromId(context.windowId)
+      if (window === null || window.isDestroyed()) {
+        throw new Error('Authorized window is unavailable for file selection')
+      }
+      const selection = await dialog.showOpenDialog(window, {
+        properties: ['openFile'],
+        filters: [
+          { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd', 'txt', 'qmd'] },
+          { name: '所有文件', extensions: ['*'] }
+        ]
+      })
+      const service = createDocumentOpenService({
+        selectFile: () =>
+          Promise.resolve(selection.canceled ? null : (selection.filePaths[0] ?? null)),
+        readSnapshot: readDocumentSnapshot,
+        createSessionId: randomUUID
+      })
+      return service.openFromPicker()
+    },
+    rememberSession: (windowId, documentSession) => {
+      if (!documentSessionsByWindow.has(windowId)) {
+        documentSessionsByWindow.set(windowId, new Map<string, DocumentSession>())
+      }
+      rememberWindowSession(windowId, documentSession)
+    }
+  })
+)
+const filesSaveRoute = defineIpcRoute(
+  createFilesSaveRoute({
+    findSession: (windowId, documentId) => documentSessionsByWindow.get(windowId)?.get(documentId),
+    saveSession: saveDocument.save,
+    rememberSession: rememberWindowSession,
+    readSnapshot: readDocumentSnapshot,
+    createConflictToken: randomUUID,
+    rememberConflict: (record) => {
+      fileConflictsByToken.set(record.token, record)
+    }
+  })
+)
+const filesReloadExternalRoute = defineIpcRoute(
+  createFilesReloadExternalRoute({
+    findSession: (windowId, documentId) => documentSessionsByWindow.get(windowId)?.get(documentId),
+    readSnapshot: readDocumentSnapshot,
+    rememberSession: rememberWindowSession
+  })
+)
+const filesSaveAsRoute = defineIpcRoute(
+  createFilesSaveAsRoute({
+    findSession: (windowId, documentId) => documentSessionsByWindow.get(windowId)?.get(documentId),
+    chooseSavePath: async (context) => {
+      const window = BrowserWindow.fromId(context.windowId)
+      if (window === null || window.isDestroyed()) {
+        throw new Error('Authorized window is unavailable for save selection')
+      }
+      const selection = await dialog.showSaveDialog(window, {
+        filters: [
+          { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd', 'txt', 'qmd'] },
+          { name: '所有文件', extensions: ['*'] }
+        ]
+      })
+      return selection.canceled ? null : selection.filePath
+    },
+    inspectTarget: inspectOptionalTarget,
+    saveAsSession: saveDocument.saveAs,
+    rememberSession: rememberWindowSession,
+    readSnapshot: readDocumentSnapshot,
+    createConflictToken: randomUUID,
+    rememberConflict: (record) => fileConflictsByToken.set(record.token, record)
+  })
+)
+const filesConfirmedOverwriteRoute = defineIpcRoute(
+  createFilesConfirmedOverwriteRoute({
+    takeConflict: (token) => {
+      const conflict = fileConflictsByToken.get(token)
+      fileConflictsByToken.delete(token)
+      return conflict
+    },
+    saveAsSession: saveDocument.saveAs,
+    rememberSession: rememberWindowSession,
+    readSnapshot: readDocumentSnapshot,
+    createConflictToken: randomUUID,
+    rememberConflict: (record) => fileConflictsByToken.set(record.token, record)
+  })
+)
+const recoveryRoutes = createRecoveryRoutes({
+  store: recoveryStore,
+  findSession: (windowId, documentId) => documentSessionsByWindow.get(windowId)?.get(documentId),
+  rememberSession: rememberWindowSession
+}).map((route) => defineIpcRoute(route))
 const router = createIpcRouter<WebContents, WebFrameMain>({
   registry: authorizedWindows,
-  routes: [appInfoRoute, commandStateRoute],
+  routes: [
+    appInfoRoute,
+    commandStateRoute,
+    windowCloseDecisionRoute,
+    filesOpenRoute,
+    filesReloadExternalRoute,
+    filesSaveRoute,
+    filesSaveAsRoute,
+    filesConfirmedOverwriteRoute,
+    ...recoveryRoutes
+  ],
   createRequestId: randomUUID,
   log: createConsoleIpcErrorLogSink({
     warn: (label, event) => {
@@ -175,9 +362,66 @@ registerCommandStateIpc<IpcMainInvokeEvent>(ipcMain, {
       input
     )
 })
+registerFilesOpenIpc<IpcMainInvokeEvent>(ipcMain, {
+  dispatch: (channel, event, input) =>
+    router.dispatch(
+      channel,
+      {
+        sender: event.sender,
+        senderId: event.sender.id,
+        senderFrame: event.senderFrame,
+        mainFrame: event.sender.mainFrame,
+        isSenderDestroyed: () => event.sender.isDestroyed()
+      },
+      input
+    )
+})
+registerFilesSaveIpc<IpcMainInvokeEvent>(ipcMain, {
+  dispatch: (channel, event, input) =>
+    router.dispatch(
+      channel,
+      {
+        sender: event.sender,
+        senderId: event.sender.id,
+        senderFrame: event.senderFrame,
+        mainFrame: event.sender.mainFrame,
+        isSenderDestroyed: () => event.sender.isDestroyed()
+      },
+      input
+    )
+})
+registerRecoveryIpc<IpcMainInvokeEvent>(ipcMain, {
+  dispatch: (channel, event, input) =>
+    router.dispatch(
+      channel,
+      {
+        sender: event.sender,
+        senderId: event.sender.id,
+        senderFrame: event.senderFrame,
+        mainFrame: event.sender.mainFrame,
+        isSenderDestroyed: () => event.sender.isDestroyed()
+      },
+      input
+    )
+})
+registerWindowLifecycleIpc<IpcMainInvokeEvent>(ipcMain, {
+  dispatch: (channel, event, input) =>
+    router.dispatch(
+      channel,
+      {
+        sender: event.sender,
+        senderId: event.sender.id,
+        senderFrame: event.senderFrame,
+        mainFrame: event.sender.mainFrame,
+        isSenderDestroyed: () => event.sender.isDestroyed()
+      },
+      input
+    )
+})
 
 function createRegisteredMainWindow(options: CreateMainWindowOptions): void {
   const window = createMainWindow(options)
+  documentSessionsByWindow.set(window.id, new Map<string, DocumentSession>())
   const unregister = authorizedWindows.register({
     windowId: window.id,
     webContentsId: window.webContents.id,
@@ -188,11 +432,28 @@ function createRegisteredMainWindow(options: CreateMainWindowOptions): void {
   const cleanup = (): void => {
     if (cleaned) return
     cleaned = true
+    windowsAuthorizedToClose.delete(window.id)
+    windowsAwaitingCloseDecision.delete(window.id)
+    documentSessionsByWindow.delete(window.id)
+    void fileWatcherManager.closeWindow(window.id)
+    for (const [token, conflict] of fileConflictsByToken) {
+      if (conflict.windowId === window.id) fileConflictsByToken.delete(token)
+    }
     applicationMenu.removeWindow(window.id)
     unregister()
   }
   window.on('focus', applicationMenu.applyForFocusedWindow)
   window.on('blur', applicationMenu.applyForFocusedWindow)
+  window.on('close', (event) => {
+    if (windowsAuthorizedToClose.delete(window.id)) return
+    event.preventDefault()
+    if (windowsAwaitingCloseDecision.has(window.id) || window.webContents.isDestroyed()) return
+    windowsAwaitingCloseDecision.add(window.id)
+    window.webContents.send(
+      WINDOW_CLOSE_REQUESTED_EVENT,
+      windowCloseRequestedEventSchema.parse({ contractVersion: 1 })
+    )
+  })
   window.once('closed', cleanup)
   window.webContents.once('destroyed', cleanup)
 }

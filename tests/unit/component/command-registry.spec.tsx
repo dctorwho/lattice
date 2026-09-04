@@ -40,7 +40,11 @@ function createPreloadHarness(
     Promise.resolve({ ok: true, value: { contractVersion: 1, applied: true } })
   )
   const api: LatticeDesktopApi = Object.freeze({
-    app: Object.freeze({ getInfo }),
+    app: Object.freeze({
+      getInfo,
+      onCloseRequested: () => () => {},
+      confirmClose: () => Promise.resolve({ ok: true as const, value: { applied: true as const } })
+    }),
     commands: Object.freeze({
       onInvoke: (nextListener: (id: CommandId) => void) => {
         listener = nextListener
@@ -49,6 +53,43 @@ function createPreloadHarness(
         }
       },
       updateStates
+    }),
+    files: Object.freeze({
+      open: () => Promise.resolve({ ok: true as const, value: null }),
+      save: () =>
+        Promise.resolve({
+          ok: false as const,
+          error: {
+            code: 'INTERNAL_UNEXPECTED' as const,
+            messageKey: 'errors.internal.unexpected' as const,
+            retryable: false
+          }
+        }),
+      saveAs: () => Promise.resolve({ ok: true as const, value: null }),
+      confirmedOverwrite: () =>
+        Promise.resolve({
+          ok: false as const,
+          error: {
+            code: 'INTERNAL_UNEXPECTED' as const,
+            messageKey: 'errors.internal.unexpected' as const,
+            retryable: false
+          }
+        }),
+      reloadExternal: () =>
+        Promise.resolve({
+          ok: false as const,
+          error: {
+            code: 'INTERNAL_UNEXPECTED' as const,
+            messageKey: 'errors.internal.unexpected' as const,
+            retryable: false
+          }
+        }),
+      onExternalChange: () => () => {}
+    }),
+    recovery: Object.freeze({
+      write: () => Promise.resolve({ ok: true as const, value: { applied: true as const } }),
+      list: () => Promise.resolve({ ok: true as const, value: [] }),
+      discard: () => Promise.resolve({ ok: true as const, value: { applied: true as const } })
     })
   })
 
@@ -271,7 +312,7 @@ describe('TC-M0-006 command shell', () => {
     expect(execute).not.toHaveBeenCalledWith('view.toggleSidebar', expect.any(Object))
   })
 
-  it('synchronizes both command states without recursive retries', async () => {
+  it('synchronizes every activated command state without recursive retries', async () => {
     const harness = createPreloadHarness()
     installPreload(harness)
     render(<App />)
@@ -280,6 +321,15 @@ describe('TC-M0-006 command shell', () => {
     const latestStates = harness.updateStates.mock.calls.at(-1)?.[0]
     expect(latestStates).toEqual([
       { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'edit.find', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'edit.redo', isVisible: true, isEnabled: false, isChecked: false },
+      { id: 'edit.replace', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'edit.undo', isVisible: true, isEnabled: false, isChecked: false },
+      { id: 'file.close', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'file.new', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'file.open', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'file.save', isVisible: true, isEnabled: true, isChecked: false },
+      { id: 'file.saveAs', isVisible: true, isEnabled: true, isChecked: false },
       { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
     ])
   })

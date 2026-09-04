@@ -108,15 +108,15 @@ interface SettingsV1 {
 - `diagramTimeoutMs: 5000`、`exportTimeoutMs: 120000`。
 - `customCssEnabled: true`。
 
-## 4. session.json
+## 4. 会话文件 session.json
 
 包含窗口 ID、bounds、maximize、workspace ID/root、active document path、sidebar mode/width、zoom 和滚动锚点。只存已命名文件的路径，不存正文、selection 文本或搜索词。
 
-## 5. recent.json
+## 5. 最近记录 recent.json
 
 最多 50 个文件和 20 个文件夹，记录 path、lastOpenedAt 和 display name。不存在路径在用户触发时移除，不因临时网络盘离线自动删除全部历史。
 
-## 6. recovery schema
+## 6. 恢复数据 schema
 
 ```ts
 interface RecoveryMetaV1 {

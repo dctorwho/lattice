@@ -1,62 +1,51 @@
-# M2 requirements
+# M2 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M2`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md).
+- 迭代：`M2`
+- 状态权威：`iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Provide Typora-like single-column hybrid Markdown editing on the shared
-CodeMirror document while preserving source, selection, history, and scroll.
+在共享的 CodeMirror 文档上提供类似 Typora 的单栏混合 Markdown 编辑，同时保留源码、选区、历史和滚动位置。
 
-## User-observable outcomes
+## 用户可观察结果
 
-Users edit basic blocks, inline syntax, lists, links, images, and code in one
-surface; markers reveal around active input; source/hybrid switching is
-continuous; IME, selection, undo, and source bytes remain reliable.
+用户在同一界面编辑基础块、行内语法、列表、链接、图片和代码；标记在活动输入附近显示；源码与混合模式切换保持连续；IME、选区、撤销和源字节始终可靠。
 
-## Scope
+## 范围
 
-Hybrid projection framework, basic block/inline/list/link/code adapters,
-input rules and pairing, composition/selection handling, and source/hybrid
-continuity with basic Markdown compatibility coverage.
+混合投影框架，基础块、行内、列表、链接和代码适配器，输入规则与自动配对，输入法组合与选区处理，以及源码和混合模式连续性与基础 Markdown 兼容覆盖。
 
-## Non-goals
+## 非目标
 
-Rich-text document serialization, secondary preview pane, disk image actions,
-advanced Markdown blocks, or independent source/hybrid histories.
+富文本文档序列化、第二预览窗格、磁盘图片操作、高级 Markdown 块或相互独立的源码与混合模式历史。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID     | Iteration outcome                                                           | Acceptance evidence                        |
-| ------------- | --------------------------------------------------------------------------- | ------------------------------------------ |
-| EDT-001..008  | Hybrid editing, state continuity, undo/IME, input rules/pairing             | Projection, editing, IME, and switch cases |
-| EDT-014       | Line-level clipboard behavior where provided by the editing core            | Input-rule and editing coverage            |
-| MD-001..003   | Basic blocks and inline Markdown                                            | Basic-block and inline cases               |
-| MD-008        | Editable code blocks                                                        | Code-block case                            |
-| COMP-005..009 | Hybrid preview, selection/IME, basic Markdown, input rules, find continuity | Compatibility gate                         |
+复刻证据范围为 `REF-006..010`，对应 `COMP-005..009`。M2 出口必须对照单栏实时预览、输入法与选择、基础 Markdown、输入规则和查找行为；不能只证明语法能渲染而忽略光标、撤销和源码连续性。
 
-## Preconditions and external dependencies
+| 全局 ID       | 迭代结果                                                  | 验收证据                   |
+| ------------- | --------------------------------------------------------- | -------------------------- |
+| EDT-001..008  | 混合编辑、状态连续性、撤销与 IME、输入规则和配对          | 投影、编辑、IME 与切换用例 |
+| EDT-014       | 编辑核心提供的行级剪贴板行为                              | 输入规则和编辑覆盖         |
+| MD-001..003   | 基础块和行内 Markdown                                     | 基础块与行内用例           |
+| MD-008        | 可编辑代码块                                              | 代码块用例                 |
+| COMP-005..009 | 混合预览、选区与 IME、基础 Markdown、输入规则和查找连续性 | 兼容性门禁                 |
 
-Requires M1 SourceBuffer, DocumentSession, CodeMirror source mode, and
-validated command/window boundaries. Parser/highlighter additions must remain
-local, sandboxed where appropriate, and independently licensed.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+依赖 M1 的 `SourceBuffer`、`DocumentSession`、CodeMirror 源码模式以及已验证的命令与窗口边界。新增解析器和高亮资源必须保持本地运行，在适用位置使用沙箱，并具备独立许可证审查。
 
-Projection-induced source drift, stale patches, IME duplication, cursor jumps,
-and non-reversible edits are prevented with revision/hash validation, minimal
-source patches, composition freeze, selection mapping, property tests, and
-manual IME use.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+通过修订号与哈希验证、最小源码补丁、组合输入冻结、选区映射、属性测试和真实 IME 人工验证，防止投影造成源码漂移、过期补丁、IME 重复输入、光标跳转和不可逆编辑。
 
-All named automated cases pass; projection changes alone never enter history;
-invalid or stale patches fall back to editable source; the manual IME and
-two-week usage case is approved with no P0/P1 or source drift.
+## 迭代级验收标准
 
-## Entry completeness
+全部指定自动化用例通过；单纯投影变化不得进入历史；无效或过期补丁必须回退到可编辑源码；人工 IME 与两周使用用例获批，且不存在 P0/P1 或源码漂移。
 
-This document, the detailed design, and the test cases are the three entry documents. All three must be complete and predecessor iterations must be `passed` before `M2` may become `ready` or `in_progress`.
+## 入口完整性
+
+本文档、详细设计和测试用例是三份入口文档。三者必须完整，且前置迭代均为 `passed`，M2 才能进入 `ready` 或 `in_progress`。

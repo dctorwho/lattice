@@ -4,7 +4,19 @@ import { createResultSchema } from '../errors'
 import { IPC_CONTRACT_VERSION } from './contract-version'
 import { createIpcRequestEnvelopeSchema } from './ipc-request'
 
-export const commandIds = ['app.about', 'view.toggleSidebar'] as const
+export const commandIds = [
+  'app.about',
+  'edit.find',
+  'edit.redo',
+  'edit.replace',
+  'edit.undo',
+  'file.close',
+  'file.new',
+  'file.open',
+  'file.save',
+  'file.saveAs',
+  'view.toggleSidebar'
+] as const
 export const commandIdSchema = z.enum(commandIds)
 
 export const commandStateSchema = z

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { errorCodeSchema, errorMessageKeys, type ErrorCode } from './error-code'
+import { errorCodeSchema, errorMessageKeys, errorRetryable, type ErrorCode } from './error-code'
 
 export const ipcSafeReasonSchema = z.enum([
   'unknown_channel',
@@ -36,12 +36,7 @@ export const safeDetailsSchema = z
 export const appErrorSchema = z
   .object({
     code: errorCodeSchema,
-    messageKey: z.enum([
-      'errors.ipc.invalidRequest',
-      'errors.ipc.unauthorizedSender',
-      'errors.app.versionMismatch',
-      'errors.internal.unexpected'
-    ]),
+    messageKey: z.enum(Object.values(errorMessageKeys)),
     retryable: z.boolean(),
     safeDetails: safeDetailsSchema.optional(),
     requestId: z.string().uuid().optional()
@@ -53,6 +48,13 @@ export const appErrorSchema = z
         code: 'custom',
         path: ['messageKey'],
         message: 'messageKey must match code'
+      })
+    }
+    if (value.retryable !== errorRetryable[value.code]) {
+      context.addIssue({
+        code: 'custom',
+        path: ['retryable'],
+        message: 'retryable must match code'
       })
     }
   })
@@ -69,7 +71,7 @@ export function createAppError(
   const base = {
     code,
     messageKey: errorMessageKeys[code],
-    retryable: false,
+    retryable: errorRetryable[code],
     requestId
   } as const
   return appErrorSchema.parse(safeDetails === undefined ? base : { ...base, safeDetails })

@@ -1,98 +1,67 @@
-# M1 detailed design
+# M1 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M1`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`M1`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-Markdown source bytes and their SourceBuffer metadata are the sole document
-authority. `DocumentSession` is a pure domain object outside React; React
-observes only derived UI state. Filesystem/dialog/watcher/clock boundaries are
-injected and accessed through narrow validated preload contracts.
+Markdown 源字节及其 `SourceBuffer` 元数据是唯一文档权威。`DocumentSession` 是 React 外部的纯领域对象；React 只观察派生 UI 状态。文件系统、对话框、监视器和时钟边界通过依赖注入提供，只能经由狭窄且经过验证的 preload 契约访问。
 
-## Capability design
+## 能力设计
 
-### Lossless bytes and session state
+### 无损字节与会话状态
 
-Decode supported UTF-8, BOM, and UTF-16 input into LF editing text while
-retaining encoding, per-line EOL index, and original-byte hash. A clean
-session writes its original bytes. Revision, savedRevision, disk version,
-selection, history, and external state are session-owned; undo to saved
-revision clears dirty without a React document mirror.
+把受支持的 UTF-8、BOM 和 UTF-16 输入解码为使用 LF 的编辑文本，同时保留编码、逐行 EOL 索引、原始字节和原始字节哈希。未修改会话直接写回原始字节。文本变更保留范围外的 EOL；替换范围内的新换行按顺序复用被替换的 EOL，新增换行依次继承前一个相邻 EOL、后一个相邻 EOL、文档主导 EOL，若 LF 与 CRLF 数量相同则固定选择 LF。修订号、已保存修订号、磁盘版本、选区、历史和外部状态归会话所有；撤销到已保存修订号会清除脏状态，无需 React 保存文档镜像。
 
-### Authorized opening and atomic saving
+### 授权打开与原子保存
 
-Only user-selected, authorized workspace, or existing-session paths enter the
-main-process file boundary. Save writes a same-directory temporary file,
-flushes, validates expected disk version, replaces/backs up atomically, and
-cleans failure points. Results distinguish cancellation, authorization,
-conflict, and recoverable I/O errors; no conflict silently overwrites.
+只有用户选择、已授权工作区或现有会话路径才能进入主进程文件边界。保存时在同目录写入临时文件、刷新数据、验证预期磁盘版本、执行原子替换或备份，并清理各故障点。结果要区分取消、授权失败、冲突和可恢复 I/O 错误；冲突绝不静默覆盖。
 
-### Recovery, watchers, and conflict resolution
+### 恢复、监视器与冲突解决
 
-Versioned, throttled atomic snapshots recover the latest valid revision and
-fall back when the last snapshot is corrupt. Watcher events are deduplicated;
-clean content follows configured reload behavior while dirty content pauses
-autosave and exposes compare, reload, local save-as, confirm-overwrite, and
-cancel paths with both versions preserved.
+使用带版本、节流且原子写入的快照恢复最新有效修订；最终快照损坏时回退。监视器事件必须去重；干净内容按配置重新加载，脏内容则暂停自动保存，并提供比较、重新加载、本地另存为、确认覆盖和取消路径，始终保留双方版本。
 
-### Source editor and document commands
+### 源码编辑器与文档命令
 
-CodeMirror 6 owns text transactions, selection, and history. Session changes
-bind/unbind views without copying full text into React. Menu, toolbar, context,
-and shortcut paths call one command registry for New, Open, Save, Save As,
-Close, and recovery. Closing a dirty session presents save/discard/cancel.
+CodeMirror 6 拥有文本事务、选区和历史。会话变更只绑定或解绑视图，不把全文复制到 React。菜单、工具栏、上下文菜单和快捷键统一调用命令注册表中的新建、打开、保存、另存为、关闭和恢复命令。关闭脏会话时提供保存、放弃和取消。
 
-### Search, replace, and status
+### 搜索、替换与状态
 
-Search supports case, whole word, regular expression, Unicode, cross-line, and
-zero-width handling. Replace-all is one undo group and invalid expressions do
-not modify source. Status calculation derives line/column, document and
-selection statistics, encoding, EOL, dirty state, and zoom using stable
-Chinese/English rules.
+搜索支持大小写、全词、正则表达式、Unicode、跨行和零宽匹配。全部替换属于一个撤销组，无效表达式不得修改源码。状态计算按稳定的中英文规则派生行列位置、文档与选区统计、编码、EOL、脏状态和缩放信息。
 
-## Module responsibilities
+## 模块职责
 
-Domain modules own SourceBuffer, sessions, persistence decisions, recovery,
-and search semantics. Main adapters own dialogs, filesystem, hashing, watcher,
-and bounded logging. Preload exposes typed requests only. Renderer owns the
-CodeMirror view and derived command/status presentation.
+领域模块负责 `SourceBuffer`、会话、持久化决定、恢复和搜索语义。主进程适配器负责对话框、文件系统、哈希、监视器和有界日志。Preload 只暴露类型化请求。渲染进程负责 CodeMirror 视图以及派生的命令与状态展示。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`authorized open -> bytes/stat/hash -> SourceBuffer -> DocumentSession ->
-CodeMirror transaction -> session revision`; `save command -> expected
-DiskVersion -> atomic write -> savedRevision or conflict Result`; `watch event
--> dedupe/stat/hash -> clean reload or dirty conflict state`.
+`授权打开 -> 字节/状态/哈希 -> SourceBuffer -> DocumentSession -> CodeMirror 事务 -> 会话修订`；`保存命令 -> 预期 DiskVersion -> 原子写入 -> savedRevision 或冲突 Result`；`监视事件 -> 去重/状态/哈希 -> 干净内容重载或脏内容冲突状态`。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Preserve BOM, encoding, line endings, list/layout bytes outside edits, and
-original bytes for clean sessions. Unknown encodings are read-only and never
-guessed for overwrite. Failure leaves complete old/new data only; recovery
-logs contain no document text. Any observed silent overwrite, source
-normalization, broken recovery, or undo inconsistency halts work.
+`REF-001..005` 只定义用户可观察目标，不授权复制 Typora 的内部实现。设计或公开资料发生冲突时，优先保持字节安全并把差异记录到证据台账；未经对照和回归，不得把证据状态改为 `已实现`。
 
-## Dependency admission
+保留 BOM、编码、换行符、编辑范围外的列表和布局字节，以及干净会话的原始字节。未知编码以只读方式打开，绝不猜测编码后覆盖。失败后只能留下完整旧数据或完整新数据；恢复日志不得包含文档文本。任何静默覆盖、源码规范化、恢复失效或撤销不一致都会立即停止工作。
 
-Use CodeMirror 6 and existing validated Electron contracts. Any new parser,
-filesystem, or watcher dependency must have a documented purpose, compatible
-license, and testable injected boundary.
+## 依赖准入
 
-## Manual-gate design
+使用精确锁定的 CodeMirror 6、`@lezer/markdown`、`chokidar`、`fast-check` 和现有经过验证的 Electron 契约。版本、用途、许可证、安装脚本和替代方案记录在 `docs/04-technology-stack.md`；文件系统与监视器仍通过可测试的注入边界接入。
 
-An evaluator performs sustained Microsoft Pinyin input, LF/CRLF/BOM hash
-checks, all dirty-conflict choices, forced-kill recovery, and each dirty-close
-choice; evidence records versions, hashes, screenshots, and conclusion.
+## 人工门禁设计
 
-## Implementation order
+不适用，M1 为 `manual_gate:false`。原 `MAN-M1-001` 要求的应用可观察边界由 `TC-M1-013` 接管：真实生产 Electron 通过 CDP 发送多阶段组合输入；版本化 Base64 夹具冻结输入、预期字节与 SHA-256；独立场景覆盖冲突四种决策、强制终止恢复以及保存、不保存、取消关闭。输入法厂商候选窗口属于 Chromium 和操作系统上游，不用品牌或持续时长间接代替应用边界断言。
 
-- [ ] Implement SourceBuffer codecs, EOL indexing, hashes, and property fixtures.
-- [ ] Add authorized open, session revisions, and atomic save/conflict handling.
-- [ ] Add recovery snapshots, watchers, autosave pause, and conflict UI.
-- [ ] Bind CodeMirror source mode and unified document commands.
-- [ ] Add search/replace/status and run data, security, E2E, performance, and manual gates.
+`pnpm test:acceptance:m1` 是有限时的一次性命令。每个场景使用隔离 `user-data-dir`，Playwright 单测最长 90 秒、状态等待最长 15 秒、进程退出最长 10 秒，禁止重试和无界循环。只有全部固定场景通过后，证据记录器才原子写入 Git 忽略的 `artifacts/m1/automated/acceptance.json`；其中只含环境版本、提交、场景 ID、公开依据、夹具 ID 和哈希，不含正文或绝对路径。
+
+## 实施顺序
+
+- [x] 实现 `SourceBuffer` 编解码器、EOL 索引、哈希和属性夹具。
+- [x] 增加授权打开、会话修订和原子保存与冲突处理。
+- [x] 增加恢复快照、监视器、自动保存暂停和冲突界面。
+- [x] 绑定 CodeMirror 源码模式和统一文档命令。
+- [x] 增加搜索、替换和状态，并执行数据、安全、端到端和性能门禁。
+- [x] 运行 `TC-M1-013` Windows 自动验收并生成脱敏证据。

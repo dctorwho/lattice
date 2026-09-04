@@ -14,26 +14,46 @@ import { foundationCommandMetadata, translateFoundationMessage } from '../../../
 const requestId = '00000000-0000-4000-8000-000000000001'
 const validStates = [
   { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.find', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.redo', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.replace', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.undo', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.close', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.new', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.open', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.save', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.saveAs', isVisible: true, isEnabled: true, isChecked: false },
   { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
 ] as const
 
 describe('M0 command contracts', () => {
   it('owns immutable labels and shortcuts in one layer-neutral metadata table', () => {
-    expect(foundationCommandMetadata).toEqual({
-      'app.about': {
-        id: 'app.about',
-        labelKey: 'commands.app.about',
-        defaultShortcut: 'F1',
-        menuGroup: 'help',
-        menuType: 'normal'
-      },
-      'view.toggleSidebar': {
-        id: 'view.toggleSidebar',
-        labelKey: 'commands.view.toggleSidebar',
-        defaultShortcut: 'CommandOrControl+Shift+L',
-        menuGroup: 'view',
-        menuType: 'checkbox'
-      }
+    expect(Object.keys(foundationCommandMetadata)).toEqual([
+      'app.about',
+      'edit.find',
+      'edit.redo',
+      'edit.replace',
+      'edit.undo',
+      'file.close',
+      'file.new',
+      'file.open',
+      'file.save',
+      'file.saveAs',
+      'view.toggleSidebar'
+    ])
+    expect(foundationCommandMetadata['file.save']).toEqual({
+      id: 'file.save',
+      labelKey: 'commands.file.save',
+      defaultShortcut: 'CommandOrControl+S',
+      menuGroup: 'file',
+      menuType: 'normal'
+    })
+    expect(foundationCommandMetadata['view.toggleSidebar']).toEqual({
+      id: 'view.toggleSidebar',
+      labelKey: 'commands.view.toggleSidebar',
+      defaultShortcut: 'CommandOrControl+Shift+L',
+      menuGroup: 'view',
+      menuType: 'checkbox'
     })
     expect(Object.isFrozen(foundationCommandMetadata)).toBe(true)
     expect(Object.values(foundationCommandMetadata).every(Object.isFrozen)).toBe(true)
@@ -55,19 +75,36 @@ describe('M0 command contracts', () => {
     ).toEqual({ contractVersion: 1, requestId, payload: { states: validStates } })
   })
 
+  it('激活 M1 文档与查找命令，并拒绝尚未实现的后续迭代命令', () => {
+    expect(
+      commandInvokedEventSchema.safeParse({ contractVersion: 1, id: 'file.new' }).success
+    ).toBe(true)
+    expect(
+      commandInvokedEventSchema.safeParse({ contractVersion: 1, id: 'file.save' }).success
+    ).toBe(true)
+    expect(
+      commandInvokedEventSchema.safeParse({ contractVersion: 1, id: 'edit.find' }).success
+    ).toBe(true)
+    expect(
+      commandInvokedEventSchema.safeParse({ contractVersion: 1, id: 'file.export' }).success
+    ).toBe(false)
+  })
+
   it.each([
     { states: [] },
     { states: [validStates[0]] },
-    { states: [validStates[1]] },
+    { states: [validStates[10]] },
     { states: [validStates[0], validStates[0]] },
     { states: [...validStates, validStates[0]] },
     {
       states: [
         validStates[0],
-        { id: 'files.open', isVisible: true, isEnabled: true, isChecked: false }
+        ...validStates.slice(1, 10),
+        { id: 'file.export', isVisible: true, isEnabled: true, isChecked: false },
+        validStates[10]
       ]
     },
-    { states: [validStates[0], { ...validStates[1], extra: true }] }
+    { states: [...validStates.slice(0, 10), { ...validStates[10], extra: true }] }
   ])(
     'rejects an incomplete, duplicate, unknown, oversized, or loose state set: $states',
     ({ states }) => {
