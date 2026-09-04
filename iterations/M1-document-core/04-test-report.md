@@ -77,6 +77,7 @@ M1 声明的自动化用例和迭代出口门禁均已通过。Windows 应用边
 | 工具链传递依赖触发 6 个 high 和 1 个 moderate 公告            | GitHub 依赖审查和本地审计阻断  | 精确固定修复版：`browserslist` 4.28.7、`@xmldom/xmldom` 0.8.15、`fast-uri` 3.1.6 | `pnpm audit:deps` 与 `pnpm list`                     | 已关闭 |
 | 干净外部重载只更新 renderer，主进程仍保留旧磁盘版本和修订     | 后续编辑保存会被误判为陈旧请求 | 新增窄重载 IPC，由主进程复读、核对版本并同步单调修订                             | 路由单元与 `external-conflict.spec.ts` Electron 回归 | 已关闭 |
 | 恢复根目录读取错误被统一当作空目录                            | 权限或结构故障会静默隐藏记录   | 仅忽略 `ENOENT`，其他文件系统错误失败关闭                                        | `recovery.spec.ts` 故障注入                          | 已关闭 |
+| 本地化 UI 单测向 CodeMirror 注入 5 MiB 文本导致 CI 超时       | GitHub Quality 偶发超过 5 秒   | UI 单测改用等价磁盘大小元数据触发阈值；真实大文本仍由性能和 Electron 验收覆盖    | 聚焦单测、性能门禁与 GitHub Quality                  | 已关闭 |
 
 ## 未执行验证
 

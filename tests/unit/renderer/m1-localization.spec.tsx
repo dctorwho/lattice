@@ -76,10 +76,14 @@ describe('M1 renderer localization', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Selected 1 words')
     expect(screen.getByRole('status')).toHaveTextContent('1 min read')
 
-    const largeController = new CodeMirrorDocumentController(
-      createUntitledDocumentSession('00000000-0000-4000-8000-000000000904')
-    )
-    largeController.dispatch({ changes: { from: 0, insert: 'x'.repeat(5 * 1024 * 1024) } })
+    const largeController = new CodeMirrorDocumentController({
+      ...createUntitledDocumentSession('00000000-0000-4000-8000-000000000904'),
+      diskVersion: {
+        mtimeMs: 1,
+        size: 5 * 1024 * 1024,
+        contentHash: 'a'.repeat(64)
+      }
+    })
     rerender(<DocumentStatusBar locale="en" controller={largeController} />)
 
     expect(screen.getByRole('status')).toHaveTextContent('Large-file source mode')
