@@ -1,17 +1,17 @@
-# M2 test cases
+# M2 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M2`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M2`
+- 状态权威： `iterations/state.json`
+- 测试策略依据： [test strategy](../../docs/09-test-strategy.md)
+- 安全策略依据： [data-safety and security](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers, not planning units. `覆盖能力` names the capability covered by each case.
+测试 ID 是稳定的验证标识符，不是规划单元。`覆盖能力` 列说明每个用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID        | 覆盖能力                                 | 层级/级别                 | 数据/环境          | 步骤                                                                                             | 预期                                                                                                                           | 自动化                                                                                                                                    |
 | --------- | ---------------------------------------- | ------------------------- | ------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -26,13 +26,13 @@ Test IDs are stable verification identifiers, not planning units. `覆盖能力`
 | TC-M2-009 | Source/hybrid mode continuity            | e2e-property/P0           | SWITCH-M2          | Edit then switch 100 times amid search, fold, scroll, undo/redo, save                            | Source hash, history, selection, scroll/fold continuous; switch creates no transaction                                         | `pnpm test:e2e -- tests/e2e/mode-switch.spec.ts`；证据：Hashes and E2E trace；停止条件：State discontinuity                               |
 | TC-M2-010 | Hybrid-editor gate                       | regression-performance/P0 | GATE-M2            | Run golden corpus, 10,000 random edits, IME E2E, two-week daily regression                       | Basic semantics correct; no source drift/cursor jump/duplicate input/memory growth                                             | `pnpm test:performance -- tests/performance/m2-gate.spec.ts`；证据：Regression report；停止条件：Any P0/P1 or drift                       |
 
-## Manual test cases
+## 人工测试用例
 
 | ID         | 覆盖能力                                     | 环境    | 步骤                                                                                                                                                                                                      | 通过条件                                                                                                        | 证据                                                                                                                          |
 | ---------- | -------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | MAN-M2-001 | Real IME and daily hybrid editing acceptance | ENV-IME | Use Microsoft Pinyin and third-party Chinese IME on basic corpus; candidate paging, punctuation, backspace, cross-line selection, cross-block mouse selection, list backspace, 100 switches, two-week use | No duplicate/lost/jumped cursor; semantic undo; selection remains; source hash changes only for edits; no P0/P1 | IME/system versions, daily records, traces, hashes, signed conclusion；停止条件：Any IME, source, selection, or P0/P1 failure |
 
-## Parameter matrix
+## 参数矩阵
 
 | Parameter ID | Variables                                                                                                                                                                                                  | Fixture                                                  | Required cases | Expected result                                                                                                      |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -46,7 +46,7 @@ Test IDs are stable verification identifiers, not planning units. `覆盖能力`
 | IME-M2       | Simulated Microsoft Pinyin trace, candidate paging, full-width punctuation, Chinese/English switching, long-press backspace, and cross-line word selection; third-party IME reserved for manual evaluation | Composition/beforeinput event traces                     | TC-M2-008      | One composition undo group with no duplicate/lost text or cursor jump                                                |
 | SELECT-M2    | Left/right/up/down, Shift extension, forward/backward mouse drag, double click, across inline/widget/block, and document start/end                                                                         | Selection mapping corpus                                 | TC-M2-008      | Selection mapping, deletion, undo, and focus restoration remain deterministic                                        |
 
-## Fixtures
+## 夹具
 
 | Fixture                     | Source and integrity                                   | Covered behavior       | Required environment  |
 | --------------------------- | ------------------------------------------------------ | ---------------------- | --------------------- |
@@ -54,10 +54,12 @@ Test IDs are stable verification identifiers, not planning units. `覆盖能力`
 | Security protocol fixtures  | Approved/disallowed and malformed links                | Link activation        | Controlled OS handoff |
 | IME/performance fixtures    | Composition traces and randomized edit seeds           | IME and scalability    | Windows IME and E2E   |
 
-## Evidence requirements
+## 证据要求
 
-Record command, environment, exit code, parameters, source hashes, selection/composition events, random seeds, and artifacts. Manual evidence includes operator, IME/system version, daily record, recordings, hashes, and evaluator conclusion.
+报告必须把 `REF-006..010` 逐项关联到窗口条件、输入法版本、操作步骤、源码哈希、事件轨迹和人工签署。单张静态截图不能替代光标、选区、撤销、IME 和模式连续性的行为证据。
 
-## Stop conditions
+记录命令、环境、退出码、参数、源码哈希、选区与组合输入事件、随机种子和制品。人工证据包括操作人、IME 与系统版本、每日记录、录屏、哈希和评估人结论。
 
-Source change from display/switching, stale-patch overwrite, repeated/lost IME input, unrecoverable selection, security-policy escape, or sustained P0/P1 failure stops iteration progress.
+## 停止条件
+
+一旦显示或切换引起源码变化、过期补丁覆盖、IME 输入重复或丢失、选区无法恢复、安全策略逃逸，或持续存在 P0/P1 问题，迭代必须停止推进。

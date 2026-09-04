@@ -10,12 +10,24 @@ export interface CommandContext {
   readonly isWindowFocused: boolean
   readonly hasSession: boolean
   readonly isSessionDirty: boolean
+  readonly isSessionReadOnly: boolean
   readonly hasEditor: boolean
+  readonly canUndo: boolean
+  readonly canRedo: boolean
 }
 
 export interface CommandExecutionContext extends CommandContext {
   readonly toggleSidebar: () => void
   readonly openAbout: () => Promise<void>
+  readonly newDocument: () => void | Promise<void>
+  readonly openDocument: () => void | Promise<void>
+  readonly saveDocument: () => void | Promise<void>
+  readonly saveDocumentAs: () => void | Promise<void>
+  readonly closeDocument: () => void | Promise<void>
+  readonly undo: () => void
+  readonly redo: () => void
+  readonly openFind: () => void
+  readonly openReplace: () => void
 }
 
 export type CommandResult =

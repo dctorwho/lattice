@@ -1,104 +1,65 @@
-# M5 detailed design
+# M5 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M5`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules:
-  [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`M5`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-Markdown remains the sole persisted authority. CodeMirror receives minimal source patches;
-clipboard projections, image previews, and theme styling are disposable. Renderer code has
-no direct filesystem, shell, or clipboard privilege: typed preload methods route authorized
-operations to main-process services. Untrusted HTML, CSS, image metadata, URLs, and upload
-output cross validation and isolation boundaries before use.
+Markdown 始终是唯一持久化权威。CodeMirror 只接收最小源码补丁；剪贴板投影、图片预览和主题样式均可丢弃。渲染进程不能直接访问文件系统、shell 或剪贴板，所有授权操作经类型化 preload 路由到主进程。不可信 HTML、CSS、图片元数据、URL 和上传输出必须先通过验证与隔离边界。
 
-## Capability design
+## 能力设计
 
-### Clipboard payload and smart paste
+### 剪贴板载荷与智能粘贴
 
-`ClipboardPayload` ranks approved MIME representations, bounds data, sanitizes HTML before
-conversion, and preserves a content summary rather than private bodies in diagnostics.
-Copy produces rich text, Markdown, HTML, and plain text from a frozen source selection.
-Smart and plain-text paste each create one editor transaction; conversion targets only the
-selection and cannot activate scripts, event handlers, forms, unsafe URLs, or SVG payloads.
+`ClipboardPayload` 对批准的 MIME 表示排序、限制数据并在转换前净化 HTML；诊断只保留内容摘要。复制从冻结源码选区生成富文本、Markdown、HTML 和纯文本。智能粘贴和纯文本粘贴各产生一个编辑器事务，只修改选区，不能激活脚本、事件处理器、表单、危险 URL 或 SVG 载荷。
 
-### Image insertion and resource transactions
+### 图片插入与资源事务
 
-The image service accepts picker, drop, clipboard, and validated remote-URL sources. A path
-policy derives relative, absolute, copy-directory, `./`, and `typora-root-url` references
-without overwriting same-name files. `ResourceTransaction` preflights authorized paths,
-performs file operations, applies the expected-revision Markdown patch, records a commit
-log, and rolls files back when the patch or commit fails. Delete requires confirmation and
-uses the recycle bin by default; an incomplete rollback reports concrete retained paths.
+图片服务接受选择器、拖放、剪贴板和已验证远程 URL。路径策略生成相对、绝对、复制目录、`./` 和 `typora-root-url` 引用，不覆盖同名文件。`ResourceTransaction` 预检授权路径、执行文件操作、应用预期修订的 Markdown 补丁并记录提交日志；补丁或提交失败时回滚文件。删除默认要求确认并移入回收站；回滚不完整时报告实际保留路径。
 
-### Upload adapters
+### 上传适配器
 
-An adapter validates configuration, executable provenance, argv arrays, timeout/cancellation,
-bounded output, and resulting URLs. It invokes a selected executable with `shell:false`;
-the default has no network upload path. Multi-file work succeeds atomically at the source
-patch boundary or leaves Markdown unchanged.
+适配器验证配置、可执行文件来源、参数数组、超时与取消、有界输出和结果 URL，并以 `shell:false` 调用所选程序；默认不提供网络上传路径。多文件工作在源码补丁边界原子成功，否则 Markdown 保持不变。
 
-### Themes and writing modes
+### 主题与写作模式
 
-Built-in Lattice light and dark themes expose CSS variables and system-color selection.
-User themes are loaded from the approved theme directory, bound to the document scope, and
-hot-reloaded after validation; remote imports, path escapes, and attempts to style protected
-chrome are rejected. A compatibility layer supports public Typora CSS conventions without
-shipping its assets. Focus, typewriter, and read-only behavior layer on the existing editor;
-spelling, Emoji, punctuation, and movement commands use the shared command path and retain
-undo, IME, selection, scroll, and accessibility semantics.
+内置 Lattice 浅色和深色主题提供 CSS 变量与系统颜色选择。用户主题从批准目录加载，绑定文档作用域，验证后热重载；拒绝远程导入、路径逃逸和修改受保护界面。兼容层支持公开 Typora CSS 约定但不携带其资源。专注、打字机和只读模式叠加在现有编辑器上；拼写、Emoji、标点和移动命令沿用共享命令路径并保留撤销、IME、选区、滚动和无障碍语义。
 
-## Module responsibilities
+## 模块职责
 
-- Renderer: CodeMirror transactions, theme/document projection, mode controls, and visible
-  failure/recovery guidance.
-- Main process: authorized file/recycle-bin operations, user theme directory watching, and
-  controlled upload process lifetime.
-- Shared contracts: bounded payloads, path policies, resource operation results, and stable
-  error shapes validated with Zod.
+- 渲染进程：CodeMirror 事务、主题与文档投影、模式控制以及可见失败和恢复指引。
+- 主进程：授权文件与回收站操作、用户主题目录监视和受控上传进程生命周期。
+- 共享契约：使用 Zod 验证有界载荷、路径策略、资源操作结果和稳定错误结构。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`clipboard input -> bounded payload -> sanitizer/converter -> source transaction`;
-`image input -> authorized source/path policy -> ResourceTransaction -> expected-revision
-patch -> commit or rollback`; `theme file -> validation -> document-scoped stylesheet`; and
-`mode setting -> command registry -> CodeMirror extension` are the sole flows. Renderer
-requests contain no arbitrary path, shell command, window identity, or privileged object.
+`剪贴板输入 -> 有界载荷 -> 净化/转换 -> 源码事务`；`图片输入 -> 授权来源/路径策略 -> ResourceTransaction -> 预期修订补丁 -> 提交或回滚`；`主题文件 -> 验证 -> 文档作用域样式表`；`模式设置 -> 命令注册表 -> CodeMirror 扩展`。渲染请求不得携带任意路径、shell 命令、窗口身份或特权对象。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Resource and source changes obey the data-safety rollback protocol. A stale revision rejects
-the patch and reparses instead of overwriting input. Cancellation produces no transaction or
-partial source mutation. User theme files remain intact when invalid; the application falls
-back to a built-in theme. Theme resources stay within the theme directory. Public CSS
-compatibility is behavior-level only and preserves independent branding.
+`REF-018..021` 的剪贴板、图片、模式和主题结果使用独立实现。六套主题必须通过本项目 CSS tokens 和自有资源重现，不得复制 Typora 主题文件；视觉证据不足时保留 `evidence_gap` 并阻止 M5 通过。
 
-## Dependency admission
+资源与源码变更遵守数据安全回滚协议。过期修订拒绝补丁并重新解析，不覆盖输入。取消不产生事务或部分源码变化。无效用户主题保持原文件不变，应用回退到内置主题；主题资源限制在主题目录内。公开 CSS 兼容只提供行为兼容并保持独立品牌。
 
-Admit clipboard, image, CSS, and process libraries only after license/security review and
-only when they preserve offline operation and typed boundaries. Pandoc is not a dependency of
-this iteration. External upload tools are user-selected capabilities, never a shell string.
+## 依赖准入
 
-## Manual-gate design
+剪贴板、图片、CSS 和进程库只有通过许可证与安全审查并保留离线能力和类型化边界后才能准入。Pandoc 不是本迭代依赖。外部上传工具是用户选择的能力，绝不是 shell 字符串。
 
-M5 has a state-defined manual gate. The evaluator verifies real Word/browser/WeChat-style
-clipboard interchange, image drop and rollback, custom theme isolation, and continuous
-writing with the specified modes and IME. Evidence includes environment versions, source and
-disk diffs, screenshots or recordings, and an evaluator conclusion; automation cannot
-approve the gate.
+## 人工门禁设计
 
-## Implementation order
+M5 有状态定义的人工门禁。评估人验证真实 Word、浏览器和微信类剪贴板互操作、图片拖放与回滚、自定义主题隔离，以及在指定模式和 IME 下持续写作。证据包括环境版本、源码与磁盘差异、截图或录屏和评估人结论；自动化不能批准门禁。
 
-- [ ] Establish bounded clipboard contracts and sanitizer/converter behavior with fixtures.
-- [ ] Add image sources and path policies, then fault-injected resource transactions.
-- [ ] Add constrained upload adapters and process-security coverage.
-- [ ] Deliver built-in/user themes and protected-chrome isolation.
-- [ ] Add writing modes and assists; run combined IME, undo, and performance regressions.
-- [ ] Execute the full M5 evidence matrix and prepare manual-gate materials.
+## 实施顺序
 
-The checklist orders work only. Its items do not have individual status, dependencies,
-evidence, reports, or independent gating behavior; `M5` is the sole execution and acceptance unit.
+- [ ] 建立有界剪贴板契约和净化转换夹具。
+- [ ] 增加图片来源与路径策略，再实现故障注入资源事务。
+- [ ] 增加受限上传适配器和进程安全覆盖。
+- [ ] 交付内置与用户主题及受保护界面隔离。
+- [ ] 增加写作模式与辅助，并执行 IME、撤销和性能回归。
+- [ ] 执行完整 M5 证据矩阵并准备人工门禁材料。
+
+此清单只规定工作顺序；清单项没有独立状态、依赖、证据、报告或门禁行为，M5 是唯一执行与验收单元。

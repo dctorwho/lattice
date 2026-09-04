@@ -33,7 +33,6 @@ const EXIT_KEYS = new Set(['test_report', 'iteration_report'])
 const EVIDENCE_KEYS = new Set(['kind', 'summary', 'path', 'recorded_at'])
 const EVIDENCE_KINDS = new Set(['command', 'test', 'report', 'manual'])
 const ACTIVE_STATUSES = new Set(['in_progress', 'awaiting_manual'])
-const MANDATORY_MANUAL_GATES = new Set(['M0', 'M1', 'M2', 'M5', 'M6', 'M8'])
 const TOP_LEVEL_SCHEMA_KEYS = new Set([
   '$schema',
   '$id',
@@ -646,9 +645,6 @@ export function validateIterationState(state, schema) {
     if (typeof iteration.manual_gate !== 'boolean') {
       errors.push(`${iteration.id ?? expectedId} manual_gate must be boolean`)
     }
-    if (MANDATORY_MANUAL_GATES.has(expectedId) && iteration.manual_gate !== true) {
-      errors.push(`${expectedId} manual_gate is mandatory`)
-    }
 
     const folder = ITERATION_FOLDERS[index]
     if (folder !== undefined) {
@@ -720,7 +716,7 @@ export function validateIterationState(state, schema) {
     }
     if (
       iteration.status === 'passed' &&
-      (iteration.manual_gate === true || MANDATORY_MANUAL_GATES.has(iteration.id)) &&
+      iteration.manual_gate === true &&
       (!Array.isArray(iteration.evidence) ||
         !iteration.evidence.some((record) => isPlainObject(record) && record.kind === 'manual'))
     ) {
@@ -760,6 +756,179 @@ const parseMarkdownTableCells = (line) => {
     .slice(1, -1)
     .split('|')
     .map((cell) => cell.trim())
+}
+
+const REPLICA_EVIDENCE_HEADER = [
+  '证据 ID',
+  '来源',
+  '采集日期',
+  '来源类型',
+  '版本依据',
+  'Windows 适用性',
+  '观察',
+  '可信度',
+  '需求',
+  '复刻项',
+  '迭代',
+  '测试',
+  '状态'
+]
+const REPLICA_SOURCE_TYPES = new Set([
+  'official-release',
+  'official-doc',
+  'official-image',
+  'public-video',
+  'review'
+])
+const REPLICA_CONFIDENCE_LEVELS = new Set(['high', 'medium', 'low'])
+const REPLICA_EVIDENCE_STATUSES = new Set(['未实现', '已实现', '存在差异', '证据不足'])
+
+const isValidCalendarDate = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (match === null) return false
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  )
+}
+
+const collectCellReferenceIds = (value, excludedPrefixes = new Set()) => {
+  const prefixes = new Set()
+  for (const match of value.matchAll(/\b([A-Z][A-Z0-9]*)-\d{3}\b/g)) {
+    const prefix = match[1]
+    if (prefix !== undefined && !excludedPrefixes.has(prefix)) prefixes.add(prefix)
+  }
+  return [...collectReferenceIds(value, prefixes)]
+}
+
+const parseEvidenceTestIds = (value, evidenceId, iterationId, errors) => {
+  const tokens = value
+    .split(/[,，、\s]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0)
+  const result = []
+  for (const token of tokens) {
+    const match = /^(TC|MAN)-(M[0-8])-(\d{3})$/.exec(token)
+    if (match === null) {
+      errors.push(`${evidenceId} 测试包含非规范 ID: ${token}`)
+      continue
+    }
+    if (match[2] !== iterationId) {
+      errors.push(`${evidenceId} 测试 ${token} 不属于 ${iterationId}`)
+      continue
+    }
+    if (result.includes(token)) errors.push(`${evidenceId} 测试包含重复 ID: ${token}`)
+    else result.push(token)
+  }
+  return result
+}
+
+export function parseReplicaEvidenceBaseline(text) {
+  const records = []
+  const errors = []
+  const seen = new Set()
+  const lines = text.split(/\r?\n/)
+  const sectionStart = lines.findIndex((line) => line.trim() === '## 证据台账')
+  if (sectionStart === -1) {
+    return { records: [], errors: ['缺少必需章节：证据台账'] }
+  }
+  const sectionEnd = lines.findIndex(
+    (line, index) => index > sectionStart && /^##\s+/.test(line.trim())
+  )
+  const end = sectionEnd === -1 ? lines.length : sectionEnd
+  let headerIndex = -1
+  for (let index = sectionStart + 1; index < end - 1; index += 1) {
+    const header = parseMarkdownTableCells(lines[index] ?? '')
+    const separator = parseMarkdownTableCells(lines[index + 1] ?? '')
+    if (
+      header !== null &&
+      separator !== null &&
+      arraysEqual(header, REPLICA_EVIDENCE_HEADER) &&
+      separator.length === header.length &&
+      isMarkdownTableSeparator(separator)
+    ) {
+      headerIndex = index
+      break
+    }
+  }
+  if (headerIndex === -1) {
+    return { records: [], errors: ['证据台账缺少精确的 13 列中文表头'] }
+  }
+
+  for (let index = headerIndex + 2; index < end; index += 1) {
+    const cells = parseMarkdownTableCells(lines[index] ?? '')
+    if (cells === null) {
+      if ((lines[index] ?? '').trim().length === 0) break
+      continue
+    }
+    if (cells.length !== REPLICA_EVIDENCE_HEADER.length) {
+      errors.push(`证据台账第 ${index + 1} 行必须包含 13 列`)
+      continue
+    }
+    const [
+      id,
+      source,
+      collectedAt,
+      sourceType,
+      versionBasis,
+      windowsApplicability,
+      observation,
+      confidence,
+      requirementCell,
+      compatibilityCell,
+      iteration,
+      testCell,
+      status
+    ] = cells
+    if (!/^REF-\d{3}$/.test(id ?? '')) errors.push(`malformed evidence id: ${id ?? ''}`)
+    if (seen.has(id)) errors.push(`duplicate evidence id: ${id}`)
+    else seen.add(id)
+    if ((source ?? '').length === 0) errors.push(`${id} 来源不能为空`)
+    if (!isValidCalendarDate(collectedAt ?? '')) {
+      errors.push(`${id} 采集日期必须是有效的 YYYY-MM-DD`)
+    }
+    if (!REPLICA_SOURCE_TYPES.has(sourceType)) errors.push(`${id} 来源类型无效`)
+    if ((versionBasis ?? '').length === 0) errors.push(`${id} 版本依据不能为空`)
+    if ((windowsApplicability ?? '').length === 0) errors.push(`${id} Windows 适用性不能为空`)
+    if ((observation ?? '').length === 0) errors.push(`${id} 观察不能为空`)
+    if (!REPLICA_CONFIDENCE_LEVELS.has(confidence)) {
+      errors.push(`${id} 可信度必须是 high、medium 或 low`)
+    }
+    if (!/^M[0-8]$/.test(iteration ?? '')) errors.push(`${id} 迭代必须是 M0 至 M8`)
+    if (!REPLICA_EVIDENCE_STATUSES.has(status)) errors.push(`${id} 状态无效`)
+
+    const requirements = collectCellReferenceIds(
+      requirementCell ?? '',
+      new Set(['COMP', 'REF', 'TC', 'MAN'])
+    )
+    if (requirements.length === 0) errors.push(`${id} 需求必须包含至少一个全局需求 ID`)
+    const compatibility = [...collectReferenceIds(compatibilityCell ?? '', new Set(['COMP']))]
+    if (compatibility.length === 0) errors.push(`${id} 复刻项必须包含至少一个 COMP-* ID`)
+    const tests = parseEvidenceTestIds(testCell ?? '', id ?? '', iteration ?? '', errors)
+    if (tests.length === 0) errors.push(`${id} 测试必须包含至少一个 TC-* 或 MAN-* ID`)
+
+    records.push({
+      id,
+      source,
+      collectedAt,
+      sourceType,
+      versionBasis,
+      windowsApplicability,
+      observation,
+      confidence,
+      requirements,
+      compatibility,
+      iteration,
+      tests,
+      status
+    })
+  }
+
+  if (records.length === 0 && errors.length === 0) errors.push('证据台账必须至少包含一条记录')
+  return { records: errors.length === 0 ? records : [], errors }
 }
 
 const normalizeHeaderCell = (value) =>

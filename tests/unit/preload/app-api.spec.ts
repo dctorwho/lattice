@@ -222,13 +222,13 @@ describe('TC-M0-005 preload app API', () => {
     expect(JSON.stringify(result)).not.toContain('secret body')
   })
 
-  it('contains only getInfo and no generic IPC escape hatch', () => {
+  it('仅包含固定的应用信息与窗口关闭能力，不暴露通用 IPC 逃逸口', () => {
     const app = createAppApi({
       createRequestId: () => requestIdOne,
       invoke: () => Promise.resolve({ ok: true, value: validValue })
     })
 
-    expect(Object.keys(app)).toEqual(['getInfo'])
+    expect(Object.keys(app)).toEqual(['onCloseRequested', 'confirmClose', 'getInfo'])
     expect(Reflect.has(app, 'invoke')).toBe(false)
     expect(Reflect.has(app, 'send')).toBe(false)
   })
@@ -267,8 +267,8 @@ vi.mock('electron', () => ({
   ipcRenderer: preloadMocks.ipcRenderer
 }))
 
-describe('M0-T05 production preload surface', () => {
-  it('exposes only frozen lattice app and command capabilities through the context bridge', async () => {
+describe('M1 production preload surface', () => {
+  it('只通过 context bridge 暴露冻结的应用、命令、文件与恢复能力', async () => {
     await import('../../../src/preload/index')
 
     const exposed = preloadMocks.readExposed()
@@ -279,7 +279,7 @@ describe('M0-T05 production preload surface', () => {
     }
 
     const rootApi = exposed.value
-    expect(Object.keys(rootApi)).toEqual(['app', 'commands'])
+    expect(Object.keys(rootApi)).toEqual(['app', 'commands', 'files', 'recovery'])
     expect(Object.isFrozen(rootApi)).toBe(true)
     if (!('app' in rootApi)) {
       throw new Error('Expected the app preload API property')
@@ -290,7 +290,7 @@ describe('M0-T05 production preload surface', () => {
       throw new Error('Expected the app preload API')
     }
 
-    expect(Object.keys(app)).toEqual(['getInfo'])
+    expect(Object.keys(app)).toEqual(['onCloseRequested', 'confirmClose', 'getInfo'])
     expect(Object.isFrozen(app)).toBe(true)
     if (!('commands' in rootApi)) {
       throw new Error('Expected the command preload API property')
@@ -302,6 +302,33 @@ describe('M0-T05 production preload surface', () => {
     }
     expect(Object.keys(commands)).toEqual(['onInvoke', 'updateStates'])
     expect(Object.isFrozen(commands)).toBe(true)
+    if (!('files' in rootApi)) {
+      throw new Error('Expected the files preload API property')
+    }
+    const files = rootApi.files
+    expect(files).toBeTypeOf('object')
+    if (typeof files !== 'object' || files === null) {
+      throw new Error('Expected the files preload API')
+    }
+    expect(Object.keys(files)).toEqual([
+      'open',
+      'save',
+      'saveAs',
+      'confirmedOverwrite',
+      'reloadExternal',
+      'onExternalChange'
+    ])
+    expect(Object.isFrozen(files)).toBe(true)
+    if (!('recovery' in rootApi)) {
+      throw new Error('Expected the recovery preload API property')
+    }
+    const recovery = rootApi.recovery
+    expect(recovery).toBeTypeOf('object')
+    if (typeof recovery !== 'object' || recovery === null) {
+      throw new Error('Expected the recovery preload API')
+    }
+    expect(Object.keys(recovery)).toEqual(['write', 'list', 'discard'])
+    expect(Object.isFrozen(recovery)).toBe(true)
     expect(Reflect.has(rootApi, 'invoke')).toBe(false)
     expect(Reflect.has(rootApi, 'send')).toBe(false)
     expect(Reflect.has(app, 'invoke')).toBe(false)
@@ -309,5 +336,9 @@ describe('M0-T05 production preload surface', () => {
     expect(Reflect.has(commands, 'invoke')).toBe(false)
     expect(Reflect.has(commands, 'send')).toBe(false)
     expect(Reflect.has(commands, 'on')).toBe(false)
+    expect(Reflect.has(files, 'invoke')).toBe(false)
+    expect(Reflect.has(files, 'readAnyPath')).toBe(false)
+    expect(Reflect.has(recovery, 'invoke')).toBe(false)
+    expect(Reflect.has(recovery, 'readAnyPath')).toBe(false)
   })
 })

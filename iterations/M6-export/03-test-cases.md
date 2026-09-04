@@ -1,19 +1,17 @@
-# M6 test cases
+# M6 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M6`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M6`
+- 状态权威： `iterations/state.json`
+- 测试策略依据： [test strategy](../../docs/09-test-strategy.md)
+- 安全策略依据： [data-safety and security](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers. They are not subtask IDs and do not own planning
-state, dependencies, implementation work, manual gates, or reports. The `覆盖能力` column names
-the capability covered by the case.
+测试 ID 是稳定验证标识，不是子任务 ID，也不拥有规划状态、依赖、实施工作、人工门禁或报告。`覆盖能力` 列说明用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID        | 覆盖能力                | 层级/级别                 | 数据/环境               | 步骤                                                                                                                                               | 预期                                                                                                                                                                            | 自动化                                                                                                                                                                                             |
 | --------- | ----------------------- | ------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,14 +26,14 @@ the capability covered by the case.
 | TC-M6-009 | 导入导出回归门禁        | regression-performance/P0 | GATE-M6                 | Run full import/export, security, performance, and golden regressions with/without Pandoc, offline, and read-only target.                          | COMP-025..029 evidence; core works without Pandoc; no source change, source rewrite, injection, or unexplained partial artifact.                                                | `pnpm test:performance -- tests/performance/m6-gate.spec.ts`；证据：Consolidated reports and hashes.；停止条件：Any mapped compatibility or safety failure stops M6.                               |
 | TC-M6-010 | Pandoc 导入             | integration-security/P0   | PANDOCIMPORT-M6         | Import every supported fixture; test resource extraction, warnings, first save, cancel, missing Pandoc, unsafe paths, limits, and non-zero output. | Source hash unchanged; success only creates unnamed Markdown session; staging is contained and commits atomically on first save; failure/cancel has no partial session/process. | `pnpm test:integration -- tests/integration/pandoc-import.spec.ts`；证据：Source/output hashes, staging manifest, and report.；停止条件：Source rewrite, path escape, or partial session stops M6. |
 
-## Manual test cases
+## 人工测试用例
 
 | ID         | 覆盖能力                   | 环境                                              | 步骤                                                                                                                                                            | 通过条件                                                                                                 | 证据                                                                                                                          |
 | ---------- | -------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | MAN-M6-001 | PDF 与系统打印实机验证     | ENV-PRINT                                         | 1. 打印综合文档到系统 PDF；2. 用真实打印机打印中文、表格、分页；3. 取消一次；4. 模拟打印错误。                                                                  | 纸张/边距/分页/中文与预览一致；取消无副作用；错误可恢复；源文档不变。                                    | 打印机/驱动、设置、扫描/照片、PDF 哈希和源哈希。；停止条件：预览偏离、取消副作用或源变更停止 M6.                              |
 | MAN-M6-002 | 导入导出目标应用与离线验证 | 浏览器、PDF 阅读器、Word/LibreOffice、EPUB 阅读器 | 1. 离线打开 HTML；2. 查看/打印 PDF；3. 检查长图；4. 打开 DOCX/ODT/RTF/EPUB；5. 导入 DOCX/RTF/EPUB/RST 并首次另存；6. 移除 Pandoc 重跑核心导出和 Markdown 打开。 | 目标可打开且语义完整；导入源哈希不变、结果可编辑、资源首次保存提交；离线资源可用；无 Pandoc 不影响核心。 | 环境版本、产物/导入源哈希、staging 清单、截图和签署结论。；停止条件：目标不可用、源变化、资源逃逸或无 Pandoc 核心失败停止 M6. |
 
-## Parameter matrix
+## 参数矩阵
 
 | Parameter ID    | Variables                                                                                                                                                                                                     | Fixture                  | Required cases          | Expected result                  |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ----------------------- | -------------------------------- |
@@ -49,7 +47,7 @@ the capability covered by the case.
 | PANDOC-M6       | DOCX/ODT/RTF/EPUB/LaTeX；metadata/reference doc/允许参数；公式/图表/本地图片；最低和当前支持版本                                                                                                              | Pandoc output fixtures   | Pandoc 格式导出         | 格式输出可用。                   |
 | PANDOCIMPORT-M6 | 使用 FX-IMP 的 DOCX/RTF/EPUB/LaTeX/TeX/RST/Org/MediaWiki/DokuWiki/Textile/OPML；无资源/多图片/同名图片/转换警告；路径遍历/symlink/超限文件数与总大小；取消、非零退出、坏 UTF-8 输出；无/最低/当前/未知 Pandoc | Import fixtures          | Pandoc 导入             | 源只读、staging 受控、会话原子。 |
 
-## Fixtures
+## 夹具
 
 | Fixture                   | Source and integrity                                                                   | Covered behavior                           | Required environment                |
 | ------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------- |
@@ -57,12 +55,12 @@ the capability covered by the case.
 | Print/image fixtures      | Controlled paper, long-document, and pixel baseline samples.                           | PDF/print/image geometry and cancellation. | Electron print and image tools.     |
 | Pandoc process/import set | Fake executables plus self-authored supported-format samples and hostile output cases. | argv, compatibility, staging, and cleanup. | With/without Pandoc environments.   |
 
-## Evidence requirements
+## 证据要求
 
-Record command, environment, exit code, parameter selection, result, and artifact or report reference for each executed automated case. Record operator, date, environment, step results, and conclusion evidence for each manual case.
+报告必须把 `REF-022..023` 关联到设置、命令、产物哈希、结构或像素结果、目标应用版本、失败反馈以及 `MAN-M6-001..002` 签署，并证明无 Pandoc 时核心工作流不退化。
 
-## Stop conditions
+每个已执行自动用例记录命令、环境、退出码、参数选择、结果和产物或报告引用；每个人工用例记录评估人、日期、环境、逐步结果和结论证据。
 
-Export changing a source session, import changing its source, path escape, execution of
-untrusted content, failure of core native formats without Pandoc, cancellation residue, or an
-unexplained partial artifact stops iteration progress until fixed and regression evidence exists.
+## 停止条件
+
+导出改变源会话、导入改变源文件、路径逃逸、执行不可信内容、无 Pandoc 时核心原生格式失败、取消残留或无法解释的部分产物都会停止迭代，直至修复并具有回归证据。

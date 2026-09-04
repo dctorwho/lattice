@@ -5,6 +5,7 @@ import process from 'node:process'
 import {
   collectReferenceIds,
   parseIterationTestCases,
+  parseReplicaEvidenceBaseline,
   validateIterationState
 } from './planning/iteration-model.mjs'
 
@@ -34,7 +35,8 @@ const globalDocuments = [
   'docs/18-error-catalog.md',
   'docs/19-user-journeys.md',
   'docs/20-markdown-compatibility-profile.md',
-  'docs/21-command-menu-inventory.md'
+  'docs/21-command-menu-inventory.md',
+  'docs/22-typora-1.13.8-windows-evidence-baseline.md'
 ]
 
 const activeRunbooks = [
@@ -77,64 +79,64 @@ const requiredFiles = [
 ]
 
 const requirementSections = [
-  'Iteration context',
-  'Objectives',
-  'User-observable outcomes',
-  'Scope',
-  'Non-goals',
-  'Requirement and compatibility coverage',
-  'Preconditions and external dependencies',
-  'Risks and mitigations',
-  'Iteration-level acceptance criteria',
-  'Entry completeness'
+  '迭代上下文',
+  '目标',
+  '用户可观察结果',
+  '范围',
+  '非目标',
+  '需求与兼容性覆盖',
+  '前置条件与外部依赖',
+  '风险与缓解措施',
+  '迭代级验收标准',
+  '入口完整性'
 ]
 
 const detailedDesignSections = [
-  'Iteration context',
-  'Architecture boundaries',
-  'Capability design',
-  'Module responsibilities',
-  'Interfaces and data flow',
-  'Data safety, failure handling, migration, and compatibility constraints',
-  'Dependency admission',
-  'Manual-gate design',
-  'Implementation order'
+  '迭代上下文',
+  '架构边界',
+  '能力设计',
+  '模块职责',
+  '接口与数据流',
+  '数据安全、失败处理、迁移与兼容性约束',
+  '依赖准入',
+  '人工门禁设计',
+  '实施顺序'
 ]
 
 const testCaseSections = [
-  'Iteration context',
-  'Coverage and ownership',
-  'Automated test cases',
-  'Manual test cases',
-  'Parameter matrix',
-  'Fixtures',
-  'Evidence requirements',
-  'Stop conditions'
+  '迭代上下文',
+  '覆盖与归属',
+  '自动化测试用例',
+  '人工测试用例',
+  '参数矩阵',
+  '夹具',
+  '证据要求',
+  '停止条件'
 ]
 
 const testReportSections = [
-  'Iteration context',
-  'Report status',
-  'Baseline and environment',
-  'Executed commands and results',
-  'Failures, fixes, and regression evidence',
-  'Unexecuted verification',
-  'Residual risks',
-  'Manual-gate handoff',
-  'Exit-readiness statement'
+  '迭代上下文',
+  '报告状态',
+  '基线与环境',
+  '已执行命令与结果',
+  '失败、修复与回归证据',
+  '未执行验证',
+  '剩余风险',
+  '人工门禁交接',
+  '退出就绪声明'
 ]
 
 const exitReportSections = [
-  'Iteration context',
-  'Requirement completion matrix',
-  'Final deliverables',
-  'Material implementation and documentation changes',
-  'Automated-gate conclusion',
-  'Manual-gate conclusion',
-  'Known limitations and residual risks',
-  'Rollback approach',
-  'Inputs released to the next iteration',
-  'Final iteration decision'
+  '迭代上下文',
+  '需求完成矩阵',
+  '最终交付物',
+  '重要实现与文档变更',
+  '自动化门禁结论',
+  '人工门禁结论',
+  '已知限制与剩余风险',
+  '回滚方法',
+  '向下一迭代释放的输入',
+  '最终迭代结论'
 ]
 
 const automationSuiteRoots = new Map([
@@ -189,7 +191,7 @@ const hasHeading = (content, heading) =>
 const validateRequiredSections = (relativePath, content, sections) => {
   for (const section of sections) {
     if (!hasHeading(content, section)) {
-      errors.push(`${relativePath} is missing required section: ${section}`)
+      errors.push(`${relativePath} 缺少必需章节：${section}`)
     }
   }
 }
@@ -281,7 +283,7 @@ const extractSecondLevelSection = (content, heading) => {
 const parseExactSectionTable = (relativePath, content, heading, expectedHeader) => {
   const sectionLines = extractSecondLevelSection(content, heading)
   if (sectionLines === null) {
-    errors.push(`${relativePath} is missing required section: ${heading}`)
+    errors.push(`${relativePath} 缺少必需章节：${heading}`)
     return []
   }
 
@@ -294,9 +296,7 @@ const parseExactSectionTable = (relativePath, content, heading, expectedHeader) 
     )
   })
   if (headerIndex === -1) {
-    errors.push(
-      `${relativePath} ${heading} must contain table header: ${expectedHeader.join(' | ')}`
-    )
+    errors.push(`${relativePath} ${heading} 必须包含表头：${expectedHeader.join(' | ')}`)
     return []
   }
 
@@ -306,7 +306,7 @@ const parseExactSectionTable = (relativePath, content, heading, expectedHeader) 
     separatorCells.length !== expectedHeader.length ||
     separatorCells.some((cell) => !/^:?-{3,}:?$/.test(cell))
   ) {
-    errors.push(`${relativePath} ${heading} must contain a Markdown table separator`)
+    errors.push(`${relativePath} ${heading} 必须包含 Markdown 表格分隔行`)
     return []
   }
 
@@ -389,20 +389,20 @@ const validateTestReportCompletion = (relativePath, content, iteration, parsedCa
   validateExactCaseResults({
     relativePath,
     content,
-    heading: 'Automated case results',
-    header: ['Case ID', 'Result', 'Evidence', 'Notes'],
+    heading: '自动化用例结果',
+    header: ['用例 ID', '结果', '证据', '备注'],
     declaredIds: parsedCases.automated,
     iterationId: iteration.id,
     kind: 'TC',
     evidenceIndex: 2
   })
 
-  if (iteration.status === 'passed') {
+  if (iteration.status === 'passed' && iteration.manual_gate === true) {
     validateExactCaseResults({
       relativePath,
       content,
-      heading: 'Manual case results',
-      header: ['Case ID', 'Result', 'Evaluator', 'Evidence'],
+      heading: '人工用例结果',
+      header: ['用例 ID', '结果', '评估人', '证据'],
       declaredIds: parsedCases.manual,
       iterationId: iteration.id,
       kind: 'MAN',
@@ -418,11 +418,11 @@ const validateExitReportCompletion = (relativePath, content, requirementsContent
     ...collectReferenceIds(requirementsContent, new Set(['COMP']))
   ]
   const declared = new Set(declaredIds)
-  const rows = parseExactSectionTable(relativePath, content, 'Requirement completion matrix', [
-    'Global ID',
-    'Required outcome',
-    'Completion evidence',
-    'Result'
+  const rows = parseExactSectionTable(relativePath, content, '需求完成矩阵', [
+    '全局 ID',
+    '要求结果',
+    '完成证据',
+    '结果'
   ])
   const seen = new Set()
   for (const cells of rows) {
@@ -451,10 +451,10 @@ const validateExitReportCompletion = (relativePath, content, requirementsContent
     )
   }
 
-  const decisionSection = extractSecondLevelSection(content, 'Final iteration decision')
-  const decisions = (decisionSection ?? []).filter((line) => line.startsWith('Decision:'))
-  if (decisions.length !== 1 || decisions[0] !== 'Decision: passed') {
-    errors.push(`${relativePath} final iteration decision must be Decision: passed`)
+  const decisionSection = extractSecondLevelSection(content, '最终迭代结论')
+  const decisions = (decisionSection ?? []).filter((line) => line.startsWith('结论：'))
+  if (decisions.length !== 1 || decisions[0] !== '结论：passed') {
+    errors.push(`${relativePath} 最终迭代结论必须是“结论：passed”`)
   }
 }
 
@@ -733,13 +733,100 @@ compareCoverage(definedRequirements, coveredRequirements, 'requirement')
 
 const compatibilityMatrix = read('docs/02-compatibility-matrix.md')
 const definedCompatibility = new Set()
+const compatibilityOwners = new Map()
+const compatibilityEvidence = new Map()
 if (compatibilityMatrix !== null) {
-  for (const match of compatibilityMatrix.matchAll(/^\|\s*(COMP-\d{3})\s*\|/gm)) {
-    addDefinition(definedCompatibility, match[1], 'compatibility item')
+  for (const line of compatibilityMatrix.split(/\r?\n/)) {
+    const cells = parseMarkdownTableCells(line)
+    const compatibilityId = cells?.[0]
+    if (compatibilityId === undefined || !/^COMP-\d{3}$/.test(compatibilityId)) continue
+    addDefinition(definedCompatibility, compatibilityId, 'compatibility item')
+    compatibilityOwners.set(compatibilityId, new Set((cells[3] ?? '').match(/M[0-8]/g) ?? []))
+    compatibilityEvidence.set(
+      compatibilityId,
+      collectReferenceIds(cells[4] ?? '', new Set(['REF']))
+    )
   }
 }
 const coveredCompatibility = collectReferenceIds(iterationRequirementText, new Set(['COMP']))
 compareCoverage(definedCompatibility, coveredCompatibility, 'compatibility item')
+
+const replicaEvidencePath = 'docs/22-typora-1.13.8-windows-evidence-baseline.md'
+const replicaEvidenceContent = read(replicaEvidencePath)
+const replicaEvidence =
+  replicaEvidenceContent === null
+    ? { records: [], errors: [] }
+    : parseReplicaEvidenceBaseline(replicaEvidenceContent)
+for (const error of replicaEvidence.errors) errors.push(`${replicaEvidencePath}: ${error}`)
+
+const evidenceById = new Map()
+const evidenceByCompatibility = new Map(
+  [...definedCompatibility].map((compatibilityId) => [compatibilityId, new Set()])
+)
+for (const record of replicaEvidence.records) {
+  evidenceById.set(record.id, record)
+  for (const requirementId of record.requirements) {
+    if (!definedRequirements.has(requirementId)) {
+      errors.push(`${record.id} references undefined requirement ${requirementId}`)
+    }
+  }
+  for (const compatibilityId of record.compatibility) {
+    if (!definedCompatibility.has(compatibilityId)) {
+      errors.push(`${record.id} references undefined compatibility item ${compatibilityId}`)
+      continue
+    }
+    evidenceByCompatibility.get(compatibilityId)?.add(record.id)
+    const owners = compatibilityOwners.get(compatibilityId) ?? new Set()
+    if (!owners.has(record.iteration)) {
+      errors.push(
+        `${record.id} iteration ${record.iteration} does not match ${compatibilityId} owner ${[
+          ...owners
+        ].join('/')}`
+      )
+    }
+  }
+  for (const testCaseId of record.tests) {
+    if (!globalAutomatedCases.has(testCaseId) && !globalManualCases.has(testCaseId)) {
+      errors.push(`${record.id} references undefined test case ${testCaseId}`)
+    }
+  }
+}
+
+for (const compatibilityId of definedCompatibility) {
+  const evidenceIds = evidenceByCompatibility.get(compatibilityId) ?? new Set()
+  if (evidenceIds.size === 0) {
+    errors.push(`compatibility item ${compatibilityId} has no replica evidence`)
+  }
+  const declaredEvidenceIds = compatibilityEvidence.get(compatibilityId) ?? new Set()
+  for (const evidenceId of declaredEvidenceIds) {
+    const record = evidenceById.get(evidenceId)
+    if (record === undefined) {
+      errors.push(`${compatibilityId} references undefined replica evidence ${evidenceId}`)
+    } else if (!record.compatibility.includes(compatibilityId)) {
+      errors.push(
+        `${compatibilityId} evidence ${evidenceId} does not map back to the compatibility item`
+      )
+    }
+  }
+  for (const evidenceId of evidenceIds) {
+    if (!declaredEvidenceIds.has(evidenceId)) {
+      errors.push(`${compatibilityId} is missing replica evidence ${evidenceId} in its matrix row`)
+    }
+  }
+}
+
+const m8State = iterations.find((iteration) => isPlainObject(iteration) && iteration.id === 'M8')
+if (isPlainObject(m8State) && m8State.status === 'passed') {
+  for (const record of replicaEvidence.records) {
+    if (record.status === '存在差异') {
+      errors.push(`M8 cannot pass while ${record.id} remains 存在差异`)
+    } else if (record.status === '证据不足' && ['high', 'medium'].includes(record.confidence)) {
+      errors.push(`M8 cannot pass while ${record.id} remains 证据不足`)
+    } else if (record.status === '未实现') {
+      errors.push(`M8 cannot pass while ${record.id} remains 未实现`)
+    }
+  }
+}
 
 const technologyTableHeaderCells = [
   '依赖',
@@ -786,7 +873,6 @@ const pandocContracts = new Map([
 ])
 for (const [relativePath, snippets] of pandocContracts) requireSnippets(relativePath, snippets)
 
-const m6 = iterations.find((iteration) => isPlainObject(iteration) && iteration.id === 'M6')
 const m6Requirements = read('iterations/M6-export/01-requirements.md')
 if (
   m6Requirements !== null &&
@@ -799,10 +885,7 @@ if (m6Cases !== undefined && !m6Cases.automated.includes('TC-M6-010')) {
   errors.push('M6 must own TC-M6-010 for Pandoc import')
 }
 if (m6Cases !== undefined && !m6Cases.manual.includes('MAN-M6-002')) {
-  errors.push('M6 must own MAN-M6-002 for Pandoc import/export verification')
-}
-if (!isPlainObject(m6) || m6.manual_gate !== true) {
-  errors.push('M6 must remain a manual-gate iteration for Pandoc import/export verification')
+  errors.push('M6 must retain the MAN-M6-002 migration source until automated coverage replaces it')
 }
 
 for (const relativePath of instructionFiles) {
@@ -842,5 +925,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Planning documentation verified: ${iterations.length} iterations, ${globalAutomatedCases.size} automated test cases, ${globalManualCases.size} manual cases, ${definedRequirements.size} requirements, ${definedCompatibility.size} compatibility items.`
+  `Planning documentation verified: ${iterations.length} iterations, ${globalAutomatedCases.size} automated test cases, ${globalManualCases.size} manual cases, ${definedRequirements.size} requirements, ${definedCompatibility.size} compatibility items, ${replicaEvidence.records.length} replica evidence records.`
 )

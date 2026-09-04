@@ -1,19 +1,17 @@
-# M8 test cases
+# M8 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M8`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M8`
+- 状态权威： `iterations/state.json`
+- 测试策略依据： [test strategy](../../docs/09-test-strategy.md)
+- 安全策略依据： [data-safety and security](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers. They are not subtask IDs and do not own planning
-state, dependencies, implementation work, manual gates, or reports. The `覆盖能力` column names
-the capability covered by the case.
+测试 ID 是稳定验证标识，不是子任务 ID，也不拥有规划状态、依赖、实施工作、人工门禁或报告。`覆盖能力` 列说明用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID        | 覆盖能力                     | 层级/级别               | 数据/环境   | 步骤                                                                                                                               | 预期                                                                                                                                   | 自动化                                                                                                                                                                                                 |
 | --------- | ---------------------------- | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -26,14 +24,14 @@ the capability covered by the case.
 | TC-M8-007 | Stable 完成审计              | release-audit/P0        | STABLE-M8   | Inspect seven-day RC, requirements/compatibility/tests/gates/P0/P1/gaps, rollback rehearsal, support channels, and artifacts.      | Evidence complete; no unapproved gap/P0/P1; rollback preserves settings/documents; Stable is traceable.                                | `pnpm test:integration -- tests/integration/stable-audit.spec.ts`；证据：Audit matrix and rollback evidence.；停止条件：Missing evidence, unresolved blocker, or failed rollback stops M8.             |
 | TC-M8-008 | 卸载删除范围安全             | installer-security/P0   | DELETE-M8   | Place canaries in install/userData/workspace/neighboring directories; execute upgrade and retain/clean uninstall.                  | Only declared app/optional userData removed; workspace, user Markdown, and neighbor hashes unchanged.                                  | `pnpm test:security -- tests/security/uninstall-scope.spec.ts`；证据：Canary hash manifest and installer trace.；停止条件：Any undeclared deletion stops M8.                                           |
 
-## Manual test cases
+## 人工测试用例
 
 | ID         | 覆盖能力            | 环境                 | 步骤                                                                                                                                           | 通过条件                                                                  | 证据                                                                                                                  |
 | ---------- | ------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | MAN-M8-001 | Windows VM 发布旅程 | ENV-WIN10、ENV-WIN11 | 1. 干净安装；2. 双击关联和 PowerShell 打开中文路径；3. 微软拼音编辑并强杀恢复；4. PDF/打印；5. 多显示器/缩放；6. 覆盖升级；7. 卸载保留与清理。 | 旅程可用；签名/哈希正确；无数据丢失；卸载不碰用户文档；窗口和输入法正常。 | VM 快照、制品哈希、命令记录、数据前后哈希、截图/录屏。；停止条件：数据丢失、签名异常、关联/IME/打印失败或误删停止 M8. |
 | MAN-M8-002 | Stable 审计与回滚   | Stable 审计环境      | 1. RC 真实使用七天；2. 审阅签名/SBOM/许可证/gaps；3. 从 RC 回滚上版再升级；4. 核验支持和安全入口；5. 批准 Stable。                             | 七天无 P0/P1；回滚/再升级不丢设置/文档；证据归档；用户明确批准。          | 七天记录、回滚哈希、审计签署、最终制品清单。；停止条件：无用户批准、P0/P1、回滚数据损失或证据缺失停止 M8.             |
 
-## Parameter matrix
+## 参数矩阵
 
 | Parameter ID | Variables                                                                                                                 | Fixture                 | Required cases               | Expected result        |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ---------------------------- | ---------------------- |
@@ -45,7 +43,7 @@ the capability covered by the case.
 | VM-M8        | Win10/11，100/150/250%，单/多显示器，微软拼音，系统 PDF/真实打印机，在线/离线                                             | Clean VMs               | Windows VM 发布门禁          | 全旅程可复现。         |
 | DELETE-M8    | 安装目录、userData/settings/themes/recovery/logs、Documents/工作区、相邻目录、junction/symlink canary                     | Canary filesystem       | 卸载删除范围安全             | 无越界删除。           |
 
-## Fixtures
+## 夹具
 
 | Fixture                          | Source and integrity                                                                    | Covered behavior                           | Required environment      |
 | -------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------- |
@@ -53,12 +51,12 @@ the capability covered by the case.
 | Routing/installer canaries       | Unicode/long path fixtures and checksummed userData/workspace/neighbor/symlink probes.  | argv, instance protection, deletion scope. | Clean Win10/11 VMs.       |
 | Update/VM corpus                 | Fake signed/invalid feeds, controlled old/current artifacts, release journey documents. | Update safety, rollback, Stable evidence.  | Network-controlled VMs.   |
 
-## Evidence requirements
+## 证据要求
 
-Record command, environment, exit code, parameter selection, result, and artifact or report reference for each executed automated case. Record operator, date, environment, step results, and conclusion evidence for each manual case.
+报告必须把 `REF-027..029` 关联到 Windows 版本、虚拟机快照、安装与更新日志、参数轨迹、文件前后哈希、截图/录屏和 `MAN-M8-001..002` 签署。最终审计还必须证明全部 `REF-*` 已知差异和关键证据缺口为零。
 
-## Stop conditions
+每个已执行自动用例记录命令、环境、退出码、参数选择、结果和产物或报告引用；每个人工用例记录评估人、日期、环境、逐步结果和结论证据。
 
-Installation/update rollback failure, signature bypass, single-instance dirty-document loss,
-undeclared deletion, secret/private-content exposure, missing Stable evidence, or release-blocking
-security/data failure stops iteration progress until fixed and regression evidence is recorded.
+## 停止条件
+
+安装/更新回滚失败、签名绕过、单实例脏文档丢失、未声明删除、秘密/私有内容暴露、缺少 Stable 证据或阻断发布的安全/数据失败都会停止迭代，直至修复并记录回归证据。

@@ -26,7 +26,7 @@ codex --ask-for-approval never "只总结当前生效的 AGENTS.md 指令和工�
 codex exec `
   --sandbox workspace-write `
   --ask-for-approval on-request `
-  "读取 AGENTS.md、iterations/state.json 和 iterations/README.md。选择一个 ready 且依赖 passed 的迭代，读取其 01-requirements.md、02-detailed-design.md、03-test-cases.md 和引用文档。只实施该迭代；开发中运行聚焦测试，退出时运行完整门禁。写入 04-test-report.md 后再 awaiting_manual；人工证据和 05-exit-report.md 完整后才 passed，然后停止。"
+  "读取 AGENTS.md、iterations/state.json 和 iterations/README.md。选择一个 ready 且依赖 passed 的迭代，读取其 01-requirements.md、02-detailed-design.md、03-test-cases.md 和引用文档。只实施该迭代；开发中运行聚焦测试，退出时运行完整门禁。写入 04-test-report.md 和 05-exit-report.md 后设为 passed；仅当 manual_gate:true 时先进入 awaiting_manual 并等待获批人工证据，然后停止。"
 ```
 
 更推荐明确指定迭代，避免并行状态歧义：
@@ -62,7 +62,7 @@ codex exec resume --last `
   "继续当前迭代。先读取磁盘和 iterations/state.json，确认未完成验收；不要开始后续迭代。"
 ```
 
-不同迭代启动新 run，让 Codex 重新加载最新 `AGENTS.md` 和入口文档。不要用 resume 跨越人工门禁。
+不同迭代启动新 run，让 Codex 重新加载最新 `AGENTS.md` 和入口文档。若迭代启用了人工门禁，不要用 resume 跨越该门禁。
 
 ## 6. 审核一次运行
 
@@ -72,7 +72,7 @@ Codex 报告后人工检查：
 2. `git diff --stat` 与 `git diff` 是否出现后续功能、跳过测试或依赖漂移。
 3. 聚焦测试和完整门禁是否真的运行，并覆盖该迭代 `03-test-cases.md` 的 `TC-*` 参数矩阵。
 4. 是否存在 `.skip`、`.only`、`@ts-ignore`、`any`、假按钮、临时安全放宽。
-5. 对人工门禁按关联的 `MAN-*` 执行并保存证据，尤其 IME、外部修改、恢复、打印和安装。
+5. 运行当前迭代定义的自动验收并保存证据；仅在 `manual_gate:true` 时按关联的有效 `MAN-*` 执行并保存人工证据。
 
 通过后可明确要求 Codex 提交；未经明确请求不提交或推送。
 
@@ -84,13 +84,13 @@ Codex 报告后人工检查：
 - 数据不变量失败：新增回归 fixture，冻结所有迭代进展直到修复。
 - 实现范围过大：恢复或拆出无关改动，但不要使用破坏用户工作的 Git 命令。
 
-## 8. 人工门禁
+## 8. 可选人工门禁
 
-状态为 `awaiting_manual` 时，Codex 不得自己改成 `passed`。用户完成步骤后运行：
+只有独立设计证明存在不可自动观察的物理边界并设置 `manual_gate:true` 时，迭代才进入 `awaiting_manual`；Codex 不得自行改成 `passed`。用户完成步骤后可运行：
 
 ```powershell
 codex exec --sandbox workspace-write `
-  "我已按 M1 的 03-test-cases.md 完成全部人工验收且结果通过。记录人工证据和 05-exit-report.md，将 M1 设为 passed，然后停止。"
+  "我已按当前迭代的 03-test-cases.md 完成全部获批人工验收且结果通过。记录人工证据和 05-exit-report.md，将当前迭代设为 passed，然后停止。"
 ```
 
 如果失败，描述复现步骤，让 Codex 将状态改为 `failed` 并在同一迭代修复。
@@ -105,7 +105,7 @@ codex exec --sandbox workspace-write `
 
 ## 10. 推荐节奏
 
-- 每个迭代：实施和聚焦测试、完整退出门禁、必要的人工验收。
+- 每个迭代：实施和聚焦测试、完整自动退出门禁，以及仅在 `manual_gate:true` 时适用的人工验收。
 - 每个迭代退出：审阅架构漂移、完整证据和下一迭代的入口完整性。
 - M1/M2 期间保持短反馈周期；编辑器底层问题越早暴露，返工越小。
 

@@ -8,6 +8,7 @@ coverage/
 playwright-report/
 test-results/
 artifacts/m0/
+artifacts/m1/
 .codex-runs/
 .superpowers/
 .worktrees/

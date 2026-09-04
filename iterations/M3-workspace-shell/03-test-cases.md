@@ -1,17 +1,17 @@
-# M3 test cases
+# M3 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M3`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M3`
+- 状态权威： `iterations/state.json`
+- 测试策略依据： [test strategy](../../docs/09-test-strategy.md)
+- 安全策略依据： [data-safety and security](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers, not planning units. `覆盖能力` names the capability covered by each case.
+测试 ID 是稳定的验证标识符，不是规划单元。`覆盖能力` 列说明每个用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID        | 覆盖能力                            | 层级/级别                 | 数据/环境    | 步骤                                                                                                 | 预期                                                                                              | 自动化                                                                                                                                           |
 | --------- | ----------------------------------- | ------------------------- | ------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -25,13 +25,13 @@ Test IDs are stable verification identifiers, not planning units. `覆盖能力`
 | TC-M3-008 | Workspace gate                      | performance-regression/P0 | GATE-M3      | Edit, enumerate, quick-open, search/cancel in 10,000-file root; full regression                      | Input P95 budgeted; work cancellable; error matrix passes; no root escape/P0/P1                   | `pnpm test:performance -- tests/performance/m3-gate.spec.ts`；证据：P50/P95 and report；停止条件：P0/P1 or blocked input                         |
 | TC-M3-009 | File-operation fault consistency    | integration/P0            | FILEFAULT-M3 | Inject failures through preflight, execution, watcher update, UI commit for rename/move/trash        | Disk/tree/recents/session converge; no false success; actionable error                            | `pnpm test:integration -- tests/integration/file-operation-faults.spec.ts`；证据：Fault traces；停止条件：Inconsistent state                     |
 
-## Manual test cases
+## 人工测试用例
 
 | ID         | 覆盖能力                             | 环境                                               | 步骤                                                                                                                                   | 通过条件                                                                                                   | 证据                                                                                                                                                                             |
 | ---------- | ------------------------------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | MAN-M3-001 | Practical large-workspace acceptance | Real large repository, ENV-SYNC, multiple displays | Open 10,000+ files while typing; create sync events; create/rename/move/recycle; cancel large search; restart after display disconnect | No perceptible input stall; no path escape/misoperation; recycle delete; searchable cancel; visible window | Repository scale, performance record, Explorer/Task Manager captures, sanitized session audit；停止条件：Any loss, escape, lingering process, blocked input, or invisible window |
 
-## Parameter matrix
+## 参数矩阵
 
 | Parameter ID | Variables                                                                                                                                                    | Fixture                                                   | Required cases       | Expected result                                                                                      |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -43,7 +43,7 @@ Test IDs are stable verification identifiers, not planning units. `覆盖能力`
 | SEARCH-M3    | Chinese, metacharacters with regex off, quotes/semicolon/`&`, large results, binary, ignored, no-permission, and dirty-document/disk same-path results       | Controlled ripgrep sidecar and dirty-session overlay      | TC-M3-006            | Shell-safe bounded results, correct deduplication, actionable errors, and terminated cancellation    |
 | SESSION-M3   | Single/dual display, disconnected display, negative coordinates, different DPI, maximized state, corrupt session, and missing recent path                    | Display-layout and versioned-session fixtures             | TC-M3-007            | Restored windows are visible, per-window state is sanitized, and corrupt/missing entries fail safely |
 
-## Fixtures
+## 夹具
 
 | Fixture               | Source and integrity                                    | Covered behavior            | Required environment  |
 | --------------------- | ------------------------------------------------------- | --------------------------- | --------------------- |
@@ -51,14 +51,12 @@ Test IDs are stable verification identifiers, not planning units. `覆盖能力`
 | File-fault corpus     | Permissions, locks, existing targets, cancellation      | Recoverable mutation        | Main-process adapters |
 | Search/session corpus | Controlled sidecar, binary/large files, display layouts | Search and restoration      | Packaged Electron     |
 
-## Evidence requirements
+## 证据要求
 
-Record commands, environments, exit codes, generator seeds, tree snapshots,
-sidecar arguments/status, before/after directory listings, session audit, and
-P50/P95. Manual evidence records the operator, hardware/displays, and result.
+报告必须把 `REF-011` 对应的 `COMP-010..013` 分别关联到窗口截图、菜单与命令轨迹、真实目录清单、搜索结果和 `MAN-M3-001` 签署，证明工作区功能与布局不存在已知差异。
 
-## Stop conditions
+记录命令、环境、退出码、生成器种子、树快照、边车参数与状态、前后目录清单、会话审计和 P50/P95。人工证据记录操作人、硬件、显示器和结果。
 
-Unauthorized access, permanent erroneous deletion, uncancelled child process,
-10,000-file work blocking input, session source-text leakage, or invisible
-restored windows stops iteration progress.
+## 停止条件
+
+一旦发生未授权访问、错误永久删除、子进程无法取消、10,000 文件工作阻塞输入、会话泄露源码文本或窗口恢复到不可见位置，迭代必须停止推进。

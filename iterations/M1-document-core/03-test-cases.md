@@ -1,69 +1,68 @@
-# M1 test cases
+# M1 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M1`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M1`
+- 状态权威： `iterations/state.json`
+- 测试策略依据：[测试策略](../../docs/09-test-strategy.md)
+- 安全策略依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers, not planning units. `覆盖能力`
-names the capability covered by each case.
+测试 ID 是稳定的验证标识符，不是规划单元。`覆盖能力` 列说明每个用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
-| ID        | 覆盖能力                                 | 层级/级别                 | 数据/环境            | 步骤                                                                                                      | 预期                                                                                                                 | 自动化                                                                                                                                            |
-| --------- | ---------------------------------------- | ------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TC-M1-001 | SourceBuffer encoding and EOL round trip | unit-property/P0          | BYTE-M1              | Decode, do not edit, re-encode; random text/EOL round trips; compare metadata/SHA-256                     | Supported bytes identical; illegal encoding read-only error; new lines use adjacent/dominant EOL                     | `pnpm test -- tests/unit/domain/source-buffer.property.spec.ts`；证据：Seed, hashes, metadata；停止条件：Any byte drift                           |
-| TC-M1-002 | Authorized file opening                  | integration-security/P0   | PATH-M1              | Open legal file from picker; forge unauthorized, traversal, symlink, and cancellation requests            | Only authorized paths open; cancel creates no session; no unauthorized bytes read; unknown encoding cannot overwrite | `pnpm test:integration -- tests/integration/open-file.spec.ts`；证据：IPC and filesystem evidence；停止条件：Path escape or unauthorized read     |
-| TC-M1-003 | Atomic save and external conflict        | integration/P0            | FI-SAVE × BYTE-M1    | Edit one range; inject failure at each save stage; inspect target/temp/backup/session                     | Complete old or new file only; untouched bytes unchanged; failure stays dirty; no silent conflict overwrite          | `pnpm test:integration -- tests/integration/atomic-save.spec.ts`；证据：Fault point and file-state evidence；停止条件：Partial write or overwrite |
-| TC-M1-004 | DocumentSession revisions and history    | unit-property/P0          | CHANGE-M1            | Random apply/undo/redo/save/path-change/close-decision sequences                                          | Revision monotonic; undo to savedRevision clears dirty; undo restores exact SourceBuffer                             | `pnpm test -- tests/unit/domain/document-session.property.spec.ts`；证据：Random seed and traces；停止条件：Undo or dirty inconsistency           |
-| TC-M1-005 | Crash recovery                           | integration/P0            | FI-RECOVERY × REC-M1 | Write versions, force kill, corrupt last version, use multiple sessions, restart/recover/discard/save-as  | Latest valid revision; bad version falls back; unconfirmed entries retained; logs contain no text                    | `pnpm test:integration -- tests/integration/recovery.spec.ts`；证据：Recovery snapshots and logs；停止条件：Broken recovery or text logging       |
-| TC-M1-006 | CodeMirror source editing                | component-e2e/P1          | EDIT-M1              | Input Unicode/long/multiline text, undo/redo, switch files, unmount/remount view                          | No lost transaction; selection/history session-isolated; React has no full-text copy                                 | `pnpm test:e2e -- tests/e2e/source-editor.spec.ts`；证据：E2E traces；停止条件：Input/history loss                                                |
-| TC-M1-007 | Unified document commands and close flow | e2e/P0                    | DOCFLOW-M1           | Use menu/button/shortcut for New/Open/Save/Save As/Close; choose save/discard/cancel                      | Entrypoints consistent; cancellation unchanged; save-as changes only new path; dirty document never silently closes  | `pnpm test:e2e -- tests/e2e/document-commands.spec.ts`；证据：E2E and dialog evidence；停止条件：Silent close or wrong-path save                  |
-| TC-M1-008 | Watcher and autosave conflict policy     | integration/P0            | WATCH-M1             | Simulate self-save, external change/delete/rename and event storm in clean/dirty/autosave states          | Self events dedupe; clean reloads by policy; dirty pauses autosave and preserves two contents                        | `pnpm test:integration -- tests/integration/file-watcher.spec.ts`；证据：Watcher event trace；停止条件：Event loss or destructive reload          |
-| TC-M1-009 | Find, replace, and status                | unit-e2e/P1               | FIND-M1              | Search/replace normal, case, whole-word, zero-width, Unicode, cross-line, invalid regex; undo replace-all | Counts/selections correct; replace-all is one undo group; error leaves source unchanged; stable bilingual statistics | `pnpm test:e2e -- tests/e2e/find-status.spec.ts`；证据：Search fixture and E2E trace；停止条件：Source mutation on error                          |
-| TC-M1-010 | Data-safety and source-editor gate       | regression-performance/P0 | GATE-M1              | Run DATA/EDIT/SEC regression and 1/5/10MB open/input/save benchmarks                                      | Invariants pass; 5MB within budget; 10MB degradable; no P0/P1                                                        | `pnpm test:performance -- tests/performance/m1-gate.spec.ts`；证据：Regression and performance report；停止条件：Any invariant/P0/P1 failure      |
-| TC-M1-011 | Minimal source patch save                | property/P0               | MINPATCH-M1          | Randomly edit one character range in each encoding/EOL file and binary diff                               | Diff only target range/necessary EOL index; BOM, final newline, other lines unchanged                                | `pnpm test -- tests/unit/domain/minimal-save.property.spec.ts`；证据：Seeds and binary diffs；停止条件：Unrelated-byte mutation                   |
-| TC-M1-012 | External-conflict choices                | e2e/P0                    | CONFLICT-M1          | On dirty external change choose compare, reload, local save-as, confirm overwrite                         | Both contents recoverable before each choice; overwrite double-confirmed; cancel retains conflict                    | `pnpm test:e2e -- tests/e2e/external-conflict.spec.ts`；证据：E2E screenshots and hashes；停止条件：Lost conflict version                         |
+| ID        | 覆盖能力                    | 层级/级别     | 数据/环境            | 步骤                                                                               | 预期                                                                       | 自动化                                                                                                                                           |
+| --------- | --------------------------- | ------------- | -------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| TC-M1-001 | SourceBuffer 编码与换行往返 | 单元属性/P0   | BYTE-M1              | 解码后不编辑并重新编码；随机执行文本与换行往返；比较元数据和 SHA-256               | 受支持字节完全相同；非法编码返回只读错误；新增换行使用相邻或主导换行符     | `pnpm test -- tests/unit/domain/source-buffer.property.spec.ts`；证据：随机种子、哈希、元数据；停止条件：任何字节漂移                            |
+| TC-M1-002 | 授权文件打开                | 集成安全/P0   | PATH-M1              | 从选择器打开合法文件；伪造未授权、穿越、符号链接和取消请求                         | 仅打开授权路径；取消不创建会话；不读取未授权字节；未知编码不能覆盖         | `pnpm test:integration -- tests/integration/open-file.spec.ts`；证据：IPC 与文件系统记录；停止条件：路径逃逸或未授权读取                         |
+| TC-M1-003 | 原子保存与外部冲突          | 集成/P0       | FI-SAVE × BYTE-M1    | 编辑一个范围；在每个保存阶段注入故障；检查目标、临时文件、备份和会话               | 文件只能是完整旧版或新版；未触碰字节不变；失败保持未保存；不得静默覆盖冲突 | `pnpm test:integration -- tests/integration/atomic-save.spec.ts`；证据：故障点和文件状态；停止条件：部分写入或覆盖                               |
+| TC-M1-004 | DocumentSession 修订与历史  | 单元属性/P0   | CHANGE-M1            | 随机执行应用、撤销、重做、保存、路径变更和关闭决定序列                             | 修订号单调递增；撤销到已保存修订清除未保存状态；撤销精确恢复 SourceBuffer  | `pnpm test -- tests/unit/domain/document-session.property.spec.ts`；证据：随机种子和轨迹；停止条件：撤销或未保存状态不一致                       |
+| TC-M1-005 | 崩溃恢复                    | 集成/P0       | FI-RECOVERY × REC-M1 | 写入多个版本、强制终止、损坏最新版本、使用多会话，并重启、恢复、放弃或另存         | 恢复最新有效修订；坏版本回退；未确认记录保留；日志不含正文                 | `pnpm test:integration -- tests/integration/recovery.spec.ts`；证据：恢复快照和日志；停止条件：恢复失效或正文进入日志                            |
+| TC-M1-006 | CodeMirror 源码编辑         | 组件端到端/P1 | EDIT-M1              | 输入 Unicode、长文本和多行文本；撤销重做；切换文件；卸载并重新挂载视图             | 事务不丢失；选区和历史按会话隔离；React 不保存全文副本                     | `pnpm test:e2e -- tests/e2e/source-editor.spec.ts`；证据：端到端轨迹；停止条件：输入或历史丢失                                                   |
+| TC-M1-007 | 统一文档命令与关闭流程      | 端到端/P0     | DOCFLOW-M1           | 通过菜单、按钮和快捷键执行新建、打开、保存、另存为、关闭，并选择保存、不保存或取消 | 各入口一致；取消不改变内容；另存仅改变新路径；未保存文档绝不静默关闭       | `pnpm test:e2e -- tests/e2e/document-commands.spec.ts`；证据：端到端和对话框记录；停止条件：静默关闭或保存到错误路径                             |
+| TC-M1-008 | 监视器与自动保存冲突策略    | 集成/P0       | WATCH-M1             | 在干净、未保存和自动保存状态模拟自身保存、外部修改、删除、重命名及事件风暴         | 自身事件去重；干净会话按策略重载；未保存会话暂停自动保存并保留两份内容     | `pnpm test:integration -- tests/integration/file-watcher.spec.ts`；证据：监视器事件轨迹；停止条件：事件丢失或破坏性重载                          |
+| TC-M1-009 | 查找、替换与状态            | 单元端到端/P1 | FIND-M1              | 测试普通、区分大小写、全词、零宽、Unicode、跨行和非法正则；撤销全部替换            | 数量和选区正确；全部替换属于一个撤销组；错误不改变源码；中英文统计稳定     | `pnpm test:e2e -- tests/e2e/find-status.spec.ts`；证据：搜索夹具和端到端轨迹；停止条件：错误导致源码变化                                         |
+| TC-M1-010 | 数据安全与源码编辑门禁      | 回归性能/P0   | GATE-M1              | 运行数据、编辑和安全回归，以及 1、5、10 MiB 打开、输入、保存基准                   | 不变量通过；5 MiB 达到预算；10 MiB 可见降级且保持可编辑；无 P0/P1          | `pnpm test:performance -- tests/performance/m1-gate.spec.ts`；证据：回归和性能报告；停止条件：任何不变量或 P0/P1 失败                            |
+| TC-M1-011 | 最小源码补丁保存            | 属性/P0       | MINPATCH-M1          | 在每种编码和换行文件中随机编辑一个字符范围并执行二进制差异比较                     | 差异仅限目标范围和必要换行索引；BOM、末尾换行和其他行不变                  | `pnpm test -- tests/unit/domain/minimal-save.property.spec.ts`；证据：随机种子和二进制差异；停止条件：无关字节变化                               |
+| TC-M1-012 | 外部冲突选择                | 端到端/P0     | CONFLICT-M1          | 未保存内容遇到外部变化时执行比较、重载、本地另存、确认覆盖                         | 每种选择前两份内容均可恢复；覆盖需要二次确认；取消保留冲突                 | `pnpm test:e2e -- tests/e2e/external-conflict.spec.ts`；证据：端到端截图和哈希；停止条件：任一冲突版本丢失                                       |
+| TC-M1-013 | Windows 自动验收            | Electron/P0   | ACCEPT-M1            | 用 CDP 执行组合输入；真实文件往返冻结字节夹具；执行冲突、强杀恢复和关闭全部决策    | 无重复或丢字；哈希精确；所有版本可恢复；恢复与关闭正确；公开依据覆盖完整   | `pnpm test:e2e -- tests/e2e/m1-windows-acceptance.spec.ts`；证据：`artifacts/m1/automated/acceptance.json`；停止条件：场景失败、超时或证据不完整 |
 
-## Manual test cases
+## 人工测试用例
 
-| ID         | 覆盖能力                                                          | 环境                | 步骤                                                                                                                                                                                               | 通过条件                                                                                                                              | 证据                                                                                                                                             |
-| ---------- | ----------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| MAN-M1-001 | Real IME, byte preservation, conflict, recovery, close acceptance | ENV-IME, Windows 11 | Use Microsoft Pinyin continuously for 30 minutes; edit LF/CRLF/BOM samples and compare hashes; create conflict and use four choices; force kill and recover; close dirty document with all choices | No duplicate/lost characters; untouched bytes unchanged; both conflicts recoverable; recovery revision correct; close choices correct | IME/system versions, before/after hashes, recovery/conflict screenshots, signed conclusion；停止条件：Any data loss, byte drift, or unsafe close |
+| ID  | 覆盖能力 | 环境 | 步骤 | 通过条件 | 证据 |
+| --- | -------- | ---- | ---- | -------- | ---- |
 
-## Parameter matrix
+不适用，M1 为 `manual_gate:false`。`MAN-M1-001` 已废止但不静默删除：中文组合输入由 `TC-M1-006`、`TC-M1-013` 接管；字节保留由 `TC-M1-001`、`TC-M1-003`、`TC-M1-011`、`TC-M1-013` 接管；冲突由 `TC-M1-008`、`TC-M1-012`、`TC-M1-013` 接管；恢复由 `TC-M1-005`、`TC-M1-013` 接管；关闭由 `TC-M1-007`、`TC-M1-013` 接管；`REF-001..005` 与 `COMP-001..004`、`COMP-036` 由 `TC-M1-013` 的自动证据清单接管。
 
-| Parameter ID | Variables                                                                                                                                                                             | Fixture                                                        | Required cases                  | Expected result                                                                                                                    |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| BYTE-M1      | Empty; UTF-8, UTF-8 BOM, UTF-16LE BOM, and UTF-16BE BOM; LF, CRLF, and mixed EOL; with and without final newline; ASCII, Chinese, Emoji, combining characters, and NUL; invalid UTF-8 | Manifested byte corpus with before/after SHA-256               | TC-M1-001, TC-M1-003, TC-M1-011 | Exact untouched-byte preservation, deterministic EOL behavior, and safe read-only handling of invalid encoding                     |
-| PATH-M1      | Normal paths, spaces, Chinese, `#`, long paths, read-only and occupied files, inside/outside authorized workspace, `..`, junction/symlink, UNC, and picker cancellation               | Authorized-root and temporary filesystem matrix                | TC-M1-002                       | Only authorized paths are read and cancellation creates no session                                                                 |
-| CHANGE-M1    | Insert, delete, replace, cross-line edits, document start/end, line-break merge/split; fixed 100 seeds and 10,000 sequences at the gate                                               | Seeded SourceBuffer change generator                           | TC-M1-004                       | Revision, dirty state, SourceBuffer, and undo/redo remain consistent for every sequence                                            |
-| REC-M1       | Named/unnamed, clean/dirty, single/multiple windows, truncated final snapshot, checksum failure, old/new schema versions, and the 30-day retention boundary                           | Versioned recovery stores with controlled clock and corruption | TC-M1-005                       | Latest valid revision is recovered, corrupt/incompatible data falls back safely, and retention boundaries are deterministic        |
-| WATCH-M1     | Write/delete/rename, unchanged mtime with changed hash, same-hash event, OneDrive-style create-change-rename storms, and out-of-order events                                          | Deterministic watcher event adapter and disk snapshots         | TC-M1-008, TC-M1-012            | Self/same-content events deduplicate, real changes remain visible, dirty content is preserved, and ordering cannot cause overwrite |
-| FIND-M1      | Empty pattern, Chinese, Emoji, combining characters, CRLF documents, zero-width `^`/`$`, capture groups, invalid regex, and read-only mode                                            | Search/replace corpus with exact ranges and source hashes      | TC-M1-009                       | Counts, ranges, replacements, undo grouping, errors, and read-only behavior are correct without unintended source changes          |
-| GATE-M1      | 1, 5, and 10 MB; on the reference machine record cold/hot open, first frame, input P50/P95, save time, and peak memory                                                                | Size-scaled Markdown performance corpus                        | TC-M1-010                       | Five-megabyte behavior meets budget, ten-megabyte mode remains editable, and measurements are reproducible                         |
+## 参数矩阵
 
-## Fixtures
+| 参数 ID   | 变量                                                                                                                                  | 夹具                                 | 必需用例                                   | 预期结果                                                               |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------ | ---------------------------------------------------------------------- |
+| BYTE-M1   | 空文件；UTF-8、UTF-8 BOM、UTF-16LE BOM、UTF-16BE BOM；LF、CRLF、混合换行；有无末尾换行；ASCII、中文、Emoji、组合字符、NUL；非法 UTF-8 | 含清单及前后 SHA-256 的字节语料      | TC-M1-001、TC-M1-003、TC-M1-011、TC-M1-013 | 精确保留未触碰字节、确定性换行行为，并对非法编码执行安全只读处理       |
+| PATH-M1   | 普通路径、空格、中文、`#`、长路径、只读或占用文件、授权工作区内外、`..`、连接点或符号链接、UNC、选择器取消                            | 授权根与临时文件系统矩阵             | TC-M1-002                                  | 仅读取授权路径，取消不创建会话                                         |
+| CHANGE-M1 | 插入、删除、替换、跨行编辑、文档首尾、换行合并或拆分；固定 100 个种子，门禁运行 10,000 个序列                                         | 带种子的 SourceBuffer 变更生成器     | TC-M1-004                                  | 每个序列中的修订、未保存状态、SourceBuffer、撤销与重做始终一致         |
+| REC-M1    | 已命名或未命名、干净或未保存、单窗口或多窗口、末尾快照截断、校验失败、新旧 schema 版本、30 天保留边界                                 | 可控制时钟和损坏注入的版本化恢复存储 | TC-M1-005                                  | 恢复最新有效修订；损坏或不兼容数据安全回退；保留边界确定               |
+| WATCH-M1  | 写入、删除、重命名；mtime 不变但哈希改变；相同哈希事件；类似 OneDrive 的创建、修改、重命名风暴；乱序事件                              | 确定性监视器事件适配器与磁盘快照     | TC-M1-008、TC-M1-012                       | 自身或同内容事件去重；真实变化仍可见；保留未保存内容；乱序不得导致覆盖 |
+| FIND-M1   | 空模式、中文、Emoji、组合字符、CRLF 文档、零宽 `^`/`$`、捕获组、非法正则、只读模式                                                    | 带精确范围和源码哈希的查找替换语料   | TC-M1-009                                  | 数量、范围、替换、撤销分组、错误和只读行为正确，不产生意外源码变化     |
+| GATE-M1   | 1、5、10 MiB；在基准机器记录冷启动与热启动打开、首帧、输入 P50/P95、保存时间和峰值内存                                                | 按大小缩放的 Markdown 性能语料       | TC-M1-010                                  | 5 MiB 达到预算；10 MiB 保持可编辑并显示轻量源码模式；结果可复现        |
+| ACCEPT-M1 | CDP 组合更新；九个冻结字节夹具；冲突四决策；强制终止恢复；关闭三决策；REF/COMP 映射                                                   | Windows 真实生产 Electron 隔离场景   | TC-M1-013                                  | 每个场景有限时通过，证据不含正文和绝对路径                             |
 
-| Fixture                         | Source and integrity                                    | Covered behavior          | Required environment  |
-| ------------------------------- | ------------------------------------------------------- | ------------------------- | --------------------- |
-| Byte and minimal-patch fixtures | Encoding/EOL manifests and SHA-256                      | Lossless codec and save   | Isolated filesystem   |
-| Path and fault fixtures         | Authorized roots, symlinks, write/recovery fault points | Open/save/recovery safety | Main-process adapters |
-| Editor, watcher, search corpus  | Unicode, long, conflict, regex, and event sequences     | Source-mode continuity    | Electron E2E          |
+## 夹具
 
-## Evidence requirements
+| 夹具                     | 来源与完整性                          | 覆盖行为             | 必需环境        |
+| ------------------------ | ------------------------------------- | -------------------- | --------------- |
+| 字节与最小补丁夹具       | 编码、换行清单和 SHA-256              | 无损编解码与保存     | 隔离文件系统    |
+| 路径与故障夹具           | 授权根、符号链接、写入与恢复故障点    | 打开、保存、恢复安全 | 主进程适配器    |
+| 编辑器、监视器和搜索语料 | Unicode、长文本、冲突、正则和事件序列 | 源码模式连续性       | Electron 端到端 |
 
-Record commands, environments, exit codes, parameter selections, fixture
-hashes, random seeds, filesystem states, screenshots, and artifacts. Manual
-evidence records operator, date, IME/system version, hash comparisons, and the
-evaluator conclusion.
+## 证据要求
 
-## Stop conditions
+报告必须把 `REF-001..005` 逐项关联到执行环境、自动化结果和文件哈希，并明确本迭代已知复刻差异为零。公开资料没有覆盖的编码细节必须保留证据缺口，不能用内部一致性测试代替 Typora 行为结论。
 
-Silent overwrite, encoding/EOL normalization, partial save, unrecoverable
-conflict content, broken recovery, unauthorized file access, or undo/IME loss
-stops iteration progress until fixed and regressed.
+记录命令、环境、退出码、参数选择、夹具哈希、随机种子、文件系统状态、截图和制品。自动证据只记录脱敏环境、场景、引用和哈希，不记录正文与绝对路径。
+
+## 停止条件
+
+一旦发生静默覆盖、编码或 EOL 规范化、部分保存、冲突内容无法恢复、恢复失效、未授权文件访问或撤销与 IME 输入丢失，迭代必须停止推进，直至完成修复和回归验证。

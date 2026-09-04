@@ -1,87 +1,56 @@
-# Repository instructions for Codex
+# Codex 仓库说明
 
-## Mission
+## 使命
 
-Build the product specified in `docs/` one iteration at a time. The target is a
-Typora 1.13.8 feature- and workflow-compatible Markdown desktop editor with
-independent branding and assets. Do not narrow the product into a generic
-rich-text editor or a preview-and-source split-pane editor.
+按迭代逐步实现 `docs/` 规定的产品。目标是使用独立品牌、代码和资源，完整复刻 Typora 1.13.8 在 Windows 10/11 上公开可确认的简洁设计风格、单栏混合编辑、界面布局、六套内置主题效果、功能和可观察工作流。不得把产品缩减为通用富文本编辑器，也不得改成预览区与源码区分离的双栏编辑器。
 
-## Required reading order
+## 必需阅读顺序
 
-Before changing files, read:
+修改文件前，按以下顺序阅读：
 
 1. `iterations/state.json`
-2. The selected iteration's `01-requirements.md`, `02-detailed-design.md`, and
-   `03-test-cases.md`
+2. 所选迭代的 `01-requirements.md`、`02-detailed-design.md` 和 `03-test-cases.md`
 3. `docs/00-product-charter.md`
-4. `docs/03-architecture.md`
-5. `docs/05-data-safety-and-security.md`
-6. `docs/09-test-strategy.md`
+4. `docs/22-typora-1.13.8-windows-evidence-baseline.md`
+5. `docs/03-architecture.md`
+6. `docs/05-data-safety-and-security.md`
+7. `docs/09-test-strategy.md`
 
-Read every document linked by the selected iteration. Repository documents
-override assumptions from model memory.
+继续阅读所选迭代链接的所有其他文档。仓库文档优先于模型记忆中的假设。
 
-## Iteration selection and stopping
+## 迭代选择与停止条件
 
-- Implement only the iteration explicitly named by the user. If none is named,
-  select the one `ready` iteration whose dependencies are `passed`.
-- Mark the selected iteration `in_progress` before implementation. Never work
-  on a later iteration, speculative abstraction, placeholder button, fake
-  setting, or disabled mock feature.
-- Iterations are the sole planning, ownership, dependency, and acceptance unit.
-  Do not generate subtask plans, subtask state, or subtask reports.
-- Run focused tests while developing. At iteration exit, run `pnpm check` and
-  every applicable integration, end-to-end, performance, and security suite in
-  `docs/09-test-strategy.md`.
-- Write `04-test-report.md` with automated evidence before setting an iteration
-  to `awaiting_manual`. Write `05-exit-report.md` and record required manual
-  evidence before setting it to `passed`.
-- Stop after reporting changed files, commands run, results, residual risks,
-  and exact manual verification steps. Do not create commits, tags, releases,
-  or push unless the user explicitly asks.
+- 只实现用户明确指定的迭代。如果用户没有指定，则选择依赖均为 `passed` 的那个 `ready` 迭代。
+- 实现前把所选迭代标记为 `in_progress`。不得提前处理后续迭代、推测性抽象、占位按钮、虚假设置或禁用的模拟功能。
+- 迭代是唯一的规划、归属、依赖和验收单元。不得生成子任务计划、子任务状态或子任务报告。
+- 开发期间运行聚焦测试。迭代退出时，运行 `pnpm check` 以及 `docs/09-test-strategy.md` 规定的所有适用集成、端到端、性能和安全测试套件。
+- 在迭代退出前，用 `04-test-report.md` 记录自动化证据；自动化门禁全部通过后编写 `05-exit-report.md`，再把迭代设置为 `passed`。
+- 自动化是默认验收方式。只有迭代通过独立设计证明存在无法自动观察的物理边界并设置 `manual_gate:true` 时，才可进入 `awaiting_manual` 并要求人工证据；M0 的历史人工证据保持不变。界面与交互结果必须引用 `REF-*` 公开依据并记录 Windows 条件、对照结果和证据；已知复刻差异不得记为通过。
+- 最终报告必须列出变更文件、执行命令、结果、剩余风险和精确人工验证步骤。除非用户明确要求，否则不得创建提交、标签、发布或推送。
 
-## Non-negotiable architecture rules
+## 不可协商的架构规则
 
-- The Markdown source string is the only document authority and persistence
-  format.
-- CodeMirror 6 is the editing surface. React must not mirror the full document
-  in component state.
-- Hybrid mode uses CodeMirror decorations, widgets, view plugins, and minimal
-  source patches. Never save by serializing a rich-text AST.
-- Source and hybrid mode share one document state, selection, history, and
-  scroll model.
-- Untouched bytes, BOM, encoding, line endings, whitespace, list markers,
-  table layout, reference definitions, and HTML remain untouched.
-- The renderer is sandboxed, has no Node integration, and accesses privileged
-  operations only through narrow typed preload methods validated in main.
-- HTML, SVG, Mermaid, math, themes, clipboard HTML, and exported custom content
-  are untrusted inputs.
-- Pandoc is optional. Core editing, HTML, PDF, image export, build, and tests
-  work without it.
+- Markdown 源字符串是文档的唯一权威和持久化格式。
+- CodeMirror 6 是编辑界面。React 不得在组件状态中镜像完整文档。
+- 混合模式使用 CodeMirror 装饰、部件、视图插件和最小源码补丁实现。严禁通过序列化富文本 AST 保存文档。
+- 源码模式与混合模式共享同一份文档状态、选区、历史和滚动模型。
+- 未触碰的字节、BOM、编码、换行符、空白、列表标记、表格布局、引用定义和 HTML 必须保持不变。
+- 渲染进程运行在沙箱中，不启用 Node 集成，只能通过狭窄的类型化 preload 方法访问特权操作，并由主进程验证。
+- HTML、SVG、Mermaid、数学公式、主题、剪贴板 HTML 和导出的自定义内容均视为不可信输入。
+- Pandoc 是可选组件。没有 Pandoc 时，核心编辑、HTML、PDF、图片导出、构建和测试仍必须正常工作。
 
-## Implementation conventions
+## 实现约定
 
-- Use TypeScript strict mode. Do not use `any`, `@ts-ignore`, disabled lint
-  rules, or unchecked type assertions to bypass design problems.
-- Use `pnpm`; do not introduce npm or yarn lockfiles.
-- Production dependencies require a documented reason in
-  `docs/04-technology-stack.md` and license compatibility.
-- Prefer pure domain modules and dependency injection for filesystem, clock,
-  process, and dialog boundaries.
-- IPC request and response schemas live in `src/shared/contracts/` and use Zod
-  at runtime.
-- User-facing strings go through the localization layer; do not scatter literal
-  UI strings after localization is introduced.
-- Preserve unrelated user changes. Never use destructive Git commands.
+- 使用 TypeScript 严格模式。不得用 `any`、`@ts-ignore`、禁用 Lint 规则或未经检查的类型断言绕过设计问题。
+- 使用 `pnpm`；不得引入 npm 或 yarn 锁文件。
+- 生产依赖必须在 `docs/04-technology-stack.md` 中记录引入理由并验证许可证兼容性。
+- 文件系统、时钟、进程和对话框边界优先使用纯领域模块与依赖注入。
+- IPC 请求与响应模式放在 `src/shared/contracts/` 中，并使用 Zod 进行运行时验证。
+- 引入本地化层后，面向用户的字符串必须通过本地化层提供，不得继续散落界面字面量。
+- 保留用户无关改动。严禁使用破坏性 Git 命令。
 
-## Data-loss response and documentation
+## 数据丢失响应与文档维护
 
-Any silent overwrite, encoding corruption, source normalization, broken
-recovery, or undo inconsistency is a release blocker. Stop iteration progress,
-add a regression fixture, fix the root cause, and rerun all data-integrity
-suites before continuing.
+任何静默覆盖、编码损坏、源码规范化、恢复失效或撤销不一致都是发布阻断问题。立即停止迭代推进，添加回归夹具，修复根因，并重新运行全部数据完整性测试套件。
 
-Update documentation in the same iteration when changing a public interface,
-architecture decision, command, setting, file format, security boundary, or
-acceptance criterion. Keep `iterations/state.json` valid JSON.
+如果变更了公共接口、架构决策、命令、设置、文件格式、安全边界或验收标准，必须在同一迭代更新文档。保持 `iterations/state.json` 为有效 JSON。

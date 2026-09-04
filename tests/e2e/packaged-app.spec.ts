@@ -57,20 +57,34 @@ test('TC-M0-007 launches the packaged executable with the frozen production boun
       }
       const app: unknown = Reflect.get(lattice, 'app')
       const commands: unknown = Reflect.get(lattice, 'commands')
+      const files: unknown = Reflect.get(lattice, 'files')
+      const recovery: unknown = Reflect.get(lattice, 'recovery')
       if (
         typeof app !== 'object' ||
         app === null ||
         typeof commands !== 'object' ||
-        commands === null
+        commands === null ||
+        typeof files !== 'object' ||
+        files === null ||
+        typeof recovery !== 'object' ||
+        recovery === null
       ) {
-        throw new Error('Expected the packaged app and command surfaces')
+        throw new Error('Expected the packaged M1 preload surfaces')
       }
       return {
         url: location.href,
         latticeKeys: Object.keys(lattice),
         appKeys: Object.keys(app),
         commandKeys: Object.keys(commands),
-        frozen: [Object.isFrozen(lattice), Object.isFrozen(app), Object.isFrozen(commands)],
+        fileKeys: Object.keys(files),
+        recoveryKeys: Object.keys(recovery),
+        frozen: [
+          Object.isFrozen(lattice),
+          Object.isFrozen(app),
+          Object.isFrozen(commands),
+          Object.isFrozen(files),
+          Object.isFrozen(recovery)
+        ],
         globals: Object.fromEntries(
           ['require', 'process', 'electron', 'ipcRenderer', 'fs', 'shell'].map((name) => [
             name,
@@ -82,10 +96,19 @@ test('TC-M0-007 launches the packaged executable with the frozen production boun
 
     expect(new URL(boundary.url).protocol).toBe('file:')
     expect(boundary).toMatchObject({
-      latticeKeys: ['app', 'commands'],
-      appKeys: ['getInfo'],
+      latticeKeys: ['app', 'commands', 'files', 'recovery'],
+      appKeys: ['onCloseRequested', 'confirmClose', 'getInfo'],
       commandKeys: ['onInvoke', 'updateStates'],
-      frozen: [true, true, true],
+      fileKeys: [
+        'open',
+        'save',
+        'saveAs',
+        'confirmedOverwrite',
+        'reloadExternal',
+        'onExternalChange'
+      ],
+      recoveryKeys: ['write', 'list', 'discard'],
+      frozen: [true, true, true, true, true],
       globals: {
         require: 'undefined',
         process: 'undefined',

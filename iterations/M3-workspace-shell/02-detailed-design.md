@@ -1,82 +1,60 @@
-# M3 detailed design
+# M3 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M3`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`M3`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-Main owns authorized roots, filesystem mutation, windows, sidecar lifecycle,
-and persistence. Renderer owns virtualized presentation and command state.
-All paths are main-validated; ripgrep uses `spawn(executable, args,
-{ shell: false })` and cancellable streams.
+主进程负责授权根目录、文件系统变更、窗口、边车程序生命周期和持久化。渲染进程负责虚拟化展示和命令状态。所有路径由主进程验证；ripgrep 使用 `spawn(executable, args, { shell: false })` 和可取消流。
 
-## Capability design
+## 能力设计
 
-### Command shell and workspace authorization
+### 命令外壳与工作区授权
 
-Project commands share command metadata/registry across menu, toolbar, context,
-and shortcuts. Folder selection grants a root capability; enumeration applies
-extension, hidden, ignore, case, and symlink policy and can cancel without
-blocking the editor.
+项目命令在菜单、工具栏、上下文菜单和快捷键之间共享命令元数据与注册表。选择文件夹会授予根能力；枚举过程应用扩展名、隐藏文件、忽略、大小写和符号链接策略，可以取消且不阻塞编辑器。
 
-### File views and operations
+### 文件视图与操作
 
-Tree/list views share sorted snapshots and selection/expansion state. Create,
-rename, move, recycle-bin delete, and reveal perform preflight, confirmation
-where dangerous, filesystem action, watcher reconciliation, and UI commit;
-failure never reports success or loses active source.
+树视图和列表视图共享排序快照以及选区和展开状态。新建、重命名、移动、移入回收站和在系统中显示依次执行预检、危险操作确认、文件系统动作、监视器协调和界面提交；失败绝不报告成功，也不丢失活动源码。
 
-### Navigation and search
+### 导航与搜索
 
-Outline derives from the current incremental syntax tree. Quick open searches
-authorized relative paths. Global search streams sidecar results with limits,
-dedupes dirty-session results, and terminates process/work on cancellation.
+大纲来自当前增量语法树。快速打开搜索授权根目录下的相对路径。全局搜索以流方式接收边车结果并设置上限，对脏会话结果去重，取消时终止进程和工作。
 
-### Recent projects and sessions
+### 最近项目与会话
 
-Persist window geometry, monitor-safe bounds, sidebar state, active file,
-scroll anchor, and recent roots without document text. Invalid/corrupt records
-fall back safely and missing paths remain removable.
+持久化窗口几何、显示器安全边界、侧边栏状态、活动文件、滚动锚点和最近根目录，但不保存文档文本。无效或损坏记录安全回退，缺失路径仍可从列表移除。
 
-## Module responsibilities
+## 模块职责
 
-Workspace service owns root/snapshots; file-operation service owns reversible
-mutations; outline/quick-open are renderer projections; search adapter owns
-sidecar cancellation; session storage owns sanitized per-window records.
+工作区服务负责根目录和快照；文件操作服务负责可恢复变更；大纲与快速打开是渲染进程投影；搜索适配器负责边车取消；会话存储负责净化后的逐窗口记录。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`authorized root -> enumeration snapshot -> tree/list/quick-open`; `file
-command -> preflight -> filesystem -> watcher reconcile -> UI result`; `query
--> spawned sidecar args -> streamed capped results -> cancel terminates child`.
+`授权根目录 -> 枚举快照 -> 树/列表/快速打开`；`文件命令 -> 预检 -> 文件系统 -> 监视器协调 -> UI 结果`；`查询 -> 边车参数数组 -> 有上限的流式结果 -> 取消并终止子进程`。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Never trust renderer paths; prevent symlink/root escape. No shell command
-composition. Recycle-bin deletion and overwrite-risk actions require clear
-confirmation. Session records never contain source text; geometry restores only
-inside a visible display area.
+`REF-011` 的工作区观察通过 Command Registry、窗口状态和授权根边界独立实现。布局与行为对照不得放宽路径授权、删除确认或会话隐私；差异必须由 M3 自身修复和回归。
 
-## Dependency admission
+绝不信任渲染进程路径，必须阻止符号链接和根目录逃逸。不得拼接 shell 命令。移入回收站和存在覆盖风险的操作必须清楚确认。会话记录不得包含源码文本；窗口几何只恢复到可见显示区域内。
 
-The ripgrep binary is packaged, versioned, integrity-checked, and invoked only
-from trusted resources. New filesystem dependencies require license and
-failure/cancellation tests.
+## 依赖准入
 
-## Manual-gate design
+ripgrep 二进制随应用打包、固定版本、验证完整性，并且只能从可信资源调用。新增文件系统依赖必须通过许可证、失败和取消测试。
 
-The documented manual scenario exercises a 10,000+ file repository, sync
-events, file operations, cancelled search, and a disconnected display; it is
-evidence preparation rather than a state-required approval.
+## 人工门禁设计
 
-## Implementation order
+已记录的人工场景覆盖超过 10,000 个文件的仓库、同步事件、文件操作、取消搜索和断开显示器；该场景用于准备证据，不是状态要求的批准门禁。
 
-- [ ] Project command shell and authorized root enumeration.
-- [ ] Shared tree/list snapshots and recoverable file operations.
-- [ ] Incremental outline, quick open, and cancellable sidecar search.
-- [ ] Sanitized recent-project and visible-window restoration.
-- [ ] Large-workspace security, performance, and practical manual verification.
+## 实施顺序
+
+- [ ] 建立项目命令外壳和授权根目录枚举。
+- [ ] 建立共享树与列表快照和可恢复文件操作。
+- [ ] 增加增量大纲、快速打开和可取消边车搜索。
+- [ ] 增加净化后的最近项目和可见窗口恢复。
+- [ ] 执行大型工作区安全、性能和实际人工验证。

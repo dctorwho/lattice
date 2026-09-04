@@ -15,7 +15,7 @@
 
 1. 读取完整字节和 stat 信息，记录 size、mtime、可选快速哈希。
 2. 按 BOM 检测 UTF-8/UTF-16LE/UTF-16BE；无 BOM 时严格验证 UTF-8。
-3. 未识别编码只读打开原始字节诊断视图，不允许保存覆盖；用户可显式“用编码重新打开”。
+3. 未识别编码只读打开原始字节诊断视图，不允许编辑或保存覆盖；M1 不提供猜测编码或强制解码入口，用户只能保留原文件并用支持该编码的外部工具转换副本。
 4. 解码后建立每行 EOL 索引和原始字节哈希。
 5. 任何解析或渲染失败不影响源码会话建立。
 
@@ -78,70 +78,39 @@
 - CSP 默认 `default-src 'self'`，按功能最小开放；生产环境不使用 `unsafe-eval`。
 - 不使用 `<webview>` 承载用户 HTML。
 
-### M0 enforced Electron invariants
+### M0 已执行的 Electron 不变量
 
-- External-link input is limited to 2,081 UTF-16 code units. Leading or trailing
-  whitespace, control characters, parse failures, credentials, empty targets,
-  and protocols other than `https:` and `mailto:` are denied.
-- Renderer navigation, new-window requests, and webview attachment are
-  synchronously denied. Only a normalized URL that the main process has
-  confirmed may reach `shell.openExternal`.
-- Redirects are denied and do not inherit a confirmation made for the original
-  URL.
-- Production CSP uses `connect-src 'none'`; scripts and styles allow only
-  `'self'`; object, frame, form, and base-URI capabilities are denied.
-- Permission checks and permission requests deny by default.
-- A packaged application ignores a development renderer URL, and production
-  uses `devTools: false`.
+- 外链输入最多 2,081 个 UTF-16 代码单元；拒绝首尾空白、控制字符、解析失败、凭据、空目标以及 `https:` 和 `mailto:` 之外的协议。
+- 同步拒绝渲染器导航、新窗口请求和 webview 附加。只有经主进程确认的规范化 URL 才能到达 `shell.openExternal`。
+- 拒绝重定向，且重定向不继承原始 URL 的确认结果。
+- 生产 CSP 使用 `connect-src 'none'`；脚本严格限制为 `'self'`，不得使用 `unsafe-inline` 或 `unsafe-eval`；拒绝 object、frame、form 和 base-URI 能力。CodeMirror 6 需要运行时生成样式表和元素定位样式，因此样式策略限定为 `style-src 'self' 'unsafe-inline'`。这一例外只作用于 CSS；Markdown、HTML、主题和其他不可信内容不得作为 HTML 或任意样式注入 DOM。
+- 权限检查和权限请求默认拒绝。
+- 打包应用忽略开发渲染器 URL，生产环境使用 `devTools: false`。
 
-### M0 enforced IPC invariants
+### M0 已执行的 IPC 不变量
 
-- The M0 renderer receives only frozen `window.lattice.app.getInfo()` and
-  `window.lattice.commands.{onInvoke,updateStates}`; neither the root nor its
-  nested objects exposes generic `invoke`/`send`/`on`, Electron objects, file,
-  external-open, settings, workspace, import, or export methods.
-- Preload generates each request UUID. Main derives `windowId` and
-  `webContentsId` from its authorized-window registry and sets `sessionId` to
-  `null`; renderer input cannot provide trusted context.
-- Sender validation rejects exactly: missing sender frame, destroyed sender,
-  subframe sender, unregistered window, mismatched sender identity, and
-  destroyed window. Exceptions from sender/window destroyed-state callbacks
-  fail closed as the corresponding destroyed condition.
-- Input and handler-output validation allows only JSON-like `null`, booleans, strings,
-  finite numbers, standard arrays, and plain or null-prototype objects. It
-  rejects unsupported values, non-finite numbers, non-standard prototypes,
-  symbol keys, accessors, cycles, non-canonical array properties, and values
-  over 65,536 UTF-16 characters, depth 8, or 256 entries. Object-key characters
-  count toward the character budget.
-- The fixed route validates sender, input value budget, approved channel,
-  contract version, Zod request, handler Result, Zod response, and handler-result
-  serializability in that order. Router-generated stable failures are constructed
-  from the strict `AppError`/`Result` schemas rather than passed through the value
-  walker. Preload validates every Result again and requires every failure
-  `error.requestId` to equal its local request ID.
-- `zod` is bundled into `out/preload/index.cjs`. Leaving it external produced a
-  sandbox preload `require("zod")` that Electron could not load; the build
-  excludes only `zod` from preload dependency externalization and does not
-  weaken sandbox or BrowserWindow preferences.
+- M0 渲染器只获得冻结的 `window.lattice.app.getInfo()` 和 `window.lattice.commands.{onInvoke,updateStates}`；根对象及其嵌套对象均不暴露通用 `invoke`/`send`/`on`、Electron 对象、文件、外链打开、设置、工作区、导入或导出方法。
+- Preload 为每个请求生成 UUID。主进程从授权窗口注册表派生 `windowId` 和 `webContentsId`，并把 `sessionId` 设为 `null`；渲染器输入不能提供可信上下文。
+- sender 校验准确拒绝六种情况：缺少 sender frame、sender 已销毁、子 frame sender、窗口未登记、sender 身份不匹配和窗口已销毁。sender/窗口销毁状态回调抛出异常时，按相应已销毁条件失败关闭。
+- 输入和处理器输出校验只允许类似 JSON 的 `null`、布尔值、字符串、有限数值、标准数组，以及普通对象或 null 原型对象。拒绝不支持的值、非有限数值、非标准原型、symbol 键、访问器、循环、非规范数组属性，以及超过 65,536 个 UTF-16 字符、深度 8 或 256 个条目的值；对象键字符计入字符预算。
+- 固定路由依次校验 sender、输入值预算、批准通道、契约版本、Zod 请求、处理器 Result、Zod 响应和处理器结果可序列化性。路由器产生的稳定失败由严格 `AppError`/`Result` schema 构造，不经过值遍历器。Preload 再次校验每个 Result，并要求每个失败的 `error.requestId` 等于本地请求 ID。
+- `zod` 被打包进 `out/preload/index.cjs`。把它保留为外部依赖会产生 Electron 沙箱 preload 无法加载的 `require("zod")`；构建只从 preload 依赖外置中排除 `zod`，不会削弱沙箱或 BrowserWindow 偏好。
 
-### M0 enforced command invariants
+### M1 已执行的文档 IPC 不变量
 
-- `CommandId` is a strict two-value enum: `app.about` and
-  `view.toggleSidebar`. State synchronization requires exactly one strict state
-  object for each ID; missing, duplicate, unknown, extra-property, malformed,
-  or oversized sets fail before the menu changes.
-- The renderer supplies no window/WebContents ID. The existing router derives
-  the authorized window, validates value budgets and Zod schemas, and applies
-  state only to that window's native-menu snapshot.
-- Native clicks resolve the current focused registered window at click time.
-  Missing, destroyed, mismatched, or throwing targets receive no event; menu
-  state without a validated snapshot is disabled and unchecked.
-- Preload discards malformed command events before calling renderer listeners,
-  contains listener exceptions, and returns an idempotent unsubscribe. It never
-  exposes the Electron event or an arbitrary event/channel registration method.
-- State-sync errors keep renderer-local state and the last validated main
-  snapshot; there is no retry loop, modal storm, raw payload log, or privilege
-  fallback.
+- `files.open()` 不接受路径或选项 payload；选择器取消返回成功 `null`，不读取磁盘且不创建会话。
+- 主进程对选择结果执行 `realpath`、常规文件检查、10 MB 上限、读取前后 stat 一致性和 SHA-256；非法 UTF-8 与未知编码只能建立只读描述。
+- 完整可编辑 `DocumentSession` 按已验证窗口保存在主进程，窗口销毁时删除授权记录并停止监视器。renderer 只获得严格、冻结的打开、保存、另存、单次 token 确认覆盖和外部变化订阅，不获得任意读取能力。
+- 恢复接口只接受严格快照、列出经过校验的记录并按 UUID 显式放弃；带磁盘路径的写入必须匹配当前窗口由主进程打开或从受控恢复存储重建的授权会话，renderer 不能借恢复接口自报路径；窗口关闭必须由 renderer 完成未保存门禁后回应主进程。
+- 打开响应、保存请求、恢复写入和恢复列表使用各自路由专属的 12 MiB 字符和约 10 Mi 条目预算；其他方向和通道继续使用 M0 默认预算。
+
+### M1 已执行的命令不变量
+
+- `CommandId` 是严格 11 值枚举。状态同步要求每个 ID 恰好对应一个严格状态对象；缺失、重复、未知、多余属性、畸形或超限集合均在菜单变化前失败。
+- 渲染器不提供窗口/WebContents ID。现有路由器派生授权窗口、校验值预算和 Zod schema，并只把状态应用于该窗口的原生菜单快照。
+- 原生点击在点击时解析当前聚焦且已登记的窗口。缺失、已销毁、不匹配或抛异常的目标不接收事件；没有已验证快照的菜单状态保持禁用且不勾选。
+- Preload 在调用渲染器监听器前丢弃畸形命令事件、隔离监听器异常并返回幂等取消订阅函数。它绝不暴露 Electron 事件或任意事件/通道注册方法。
+- 状态同步错误保留渲染器本地状态和主进程最后一次有效快照；不存在重试循环、模态窗口风暴、原始载荷日志或权限降级。
 
 ## 9. 内容与进程隔离
 
@@ -159,14 +128,7 @@
 - 日志使用路径哈希或根目录相对路径；不记录文档、剪贴板、搜索词、YAML 值和导出自定义内容。
 - 用户可从设置打开日志目录并一键清理。
 - 错误报告在未来加入时必须预览待发送内容并显式同意。
-- M0 IPC logs contain only level, stable code, request ID, approved channel
-  or `unknown`, safe reason, optional main-derived window/WebContents IDs, and
-  an optional sanitized stack. Raw payloads, errors, document text, and full
-  paths are excluded. Stack processing inspects at most 16,384 characters, 64
-  lines, and 1,024 input characters per line, emits at most 8 frames of 256
-  characters, and keeps only recognized application basenames or the bounded
-  Node task-queue frame. Diagnostic sink failures cannot replace the stable IPC
-  response.
+- M0 IPC 日志只包含级别、稳定代码、请求 ID、批准通道或 `unknown`、安全原因、可选的主进程派生窗口/WebContents ID 和可选的脱敏堆栈。排除原始载荷、原始错误、文档正文和完整路径。堆栈处理最多检查 16,384 个字符、64 行及每输入行 1,024 个字符，最多输出 8 帧且每帧 256 字符，只保留已识别的应用 basename 或受限 Node 任务队列帧。诊断接收器失败不能替换稳定 IPC 响应。
 
 ## 11. 安全测试门禁
 

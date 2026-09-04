@@ -1,84 +1,60 @@
-# M4 detailed design
+# M4 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M4`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`M4`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-Advanced features use the M2 adapter contract: parse source ranges, render a
-disposable projection, apply minimal revision/hash-bound patches, validate, and
-fall back to source. Markdown text remains authoritative; renderers are
-untrusted and isolated from Node/preload/host access.
+高级功能沿用 M2 适配器契约：解析源码范围、渲染一次性投影、应用绑定修订号和哈希的最小补丁、验证，并在失败时回退到源码。Markdown 文本始终具有权威性；渲染器是不可信环境，与 Node、preload 和宿主访问隔离。
 
-## Capability design
+## 能力设计
 
-### Registration and resilient adapters
+### 注册与可靠适配器
 
-One feature registry controls parser/renderer configuration and flags. Adapter
-parse/render/apply timeout, exception, invalid range, or stale revision
-preserves session/history and exposes source plus diagnostics.
+一个功能注册表统一管理解析器、渲染器配置和功能标志。适配器解析、渲染或应用超时，出现异常、无效范围或过期修订时，必须保留会话与历史，并显示源码和有界诊断。
 
-### Structured Markdown
+### 结构化 Markdown
 
-YAML retains key order and unrelated formatting; TOC updates incrementally;
-alerts preserve nested ranges. Tables retain original cell/range/delimiter
-layout; operations patch only the target table, are selection-aware and fully
-undoable. Footnotes, references, anchors, and local links diagnose missing or
-duplicate definitions without relocating source.
+YAML 保留键顺序和无关格式；目录增量更新；警告块保留嵌套范围。表格保留原始单元格、范围和分隔符布局；操作只修改目标表格，感知选区且完全可撤销。脚注、引用、锚点和本地链接诊断缺失或重复定义，但不移动源码。
 
-### Code, math, and diagrams
+### 代码、数学与图表
 
-Code uses on-demand language assets, aliases, safe unknown-language fallback,
-indent/copy behavior, and long-line limits. MathJax 4 is local/offline with
-four delimiters, macro/numbering support, and timeout/node/output budgets.
-Mermaid is strictly isolated, cancellable, source-fallback capable, and keeps
-legacy sequence/flowchart adapters.
+代码功能按需加载语言资源，支持别名、未知语言安全回退、缩进、复制和长行限制。MathJax 4 在本地离线运行，支持四种分隔符、宏和编号，并受超时、节点与输出预算限制。Mermaid 严格隔离、可取消、可回退源码，并保留旧版时序图和流程图适配器。
 
-### HTML, video, and embeds
+### HTML、视频与嵌入
 
-Sanitize permitted inline/block HTML and media semantics in an isolated
-no-Node/no-preload renderer. Disallow executable content, dangerous URLs,
-remote escape, unauthorized local paths, and active forms/frames; unsafe input
-becomes a source-preserving placeholder.
+在不具备 Node 和 preload 的隔离渲染器中，净化允许的行内或块级 HTML 与媒体语义。禁止可执行内容、危险 URL、远程逃逸、未授权本地路径和活动表单或框架；不安全输入显示为保留源码的占位内容。
 
-## Module responsibilities
+## 模块职责
 
-Feature registry owns flags; adapters own ranges/models/patches; worker or
-isolated renderer owns costly/hostile rendering; source-patch service owns
-revision/hash checks; security policy owns resource/network restrictions.
+功能注册表负责标志；适配器负责范围、模型和补丁；工作线程或隔离渲染器负责高成本或恶意内容；源码补丁服务负责修订号和哈希检查；安全策略负责资源与网络限制。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`source range -> adapter parse -> isolated/widget render -> operation ->
-minimal SourcePatch(snapshot revision/hash) -> validate -> transaction`; any
-failure returns source and bounded diagnostics.
+`源码范围 -> 适配器解析 -> 隔离/部件渲染 -> 操作 -> 最小 SourcePatch（快照修订号/哈希）-> 验证 -> 事务`；任何失败都返回源码和有界诊断。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-No adapter reformats unrelated source or accepts stale patches. Untrusted
-content never executes scripts or reaches host APIs. Cancellation terminates
-work; timing/node/output limits fail safely. Advanced feature failure never
-blocks normal source editing.
+`REF-012..017` 的可观察结果通过独立适配器、投影和最小源码补丁实现。外部示例和截图只用于参数与人工对照，不能打包为资源；证据冲突或不完整输入必须回退源码并阻止错误通过。
 
-## Dependency admission
+任何适配器都不得重排无关源码或接受过期补丁。不可信内容绝不执行脚本或访问宿主 API。取消必须终止工作；时间、节点或输出超限时安全失败。高级功能失败不得阻塞普通源码编辑。
 
-MathJax, Mermaid, grammars, and sanitization dependencies require local assets,
-compatible licenses, documented budgets, offline tests, and security review.
+## 依赖准入
 
-## Manual-gate design
+MathJax、Mermaid、语法资源和净化依赖必须使用本地资源、兼容许可证、已记录预算、离线测试和安全审查。
 
-Evaluator exercises bulk table undo, complex formulas/macros, multiple
-diagrams, invalid YAML/HTML, and repeated source/hybrid transitions offline;
-the case is manual acceptance evidence, not agent approval.
+## 人工门禁设计
 
-## Implementation order
+评估人离线执行批量表格撤销、复杂公式与宏、多图表、无效 YAML 或 HTML，以及反复源码与混合模式切换；该用例是人工验收证据，不由代理批准。
 
-- [ ] Implement registry, adapter lifecycle, revision validation, and source fallback.
-- [ ] Add metadata, TOC, alerts, code, tables, and academic links.
-- [ ] Add bounded offline math and strictly isolated diagrams.
-- [ ] Add sanitized HTML/media/embed presentation.
-- [ ] Run advanced golden, property, security, performance, and manual checks.
+## 实施顺序
+
+- [ ] 实现注册表、适配器生命周期、修订验证和源码回退。
+- [ ] 增加元数据、目录、警告块、代码、表格和学术链接。
+- [ ] 增加有界离线数学渲染和严格隔离图表。
+- [ ] 增加净化后的 HTML、媒体和嵌入展示。
+- [ ] 运行高级黄金、属性、安全、性能和人工检查。

@@ -20,7 +20,7 @@ const productionPolicy = [
   "img-src 'self' data:",
   "object-src 'none'",
   "script-src 'self'",
-  "style-src 'self'"
+  "style-src 'self' 'unsafe-inline'"
 ].join('; ')
 
 type PermissionCheckHandler = Parameters<Session['setPermissionCheckHandler']>[0]
@@ -83,6 +83,8 @@ describe('content security policy', () => {
 
   it('SEC-003 returns the exact production policy that blocks remote content', () => {
     expect(buildContentSecurityPolicy(false)).toBe(productionPolicy)
+    expect(buildContentSecurityPolicy(false)).toContain("script-src 'self'")
+    expect(buildContentSecurityPolicy(false)).not.toContain("script-src 'self' 'unsafe-inline'")
   })
 
   it('SEC-003 changes only connect-src for the development server', () => {

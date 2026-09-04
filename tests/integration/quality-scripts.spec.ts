@@ -52,7 +52,7 @@ const contractedScriptCommands: Readonly<Record<ContractedScript, string>> = {
   'test:performance': 'vitest run --config vitest.performance.config.ts',
   build: 'electron-vite build',
   check:
-    'pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build',
+    'pnpm format:check && pnpm verify:docs && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration && pnpm build',
   'test:bootstrap:cold': 'vitest run --config vitest.bootstrap.config.ts'
 }
 

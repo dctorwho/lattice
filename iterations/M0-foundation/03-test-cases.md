@@ -1,20 +1,18 @@
-# M0 test cases
+# M0 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M0`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy:
+- 迭代： `M0`
+- 状态权威： `iterations/state.json`
+- 测试策略依据： [test strategy](../../docs/09-test-strategy.md)
+- 安全策略依据：
   [data-safety and security](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers. They are not subtask IDs and do
-not own planning state, dependencies, implementation work, manual gates, or
-reports. The `覆盖能力` column names the capability covered by the case.
+测试 ID 是稳定验证标识，不是子任务 ID，也不拥有规划状态、依赖、实施工作、人工门禁或报告。`覆盖能力` 列说明用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID        | 覆盖能力                                         | 层级/级别        | 数据/环境                                                    | 步骤                                                                                                                                                                          | 预期                                                                                                                                                     | 自动化                                                                                                                                                                                      |
 | --------- | ------------------------------------------------ | ---------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -27,13 +25,13 @@ reports. The `覆盖能力` column names the capability covered by the case.
 | TC-M0-006 | Unified command registry and window shell        | component-e2e/P1 | COMMAND-M0                                                   | Invoke one registry from native menu, button, renderer context menu, and shortcut; vary visible/enabled/checked context; inspect About, focus restoration, and preload        | Four inputs share command ID/state; disabled command does not execute; focus restores deterministically; frozen `{ app, commands }`; invalid event drops | `pnpm test -- tests/unit/component/command-registry.spec.tsx`；证据：Registry, menu, component, and Electron evidence；停止条件：Divergent command behavior, focus loss, or boundary breach |
 | TC-M0-007 | CI, dependency audit, SBOM, and packaging gate   | integration/P1   | ENV-M0-A                                                     | From clean checkout run CI-equivalent commands, license audit, SBOM, and artifact checks                                                                                      | Commands match documentation; artifact launches; dependencies have versions/licenses; SBOM parses and covers production dependencies                     | `pnpm test:integration -- tests/integration/m0-gate.spec.ts`；证据：CI output, audit report, SBOM, and artifact hashes；停止条件：Missing audit/SBOM evidence or unlaunchable package       |
 
-## Manual test cases
+## 人工测试用例
 
 | ID         | 覆盖能力                            | 环境                     | 步骤                                                                                                                                        | 通过条件                                                                                                               | 证据                                                                                                                            |
 | ---------- | ----------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | MAN-M0-001 | Packaged-shell and audit acceptance | Windows 11 standard user | Inspect packaged window and process arguments; attempt DevTools/navigation; review preload API, CI, licenses, and SBOM; rerun release build | No Node/raw IPC/development URL; application launches; dependency provenance/licenses acceptable; CI evidence complete | Screenshots, build hashes, audit report, signed conclusion；停止条件：Any privilege exposure, rejected audit, or launch failure |
 
-## Parameter matrix
+## 参数矩阵
 
 | Parameter ID | Variables                                                                                                          | Fixture                              | Required cases       | Expected result                                              |
 | ------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | -------------------- | ------------------------------------------------------------ |
@@ -44,7 +42,7 @@ reports. The `覆盖能力` column names the capability covered by the case.
 | CONTRACT-M0  | Success, business, validation, permission, cancellation, timeout; no text/absolute paths in error details          | Contract fixtures                    | TC-M0-005            | Stable bounded and redacted results                          |
 | COMMAND-M0   | No session, clean/dirty session, no editor, dialog open, window unfocused                                          | Command shell fixtures               | TC-M0-006            | Validated unified command behavior                           |
 
-## Fixtures
+## 夹具
 
 | Fixture     | Source and integrity                                        | Covered behavior                               | Required environment             |
 | ----------- | ----------------------------------------------------------- | ---------------------------------------------- | -------------------------------- |
@@ -53,16 +51,10 @@ reports. The `覆盖能力` column names the capability covered by the case.
 | CONTRACT-M0 | Strict Zod payload, sender, value-budget, and log fixtures  | IPC contract fail-closed behavior              | Unit and production Electron     |
 | COMMAND-M0  | Session/editor/dialog/focus-state matrix                    | Registry and native-menu projection            | Renderer and production Electron |
 
-## Evidence requirements
+## 证据要求
 
-Record command, environment, exit code, parameter selection, result, and
-artifact or report reference for each automated case. Preserve script exit
-codes, build hashes, preload-surface snapshots, CSP/security configuration,
-SBOM, and license reports. Record evaluator, date, environment, steps, and
-signed conclusion for the manual case.
+每个自动用例记录命令、环境、退出码、参数选择、结果和产物或报告引用。保留脚本退出码、构建哈希、preload 表面快照、CSP/安全配置、SBOM 和许可证报告。人工用例记录评估人、日期、环境、步骤和签署结论。
 
-## Stop conditions
+## 停止条件
 
-Renderer access to Node or raw IPC, dangerous protocol execution, a falsely
-green quality command, unreproducible builds, missing audit evidence, or a
-package launch failure stops iteration progress until fixed and regressed.
+渲染器获得 Node 或原始 IPC、执行危险协议、质量命令假绿、构建不可复现、缺少审计证据或打包启动失败都会停止迭代，直至修复并完成回归。

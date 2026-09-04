@@ -1,92 +1,61 @@
-# M6 detailed design
+# M6 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M6`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`M6`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-`RenderDocument` is a read-only semantic projection of a frozen `DocumentSession` snapshot;
-it never writes Markdown. Main-process controllers own authorized targets, temporary files,
-processes, and printing. Export renderers load only local templates and sanitized content with
-no Node/preload privilege. All renderer requests use narrow typed contracts.
+`RenderDocument` 是冻结 `DocumentSession` 快照的只读语义投影，绝不写入 Markdown。主进程控制器负责授权目标、临时文件、进程和打印。导出渲染器只加载本地模板与净化内容，不具备 Node 或 preload 权限；所有请求均使用狭窄类型化契约。
 
-## Capability design
+## 能力设计
 
-### Snapshot, native render, and print
+### 快照、原生渲染与打印
 
-Freeze source, revision, resources, options, and feature state before parse, resource
-resolution, sanitization, theme application, and formula/diagram stabilization. HTML and
-plain HTML preserve semantic anchors and UTF-8. PDF uses `printToPDF`; print shares the same
-render contract. Image export supports full document/selection, bounded tiling, and explicit
-pixel/memory diagnostics. Cancellation terminates work and cleans temporary output.
+解析、资源解析、净化、主题应用和公式图表稳定前冻结源码、修订、资源、选项和功能状态。HTML 与纯 HTML 保留语义锚点和 UTF-8。PDF 使用 `printToPDF`，打印共享同一渲染契约。图片导出支持全文和选区、有界分块以及明确的像素与内存诊断。取消必须终止工作并清理临时输出。
 
-### Settings and target safety
+### 设置与目标安全
 
-Per-format versioned options retain their own last target. Repeat export validates that target
-and requests overwrite confirmation. YAML settings are ignored unless explicitly authorized;
-they remain untrusted data and cannot add executable behavior. Failed migrations retain the
-previous settings/backup rather than silently resetting user intent.
+逐格式版本化选项分别保留上次目标。重复导出必须重新验证目标并请求覆盖确认。YAML 设置只有经明确授权才生效，始终是不可信数据且不能增加可执行行为。迁移失败时保留旧设置或备份，不静默重置用户意图。
 
-### Pandoc export and import
+### Pandoc 导出与导入
 
-The adapter checks a user-authorized executable and version, builds `spawn(executable,args,
-{shell:false})`, bounds output, and cancels/cleans the child process. Missing Pandoc disables
-only Pandoc formats. Import treats its source as read-only, validates UTF-8 Markdown, warnings,
-hashes, resource count/size, relative paths, and symlinks in a main-generated staging directory
-before creating an unnamed session. First save commits resources through the resource
-transaction; recovery migration adds only a validated staging identifier.
+适配器检查用户授权的可执行文件及版本，构造 `spawn(executable, args, { shell:false })`，限制输出并支持取消和清理。Pandoc 缺失只禁用 Pandoc 格式。导入把源文件视为只读，在主进程创建的暂存区（`staging`）目录中验证 UTF-8 Markdown、警告、哈希、资源数量与大小、相对路径和符号链接，再创建未命名会话（`unnamed session`）。首次保存通过资源事务提交资源；恢复迁移只增加已验证的暂存标识符。
 
-## Module responsibilities
+## 模块职责
 
-- Renderer: option controls, immutable request initiation, progress/cancellation display, and
-  non-privileged previews.
-- Main/export controller: snapshot admission, target writes, temporary-directory cleanup,
-  isolated rendering, print, and adapter lifetime.
-- Import controller: source authorization, staging validation, unnamed-session result, and
-  recovery/staging cleanup.
-- Shared contracts: Zod schemas for formats/options/progress/results and stable errors.
+- 渲染进程：选项控件、不可变请求、进度与取消展示、非特权预览。
+- 主进程导出控制器：快照准入、目标写入、临时目录清理、隔离渲染、打印和适配器生命周期。
+- 导入控制器：源授权、暂存验证、未命名会话结果和恢复清理。
+- 共享契约：格式、选项、进度、结果和稳定错误的 Zod 模式。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`DocumentSession -> frozen RenderSnapshot -> RenderDocument -> sanitized isolated renderer ->
-artifact`; `authorized import source -> bounded Pandoc argv -> validated staging -> unnamed
-DocumentSession`; and `format options -> validation -> confirmed target -> artifact` are the
-only data paths. The export adapter never receives a mutable session; no raw process or path
-capability reaches the renderer.
+`DocumentSession -> 冻结 RenderSnapshot -> RenderDocument -> 净化隔离渲染器 -> 制品`；`授权导入源 -> 有界 Pandoc 参数 -> 验证暂存 -> 未命名 DocumentSession`；`格式选项 -> 验证 -> 已确认目标 -> 制品`。导出适配器不接收可变会话，渲染进程不获得原始进程或路径能力。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Compare snapshot revision/source/hash before and after every operation. Atomic target writes
-and cleanup prevent half-written output; visible, retained diagnostics identify any artifact
-that cannot be cleaned. Import never moves, edits, or deletes its source. Recovery V1-to-V2
-migration preserves body and rejects arbitrary staging paths. Custom HTML/head/body, image,
-font, formula, chart, and Pandoc diagnostics are bounded and sanitized. Core native formats
-are independent from network and Pandoc availability.
+`REF-022..023` 的导出与 Pandoc 行为只约束输入、设置、反馈和结果。实现继续使用只读 RenderDocument、受控资源和 `shell:false` 进程边界；可观察结果不一致、源会话变化或部分产物均阻止 M6 通过。
 
-## Dependency admission
+每次操作前后比较快照修订、源码和哈希。原子目标写入与清理阻止半成品；无法清理的制品必须以可见、有界诊断报告。导入绝不移动、修改或删除源文件。恢复 V1 到 V2 迁移保留正文并拒绝任意暂存路径。自定义 HTML、图片、字体、公式、图表和 Pandoc 诊断均受限且净化。原生核心格式不依赖网络或 Pandoc。
 
-Electron print/render APIs, parser/renderer packages, and Pandoc integration must satisfy
-license review, offline operation, sandboxing, and bounded-process rules. No dependency may
-weaken the existing Electron, source-authority, or typed IPC constraints.
+## 依赖准入
 
-## Manual-gate design
+Electron 打印与渲染 API、解析与渲染包、Pandoc 集成都必须满足许可证审查、离线、沙箱和有界进程规则，不得削弱现有 Electron、源码权威或类型化 IPC 约束。
 
-M6 has a state-defined manual gate. The evaluator checks system/real printing, offline HTML,
-PDF and long image results, target-application opening, Pandoc import/first-save behavior, and
-no-Pandoc core behavior. Evidence includes software versions, hashes, staging manifests,
-screenshots or scans, and signed conclusions.
+## 人工门禁设计
 
-## Implementation order
+M6 有状态定义的人工门禁。评估人检查系统与真实打印、离线 HTML、PDF 和长图、目标应用打开、Pandoc 导入与首次保存，以及无 Pandoc 的核心行为。证据包括软件版本、哈希、暂存清单、截图或扫描件和签署结论。
 
-- [ ] Build frozen snapshot and isolated native render pipeline with cancellation.
-- [ ] Add HTML/plain HTML, then PDF/print and image exporters with golden validation.
-- [ ] Add per-format settings, target confirmation, and YAML authorization.
-- [ ] Add bounded Pandoc detection/export, followed by validated import and recovery migration.
-- [ ] Execute offline/with-Pandoc security and performance matrices; prepare manual evidence.
+## 实施顺序
 
-The checklist orders work only. Its items do not have individual status, dependencies,
-evidence, reports, or independent gating behavior; `M6` is the sole execution and acceptance unit.
+- [ ] 构建冻结快照和可取消的隔离原生渲染管道。
+- [ ] 增加 HTML、纯 HTML、PDF、打印和图片导出及黄金验证。
+- [ ] 增加逐格式设置、目标确认和 YAML 授权。
+- [ ] 增加有界 Pandoc 检测与导出，再实现验证导入和恢复迁移。
+- [ ] 执行离线与有 Pandoc 的安全和性能矩阵，并准备人工证据。
+
+此清单只规定工作顺序；M6 是唯一执行与验收单元。

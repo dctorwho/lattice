@@ -1,57 +1,47 @@
-# {{ITERATION_ID}} test cases
+# {{ITERATION_ID}} 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `{{ITERATION_ID}}`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy:
-  [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`{{ITERATION_ID}}`
+- 状态权威：`iterations/state.json`
+- 测试策略依据：[测试策略](../../docs/09-test-strategy.md)
+- 安全策略依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
+- 复刻依据：[Typora 1.13.8 Windows 公开证据基线](../../docs/22-typora-1.13.8-windows-evidence-baseline.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers. They are not subtask IDs and do
-not own planning state, dependencies, implementation work, manual gates, or
-reports. The `覆盖能力` column names the capability covered by the case.
+测试 ID 是稳定的验证标识符，不是子任务 ID，也不拥有规划状态、依赖、实施工作、人工门禁或报告。`覆盖能力` 列说明用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID  | 覆盖能力 | 层级/级别 | 数据/环境 | 步骤 | 预期 | 自动化 |
 | --- | -------- | --------- | --------- | ---- | ---- | ------ |
 
-`数据/环境` records the parameter or fixture selection. `自动化` records the
-automation target together with the required evidence and case-specific stop
-condition.
+`数据/环境` 记录参数或夹具选择。`自动化` 记录自动化目标、必需证据和用例专属停止条件。
 
-## Manual test cases
+## 人工测试用例
 
 | ID  | 覆盖能力 | 环境 | 步骤 | 通过条件 | 证据 |
 | --- | -------- | ---- | ---- | -------- | ---- |
 
-The manual `证据` cell records both the evidence artifact and the case-specific
-stop condition.
+人工用例的 `证据` 单元格同时记录证据制品和用例专属停止条件。
 
-Manual cases require approval by the user or designated evaluator. An agent
-must not record a manual pass conclusion on their behalf.
+人工用例必须由用户或指定评估人批准。代理不得代表他们记录人工通过结论。
 
-## Parameter matrix
+## 参数矩阵
 
-| Parameter ID | Variables | Fixture | Required cases | Expected result |
-| ------------ | --------- | ------- | -------------- | --------------- |
+| 参数 ID | 变量 | 夹具 | 必需用例 | 预期结果 |
+| ------- | ---- | ---- | -------- | -------- |
 
-## Fixtures
+## 夹具
 
-| Fixture | Source and integrity | Covered behavior | Required environment |
-| ------- | -------------------- | ---------------- | -------------------- |
+| 夹具 | 来源与完整性 | 覆盖行为 | 必需环境 |
+| ---- | ------------ | -------- | -------- |
 
-## Evidence requirements
+## 证据要求
 
-Record command, environment, exit code, parameter selection, result, and
-artifact or report reference for each executed automated case. Record operator,
-date, environment, step results, and conclusion evidence for each manual case.
+每个已执行自动化用例必须记录命令、环境、退出码、参数选择、结果以及制品或报告引用。每个人工用例必须记录操作人、日期、Windows 条件、所属 `REF-*`、对照步骤、差异结果和结论证据。单张静态截图不能替代交互行为证据。
 
-## Stop conditions
+## 停止条件
 
-Data corruption, security-boundary failure, broken recovery, or any other
-release-blocking condition in the governing policies stops iteration progress
-until it is fixed and regression evidence is recorded.
+一旦发现数据损坏、安全边界失效、恢复失败或治理策略规定的其他发布阻断条件，迭代必须停止推进，直至完成修复并记录回归证据。

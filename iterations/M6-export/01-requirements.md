@@ -1,81 +1,56 @@
-# M6 requirements
+# M6 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M6`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md)
+- 迭代：`M6`
+- 状态权威：`iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Provide secure offline HTML, PDF, image, print, Pandoc export, and Pandoc import workflows
-that operate from immutable document snapshots and never modify a source document or import
-source unexpectedly.
+提供安全离线的 HTML、PDF、图片、打印、Pandoc 导出和 Pandoc 导入工作流。所有流程基于不可变文档快照，绝不意外修改源文档或导入源文件。
 
-## User-observable outcomes
+## 用户可观察结果
 
-- Users can export semantic HTML, PDF, and images and print with themes and documented options.
-- Users can remember per-format export choices, safely re-export, and explicitly authorize
-  YAML overrides.
-- When Pandoc is available, users can exchange supported formats; when it is unavailable,
-  core Markdown work and native exports remain usable.
+- 用户可以按主题和已记录选项导出语义 HTML、PDF、图片并打印。
+- 用户可以保存逐格式选项、安全重复导出，并明确授权 YAML 覆盖。
+- Pandoc 可用时支持格式交换；Pandoc 不可用时，核心 Markdown 工作和原生导出仍可使用。
 
-## Scope
+## 范围
 
-- Read-only `RenderDocument` pipeline, HTML/plain HTML, PDF/printing, full/selection image
-  export, export preferences, and optional Pandoc adapters.
-- Pandoc import into a new unnamed Markdown session with validated staging resources and
-  recovery metadata migration.
+只读 `RenderDocument` 管道、HTML 与纯 HTML、PDF 与打印、全文与选区图片导出、导出偏好和可选 Pandoc 适配器；Pandoc 导入到新的未命名 Markdown 会话，并验证暂存区（`staging`）资源和恢复元数据迁移。
 
-## Non-goals
+## 非目标
 
-- Making Pandoc mandatory, allowing arbitrary export scripts/arguments, or serializing an
-  editable rich-text AST.
-- Network-dependent native export, source-session mutation during rendering, or overwriting
-  imported source files.
+强制依赖 Pandoc、允许任意导出脚本或参数、序列化可编辑富文本 AST、依赖网络的原生导出、渲染时修改源会话或覆盖导入源文件。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID                 | Iteration outcome                                                                   | Acceptance evidence                     |
-| ------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------- |
-| EXP-001..004, EXP-008     | Secure HTML, PDF/print, and image exports come from an unchanged snapshot.          | Native export and evaluator evidence    |
-| EXP-005, EXP-007, EXP-009 | Optional Pandoc export/import use bounded argv, validated output, and safe staging. | Process, import, and evaluator evidence |
-| EXP-006                   | Per-format settings and repeat export validate targets before overwriting.          | Export preference evidence              |
-| COMP-025..029             | Export/import compatibility categories have explicit evidence.                      | Consolidated M6 evidence set            |
-| NFR-007                   | Native core exports remain offline and work without Pandoc.                         | Offline and no-Pandoc evidence          |
+复刻证据范围为 `REF-022..023`，对应 `COMP-025..029`。M6 必须对照 HTML、PDF、图片、打印、导出记忆和可选 Pandoc 工作流；目标产物、失败反馈和“无 Pandoc”状态均属于可观察复刻结果。
 
-## Preconditions and external dependencies
+| 全局 ID                   | 迭代结果                                               | 验收证据             |
+| ------------------------- | ------------------------------------------------------ | -------------------- |
+| EXP-001..004, EXP-008     | 安全 HTML、PDF、打印和图片导出来自不变快照             | 原生导出与评估证据   |
+| EXP-005, EXP-007, EXP-009 | 可选 Pandoc 导出与导入使用有界参数、验证输出和安全暂存 | 进程、导入与评估证据 |
+| EXP-006                   | 逐格式设置和重复导出在覆盖前验证目标                   | 导出偏好证据         |
+| COMP-025..029             | 导出与导入兼容类别具备明确证据                         | M6 汇总证据集        |
+| NFR-007                   | 原生核心导出离线工作且不依赖 Pandoc                    | 离线与无 Pandoc 证据 |
 
-- M5 is `passed` in `iterations/state.json`.
-- The sanitized Markdown/feature registry, source session snapshot, secure IPC, and controlled
-  filesystem/process adapters are available.
-- Electron printing APIs and an optional user-selected Pandoc executable are admitted only via
-  the documented contracts; fixtures provide fake executables and offline resources.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+M5 必须已为 `passed`。依赖净化后的 Markdown 功能注册表、源会话快照、安全 IPC 和受控文件系统与进程适配器。Electron 打印 API 和用户选择的 Pandoc 可执行文件只能通过既定契约准入；夹具提供虚假可执行文件与离线资源。
 
-- Rendering may mutate or race an editor session: freeze revision/source/hash and test them
-  before/after every outcome.
-- Export HTML, templates, resources, and Pandoc input are untrusted: isolate renderers,
-  sanitize, bound resources, and use `shell:false` argv.
-- Import cancellation, invalid output, or staging escape can create partial documents: validate
-  before session creation and clean staging deterministically.
-- Print/PDF variation and long-image memory pressure require golden, E2E, and performance
-  coverage on the stated environments.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+每次操作前后冻结并比较修订、源码和哈希，防止渲染与编辑会话竞争。不可信 HTML、模板、资源和 Pandoc 输入必须隔离、净化、限制资源并使用 `shell:false` 参数数组。导入创建会话前验证全部输出，取消或失败时确定性清理暂存。打印差异和长图内存压力由黄金、端到端和性能覆盖约束。
 
-1. Native HTML/PDF/image export and Markdown opening remain usable offline without Pandoc.
-2. All export/import paths prove source revision, source hash, and import source hashes are
-   unchanged; failures and cancellation leave no unreported partial artifact or session.
-3. Pandoc processes use approved executables and argument arrays; staged resources cannot
-   escape their controlled directory.
-4. The M6 manual print and target-application observations are evaluator-approved before pass.
+## 迭代级验收标准
 
-## Entry completeness
+1. 没有 Pandoc 时，原生 HTML、PDF、图片导出和 Markdown 打开仍离线可用。
+2. 所有路径证明源修订、源哈希和导入源哈希不变；失败与取消不留下未报告的部分制品或会话。
+3. Pandoc 只使用批准的可执行文件和参数数组，暂存资源不能逃逸受控目录。
+4. M6 通过前，人工打印与目标应用观察必须由评估人批准。
 
-This document, the detailed design, and the test cases are the three entry documents. All
-three must be complete and predecessor iterations must be `passed` before `M6` may become
-`ready` or `in_progress`.
+## 入口完整性
 
-No subtask, task-level status, or task-level ownership belongs in this document.
+本文档、详细设计和测试用例是三份入口文档。三者必须完整，且前置迭代均为 `passed`，M6 才能进入 `ready` 或 `in_progress`。本文档不包含子任务或任务级归属。

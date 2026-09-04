@@ -1,83 +1,65 @@
-# M8 requirements
+# M8 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M8`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md)
+- 迭代： `M8`
+- 状态权威： `iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Deliver reproducible, secure Windows release artifacts and prove installation, routing,
-upgrade, uninstall, update readiness, supply-chain evidence, rollback, and Stable audit
-without ever deleting user Markdown or workspace content.
+交付可复现且安全的 Windows 发布产物，证明安装、路由、升级、卸载、更新准备、供应链证据、回滚和 Stable 审计，同时绝不删除用户 Markdown 或工作区内容。
 
-## User-observable outcomes
+## 用户可观察结果
 
-- Users can install, launch, repair, upgrade, and uninstall the Windows application while
-  settings, themes, recovery data, and user documents are handled exactly as disclosed.
-- File associations, Explorer, command-line paths, and second launches route safely without
-  shell interpretation or losing dirty work.
-- Signed-release readiness, SBOM/license/hash evidence, and a user-approved Stable decision
-  are available; update behavior remains disabled until configured safely.
+- 用户可以安装、启动、修复、升级和卸载 Windows 应用，设置、主题、恢复数据和用户文档严格按说明处理。
+- 文件关联、资源管理器、命令行路径和第二次启动安全路由，不经过 shell 解释，也不丢失脏工作。
+- 具备签名发布准备、SBOM/许可证/哈希证据和用户批准的 Stable 结论；更新行为在安全配置前保持禁用。
 
-## Scope
+## 范围
 
-- OS-001..003 single-instance/window routing, file association, command line, and supported
-  file/folder paths; OS-005 installer lifecycle; OS-006 disabled-by-default signed updater.
-- COMP-033..035 Windows integration/release compatibility, release security, stable audit,
-  installer artifacts, SBOM, license, signing preparation, and rollback evidence.
+- OS-001..003 单实例/窗口路由、文件关联、命令行及受支持文件/文件夹路径；OS-005 安装器生命周期；OS-006 默认禁用的签名更新器。
+- COMP-033..035 Windows 集成/发布复刻、发布安全、Stable 审计、安装器产物、SBOM、许可证、签名准备和回滚证据。
 
-## Non-goals
+## 非目标
 
-- Enabling network updates without an approved signing key, removing user data without an
-  explicit choice, or treating a developer build as a release artifact.
-- Replacing source/document safety policies with installer behavior or asserting Stable
-  approval on behalf of a user.
+- 在没有批准签名密钥时启用网络更新、未经明确选择删除用户数据，或把开发构建当成发布产物。
+- 用安装器行为替代源码/文档安全策略，或代表用户宣称 Stable 批准。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID                         | Iteration outcome                                                                               | Acceptance evidence                                   |
-| --------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| OS-001..003                       | Single instance, file association, command-line, location parameters, and routing are safe.     | Routing and VM evaluator evidence                     |
-| OS-005                            | NSIS packaging, installation, repair, upgrade, rollback, and uninstall preserve declared data.  | Packaging, lifecycle, deletion-scope, and VM evidence |
-| OS-006                            | Signed update adapter/channel/feed is disabled until configured and fails safely.               | Update-security evidence                              |
-| COMP-033..035                     | Windows integration, installation, and update compatibility have VM/release evidence.           | VM, release-audit, and evaluator evidence             |
-| Release security and stable audit | Artifacts, SBOM, licenses, signatures, hashes, rollback, gaps, and release gates are traceable. | Supply-chain, audit, and evaluator evidence           |
+复刻证据范围为 `REF-027..029`，对应 `COMP-033..035`。M8 必须在 Windows 10/11 实机或干净虚拟机对照命令行、关联、安装、升级、卸载和更新行为；`REF-029` 的更新协议缺口与全部已知产品差异必须在最终通过前归零。
 
-## Preconditions and external dependencies
+| 全局 ID                | 迭代结果                                                         | 验收证据                           |
+| ---------------------- | ---------------------------------------------------------------- | ---------------------------------- |
+| OS-001..003            | 单实例、文件关联、命令行、位置参数和路由安全。                   | 路由和虚拟机评估人证据             |
+| OS-005                 | NSIS 打包、安装、修复、升级、回滚和卸载保留声明数据。            | 打包、生命周期、删除范围和 VM 证据 |
+| OS-006                 | 签名更新适配器/通道/feed 在配置前禁用，失败时保持安全。          | 更新安全证据                       |
+| COMP-033..035          | Windows 集成、安装和更新复刻具有 VM/发布证据。                   | VM、发布审计和评估人证据           |
+| 发布安全和 Stable 审计 | 产物、SBOM、许可证、签名、哈希、回滚、差异和发布门禁相互可追踪。 | 供应链、审计和评估人证据           |
 
-- M7 is `passed` in `iterations/state.json`.
-- Packaged build, secure Electron boundary, source/recovery behavior, localization, and all
-  release-candidate evidence are available.
-- Clean Windows 10/11 VMs, NSIS/electron-builder, certificate/signing custody, printer/IME,
-  and signed evaluator evidence are available. No signing secret is stored in the repository.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+- `iterations/state.json` 中 M7 为 `passed`。
+- 已具备打包构建、安全 Electron 边界、源码/恢复行为、本地化和全部发布候选证据。
+- 已具备干净 Windows 10/11 VM、NSIS/electron-builder、证书/签名保管、打印机/IME 和评估人签署证据。仓库不保存签名秘密。
 
-- Install/upgrade/uninstall scope can delete user data: separate installation/userData,
-  use explicit cleanup choice, and run canary/symlink VM tests.
-- Quoted paths, elevation, and second-instance arguments can create shell/routing bugs: use
-  parsed argv arrays, authorized paths, and dirty-session preservation.
-- Update and supply-chain compromise: require signatures, SBOM/license/hash cross-checks,
-  disabled default, clean builds, and rollback rehearsal.
-- VM-only and manual flows can mask defects: retain snapshots, command logs, hashes, and
-  evaluator approval for every manual release gate.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+- 安装/升级/卸载范围可能删除用户数据：分离安装目录和 userData，使用明确清理选择，并运行金丝雀/符号链接 VM 测试。
+- 引号路径、提权和第二实例参数可能造成 shell/路由问题：使用已解析 argv 数组、授权路径和脏会话保护。
+- 更新和供应链可能被入侵：要求签名、SBOM/许可证/哈希交叉核对、默认禁用、干净构建和回滚演练。
+- 仅 VM 和人工流程可能掩盖缺陷：保留快照、命令日志、哈希，并为每个人工发布门禁保存评估人批准。
 
-1. Clean Win10/11 VM evidence covers install through uninstall at 100/150/250% scaling,
-   including associations, IME, printing, recovery, upgrade, and data-scope checks.
-2. Installer/updater failures preserve a runnable previous application and user documents;
-   only declared application data is removed after an explicit choice.
-3. Artifact contents, SBOM, licenses, hashes, signature status, and rollback results are
-   mutually traceable and have no development secret/content leakage.
-4. Required M8 manual VM and Stable audit cases are evaluator-approved before pass.
+## 迭代级验收标准
 
-## Entry completeness
+1. 干净 Win10/11 VM 证据在 100/150/250% 缩放下覆盖安装至卸载，包括关联、IME、打印、恢复、升级和数据范围检查。
+2. 安装器/更新器失败时保留可运行的上一版本应用和用户文档；只有在明确选择后才删除声明的应用数据。
+3. 产物内容、SBOM、许可证、哈希、签名状态和回滚结果相互可追踪，且不泄漏开发秘密/内容。
+4. M8 必需人工 VM 与 Stable 审计用例在通过前获得评估人批准。
 
-This document, the detailed design, and the test cases are the three entry documents. All
-three must be complete and predecessor iterations must be `passed` before `M8` may become
-`ready` or `in_progress`.
+## 入口完整性
 
-No subtask, task-level status, or task-level ownership belongs in this document.
+本文档、详细设计和测试用例是三个迭代入口。三者必须完整且前置迭代均为 `passed`，M8 才能进入 `ready` 或 `in_progress`。
+
+本文档不包含子任务、任务级状态或任务级所有权。

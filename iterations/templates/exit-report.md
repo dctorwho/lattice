@@ -1,44 +1,45 @@
-# {{ITERATION_ID}} exit report
+# {{ITERATION_ID}} 出口报告
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `{{ITERATION_ID}}`
-- State authority: `iterations/state.json`
-- Evidence source: `04-test-report.md`
+- 迭代：`{{ITERATION_ID}}`
+- 状态权威：`iterations/state.json`
+- 证据来源：`04-test-report.md`
 
-## Requirement completion matrix
+## 需求完成矩阵
 
-List every global requirement and compatibility ID declared by this
-iteration's `01-requirements.md` exactly once. Every row requires a non-empty
-outcome, non-empty completion evidence, and `passed` result.
+把本迭代 `01-requirements.md` 声明的每个全局需求和兼容性 ID 恰好列出一次。每一行都必须包含非空结果说明、非空完成证据和 `passed` 结果。
 
-| Global ID | Required outcome | Completion evidence | Result |
-| --------- | ---------------- | ------------------- | ------ |
+| 全局 ID | 要求结果 | 完成证据 | 结果 |
+| ------- | -------- | -------- | ---- |
 
-## Final deliverables
+## 最终交付物
 
-## Material implementation and documentation changes
+## 重要实现与文档变更
 
-## Automated-gate conclusion
+## 自动化门禁结论
 
-## Manual-gate conclusion
+## 人工门禁结论
 
-Manual gates may be marked passed only with approval and evidence from the user
-or designated evaluator.
+`manual_gate:false` 时记录“不适用，自动化门禁已覆盖本迭代验收边界”。只有 `manual_gate:true` 时，取得用户或指定评估人的批准与证据后，才能把人工门禁标记为通过。
 
-## Known limitations and residual risks
+## 复刻证据结论
 
-## Rollback approach
+列出本迭代所属 `REF-*`、对应 `COMP-*`、最终对照证据和差异结论。迭代只有在已确认差异为零、关键证据缺口关闭后才能通过。
 
-## Inputs released to the next iteration
+| 公开证据 | 复刻项 | 完成证据 | 差异结论 |
+| -------- | ------ | -------- | -------- |
 
-## Final iteration decision
+## 已知限制与剩余风险
 
-Record the following machine-readable line only after `{{ITERATION_ID}}` meets
-the conditions to become `passed`:
+## 回滚方法
 
-`Decision: passed`
+## 向下一迭代释放的输入
 
-A passed iteration has a complete test report, this final exit report, and
-every required manual gate completed. Only its direct successor may then be
-unblocked.
+## 最终迭代结论
+
+只有在 `{{ITERATION_ID}}` 满足进入 `passed` 的条件后，才记录以下机器可读行：
+
+`结论：passed`
+
+已通过的迭代必须具备完整测试报告和本最终出口报告；`manual_gate:true` 时还必须具备全部人工门禁证据。只有它的直接后继迭代可以随后解除阻塞。

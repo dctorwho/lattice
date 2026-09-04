@@ -1,82 +1,60 @@
-# M2 detailed design
+# M2 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M2`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代：`M2`
+- 状态权威：`iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全边界依据：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-CodeMirror 6 remains the only editing surface and SourceBuffer text remains
-authoritative. Hybrid mode uses decorations, widgets, view plugins, and
-minimal source patches; no rich-text AST is saved or mirrored in React.
+CodeMirror 6 始终是唯一编辑界面，`SourceBuffer` 文本始终具有权威性。混合模式使用装饰、部件、视图插件和最小源码补丁；不得保存富文本 AST，也不得在 React 中镜像全文。
 
-## Capability design
+## 能力设计
 
-### Projection and source fallback
+### 投影与源码回退
 
-HybridProjection, RevealController, block-adapter registry, and mode
-compartments rebuild disposable decorations without history. Widgets submit
-range patches carrying snapshot revision/hash; stale, invalid, timeout, or
-parser failures reject the patch and show editable source without changing the
-session.
+`HybridProjection`、`RevealController`、块适配器注册表和模式 compartment 重建一次性装饰，但不写入历史。部件提交携带快照修订号和哈希的范围补丁；过期、无效、超时或解析失败的补丁必须被拒绝，并在不修改会话的情况下显示可编辑源码。
 
-### Basic Markdown adapters
+### 基础 Markdown 适配器
 
-Paragraphs, ATX/Setext headings, quotes, inline marks, ordered/unordered/task
-lists, links/images/autolinks, and fenced/indented code preserve original
-markers, delimiters, and unknown/incomplete input. Code body is always
-editable; link activation follows the M0 approved protocol policy.
+段落、ATX/Setext 标题、引用、行内标记、有序/无序/任务列表、链接、图片、自动链接以及围栏/缩进代码必须保留原始标记、分隔符和未知或未完成输入。代码正文始终可编辑；链接激活遵循 M0 已批准的协议策略。
 
-### Editing transactions
+### 编辑事务
 
-Input rules and auto-pairs act only in legal contexts, produce minimal
-undoable change sets, and are suppressed during composition. Selection mapping
-spans inline marks/widgets/blocks. Composition events form one undo group;
-focus restoration and drag selection remain deterministic.
+输入规则和自动配对只在合法上下文生效，生成可撤销的最小变更集，并在组合输入期间禁用。选区映射跨越行内标记、部件和块。一次组合输入事件形成一个撤销组；焦点恢复和拖拽选择保持确定性。
 
-### Mode continuity
+### 模式连续性
 
-Source and hybrid extensions switch within one EditorState and retain text,
-selection, history, scroll, and folds. Mode change itself creates no document
-transaction; window/document preference persistence follows the storage rules.
+源码与混合扩展在同一 `EditorState` 中切换，并保留文本、选区、历史、滚动和折叠。模式切换本身不产生文档事务；窗口与文档偏好按存储规则持久化。
 
-## Module responsibilities
+## 模块职责
 
-Editor extensions own decorations, reveal state, adapters, patch validation,
-input rules, selection mapping, and mode compartments. Domain sessions own
-text/history authority; renderer supplies presentation only.
+编辑器扩展负责装饰、显示状态、适配器、补丁验证、输入规则、选区映射和模式 compartment。领域会话拥有文本和历史权威；渲染进程只提供展示。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`SourceBuffer -> DocumentSession -> CodeMirror state -> parser ranges ->
-decorations/widgets`; `widget operation -> source patch + revision/hash ->
-validation -> CodeMirror transaction -> session`; failures return to source.
+`SourceBuffer -> DocumentSession -> CodeMirror 状态 -> 解析范围 -> 装饰/部件`；`部件操作 -> 源码补丁 + 修订号/哈希 -> 验证 -> CodeMirror 事务 -> 会话`；失败时回退到源码。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Display changes never modify source. Patches may change only target ranges.
-Composition must not rebuild active DOM or duplicate text. A source/hash or
-history change caused by a mode switch, stale patch overwrite, unrecoverable
-cross-block selection, or IME loss is a release blocker.
+`REF-006..010` 经复刻矩阵进入投影、输入和查找设计。视觉装饰不得成为第二份文档权威；如果公开行为与安全或源码保真冲突，保持源码和会话安全、记录失败，并停止 M2 出口而不是静默采用近似实现。
 
-## Dependency admission
+显示变化绝不修改源码。补丁只能修改目标范围。组合输入期间不得重建活动 DOM 或重复文本。模式切换导致源码、哈希或历史变化，过期补丁覆盖，跨块选区无法恢复，或 IME 输入丢失，均为发布阻断问题。
 
-Use parser and language assets only when on-demand loading, license, bundle
-size, offline behavior, and sandbox requirements are documented.
+## 依赖准入
 
-## Manual-gate design
+只有在记录按需加载、许可证、包体大小、离线行为和沙箱要求后，才可使用解析器和语言资源。
 
-The evaluator tests Microsoft Pinyin and a third-party Chinese IME, candidate
-navigation, full-width punctuation, cross-block selection, list backspace,
-repeated switching, and sustained daily use with hashes and recordings.
+## 人工门禁设计
 
-## Implementation order
+评估人使用微软拼音和第三方中文输入法，检查候选导航、全角标点、跨块选区、列表退格、重复模式切换和持续日常使用，并保存哈希与录屏证据。
 
-- [ ] Add projection lifecycle, reveal behavior, and revision/hash patch validation.
-- [ ] Add block, inline, list, link/image, and code adapters with source fallback.
-- [ ] Add rules, pairing, composition, selection, and transaction grouping.
-- [ ] Add mode continuity and persistence.
-- [ ] Execute property, E2E, security, performance, and manual regression gates.
+## 实施顺序
+
+- [ ] 增加投影生命周期、显示行为和基于修订号与哈希的补丁验证。
+- [ ] 增加块、行内、列表、链接与图片、代码适配器及源码回退。
+- [ ] 增加输入规则、配对、组合输入、选区和事务分组。
+- [ ] 增加模式连续性和持久化。
+- [ ] 执行属性、端到端、安全、性能和人工回归门禁。

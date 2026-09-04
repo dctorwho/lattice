@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 
 import {
   APP_GET_INFO_CHANNEL,
+  FILES_SAVE_CHANNEL,
   IPC_CONTRACT_VERSION,
   appGetInfoRequestSchema,
   appGetInfoResultSchema,
   appInfoSchema,
-  approvedIpcChannelSchema
+  approvedIpcChannelSchema,
+  filesSaveRequestSchema
 } from '../../../src/shared/contracts'
 import { appErrorSchema, createAppError, errorCodeSchema } from '../../../src/shared/errors'
 
@@ -73,10 +75,12 @@ describe('TC-M0-005 shared contracts', () => {
     expect(appInfoSchema.parse(value)).toEqual(value)
   })
 
-  it('restricts channels and stable error codes', () => {
+  it('restricts channels and accepts only activated stable error codes', () => {
     expect(approvedIpcChannelSchema.parse(APP_GET_INFO_CHANNEL)).toBe('lattice:app:get-info')
+    expect(approvedIpcChannelSchema.parse(FILES_SAVE_CHANNEL)).toBe('lattice:files:save')
     expect(approvedIpcChannelSchema.safeParse('lattice:invoke').success).toBe(false)
-    expect(errorCodeSchema.safeParse('FILE_NOT_FOUND').success).toBe(false)
+    expect(errorCodeSchema.safeParse('FILE_NOT_FOUND').success).toBe(true)
+    expect(errorCodeSchema.safeParse('EXPORT_WRITE_FAILED').success).toBe(false)
     expect(errorCodeSchema.safeParse('IPC_INVALID_REQUEST').success).toBe(true)
   })
 
@@ -84,6 +88,10 @@ describe('TC-M0-005 shared contracts', () => {
     ['IPC_INVALID_REQUEST', 'IPC_INVALID_REQUEST'],
     ['IPC_UNAUTHORIZED_SENDER', 'IPC_UNAUTHORIZED_SENDER'],
     ['APP_VERSION_MISMATCH', 'APP_VERSION_MISMATCH'],
+    ['FILE_ATOMIC_SAVE_FAILED', 'FILE_ATOMIC_SAVE_FAILED'],
+    ['DOCUMENT_STALE_PATCH', 'DOCUMENT_STALE_PATCH'],
+    ['RECOVERY_WRITE_FAILED', 'RECOVERY_WRITE_FAILED'],
+    ['SEARCH_INVALID_PATTERN', 'SEARCH_INVALID_PATTERN'],
     ['INTERNAL_UNEXPECTED', 'INTERNAL_UNEXPECTED']
   ])('parses the exact active error code: %s', (_name, value) => {
     expect(errorCodeSchema.parse(value)).toBe(value)
@@ -114,6 +122,36 @@ describe('TC-M0-005 shared contracts', () => {
 
   it('rejects an invalid request ID when building an AppError', () => {
     expect(() => createAppError('IPC_INVALID_REQUEST', 'not-a-uuid')).toThrow()
+  })
+
+  it('拒绝正文换行数与 EOL 索引不一致的保存快照', () => {
+    const base = {
+      contractVersion: 1,
+      requestId,
+      payload: {
+        documentId: '00000000-0000-4000-8000-000000000601',
+        path: 'D:\\文档\\严格.md',
+        revision: 1,
+        text: '第一行\n第二行',
+        encoding: 'utf8',
+        eolByLine: ['\r\n'],
+        expectedDiskVersion: { mtimeMs: 1, size: 16, contentHash: 'a'.repeat(64) }
+      }
+    }
+
+    expect(filesSaveRequestSchema.safeParse(base).success).toBe(true)
+    expect(
+      filesSaveRequestSchema.safeParse({
+        ...base,
+        payload: { ...base.payload, eolByLine: [] }
+      }).success
+    ).toBe(false)
+    expect(
+      filesSaveRequestSchema.safeParse({
+        ...base,
+        payload: { ...base.payload, eolByLine: ['\r\n', '\n'] }
+      }).success
+    ).toBe(false)
   })
 
   it.each([

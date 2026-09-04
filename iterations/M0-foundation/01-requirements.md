@@ -1,93 +1,64 @@
-# M0 requirements
+# M0 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M0`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md),
-  [architecture](../../docs/03-architecture.md), [data-safety and
-  security](../../docs/05-data-safety-and-security.md), and [test
-  strategy](../../docs/09-test-strategy.md).
+- 迭代： `M0`
+- 状态权威： `iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)。
 
-## Objectives
+## 目标
 
-Establish a reproducible, offline-capable engineering foundation and a secure
-Electron desktop shell. Provide the narrow shared contracts and command/window
-shell needed by later iterations, plus the CI, dependency-audit, SBOM, and
-packaging evidence needed to evaluate the foundation as one iteration.
+建立可复现、可离线运行的工程基础和安全 Electron 桌面外壳。提供后续迭代所需的窄共享契约与命令/窗口外壳，以及把基础作为一个迭代验收所需的 CI、依赖审计、SBOM 和打包证据。
 
-## User-observable outcomes
+## 用户可观察结果
 
-- The application starts as an independently branded Windows desktop shell
-  with an accessible title bar, sidebar toggle, editor area, status area, and
-  an About command.
-- The packaged renderer has no Node, raw Electron, or general IPC authority;
-  navigation, permissions, webviews, and unsafe external URLs are denied.
-- Native menus, renderer controls, shortcuts, and context menus dispatch the
-  same command identity and preserve deterministic focus behavior.
+- 应用以独立品牌 Windows 桌面外壳启动，具有可访问标题栏、侧栏开关、编辑区、状态区和“关于”命令。
+- 打包渲染器不具有 Node、原始 Electron 或通用 IPC 权限；拒绝导航、权限、webview 和不安全外部 URL。
+- 原生菜单、渲染器控件、快捷键和右键菜单分发同一命令标识，并保持确定的焦点行为。
 
-## Scope
+## 范围
 
-- Reproducible pnpm/Electron/TypeScript project bootstrap, strict quality
-  commands, hermetic daily checks, and explicit cold-bootstrap coverage.
-- Production Electron sandbox, CSP, permission, navigation, new-window,
-  webview, and confirmed external-link policies.
-- Zod-validated request/response contracts, bounded serialization, stable
-  errors, redacted diagnostics, sender ownership, and the frozen preload API.
-- A renderer-owned command registry, native-menu projection, localized shell,
-  and the CI/license/SBOM/packaged-artifact gate.
+- 可复现 pnpm/Electron/TypeScript 项目自举、严格质量命令、封闭日常检查和明确冷自举覆盖。
+- 生产 Electron 沙箱、CSP、权限、导航、新窗口、webview 和经确认外链策略。
+- 经 Zod 校验的请求/响应契约、受限序列化、稳定错误、脱敏诊断、sender 所有权和冻结 preload API。
+- 渲染器拥有的命令注册表、原生菜单投影、本地化外壳，以及 CI/许可证/SBOM/打包产物门禁。
 
-## Non-goals
+## 非目标
 
-- File, workspace, settings, import, export, or general-purpose IPC APIs.
-- A fake product surface, unimplemented command controls, or a rich-text
-  document authority.
-- Relaxing quality, security, licensing, or data-integrity checks to make a
-  bootstrap or package result pass.
+- 文件、工作区、设置、导入、导出或通用 IPC API。
+- 假产品界面、未实现命令控件或富文本文档权威。
+- 为让自举或打包结果通过而放宽质量、安全、许可证或数据完整性检查。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID              | Iteration outcome                                                                              | Acceptance evidence                                    |
-| ---------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| NFR-007..009           | Offline core behavior, replaceable engineering boundaries, and redacted structured diagnostics | Offline/bootstrap, security, contract, and audit cases |
-| UI-001..002            | Window structure and one command identity across interaction surfaces                          | Command/window shell cases and manual review           |
-| Engineering foundation | Reproducible build, quality toolchain, and test harness                                        | Command exit codes, lockfile and artifact hashes       |
-| CI/audit/package gate  | Windows CI, dependency and license audit, SBOM, and launchable packaged artifact               | Gate case, audit artifacts, and manual evaluation      |
+| 全局 ID          | 迭代结果                                            | 验收证据                        |
+| ---------------- | --------------------------------------------------- | ------------------------------- |
+| NFR-007..009     | 离线核心行为、可替换工程边界和脱敏结构化诊断        | 离线/自举、安全、契约和审计用例 |
+| UI-001..002      | 窗口结构及所有交互表面的统一命令标识                | 命令/窗口外壳用例和人工审阅     |
+| 工程基础         | 可复现构建、质量工具链和测试工具                    | 命令退出码、锁文件和产物哈希    |
+| CI/审计/打包门禁 | Windows CI、依赖和许可证审计、SBOM 及可启动打包产物 | 门禁用例、审计产物和人工评估    |
 
-## Preconditions and external dependencies
+## 前置条件与外部依赖
 
-- A supported Windows build environment, pinned pnpm dependencies, Electron,
-  and the project-local package store.
-- Platform signing, CI, license-audit, and SBOM tooling are admitted only with
-  documented versions, licenses, and reproducible command output.
-- User or designated evaluator review is required for the iteration manual
-  gate and cannot be concluded by the implementation agent.
+- 受支持 Windows 构建环境、固定 pnpm 依赖、Electron 和项目本地包存储。
+- 平台签名、CI、许可证审计和 SBOM 工具只有在版本、许可证和可复现命令输出有记录时才准入。
+- 迭代人工门禁需要用户或指定评估人审阅，实施代理不能代为下结论。
 
-## Risks and mitigations
+## 风险与缓解措施
 
-- Renderer privilege leakage: fail closed at preload, IPC, BrowserWindow,
-  session, and WebContents boundaries; exercise production Electron tests.
-- Non-reproducible or falsely green quality results: use isolated copies,
-  injected faults, frozen installs, and preserved exit-code evidence.
-- Dependency or packaging risk: retain a parseable SBOM, license audit, and
-  packaged-artifact evidence before the manual review.
+- 渲染器权限泄漏：在 preload、IPC、BrowserWindow、session 和 WebContents 边界失败关闭；运行生产 Electron 测试。
+- 不可复现或假绿质量结果：使用隔离副本、故障注入、冻结安装和保留的退出码证据。
+- 依赖或打包风险：人工审阅前保留可解析 SBOM、许可证审计和打包产物证据。
 
-## Iteration-level acceptance criteria
+## 迭代级验收标准
 
-- All M0 automated cases in `03-test-cases.md` pass with retained commands,
-  environments, exit codes, and artifacts in the controlled test report.
-- The production shell is sandboxed and has only the approved frozen preload
-  surface; unsafe navigation, permission, and external-link attempts fail.
-- Quality checks, CI-equivalent commands, license audit, SBOM, and packaged
-  launch evidence are reproducible and complete.
-- The designated evaluator completes the named manual case using its required
-  evidence; no data-loss, privilege-boundary, or audit blocker remains.
+- `03-test-cases.md` 中所有 M0 自动用例通过，命令、环境、退出码和产物保留在受控测试报告中。
+- 生产外壳已沙箱化且只有批准的冻结 preload 表面；不安全导航、权限和外链尝试失败。
+- 质量检查、等效 CI 命令、许可证审计、SBOM 和打包启动证据可复现且完整。
+- 指定评估人使用必需证据完成命名人工用例；不存在数据丢失、权限边界或审计阻断项。
 
-## Entry completeness
+## 入口完整性
 
-This document, the detailed design, and the test cases are the three entry
-documents. All three must be complete and predecessor iterations must be
-`passed` before `M0` may become `ready` or `in_progress`.
+本文档、详细设计和测试用例是三个迭代入口。三者必须完整且前置迭代均为 `passed`，M0 才能进入 `ready` 或 `in_progress`。
 
-No subtask, task-level status, or task-level ownership belongs in this
-document.
+本文档不包含子任务、任务级状态或任务级所有权。

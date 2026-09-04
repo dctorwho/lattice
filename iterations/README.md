@@ -1,62 +1,41 @@
-# Iteration governance
+# 迭代治理
 
-`iterations/state.json` is the sole authority for active planning state. The
-only active planning IDs are `M0` through `M8`; an iteration owns its scope,
-dependencies, status, evidence, and manual-gate decision.
+`iterations/state.json` 是活跃规划状态的唯一权威。唯一有效的规划 ID 为 `M0` 至 `M8`；每个迭代拥有自己的范围、依赖、状态、证据和人工门禁决定。
 
-This directory does not create a second product specification. Iteration
-documents link to the global [product charter](../docs/00-product-charter.md),
-[architecture](../docs/03-architecture.md), [data-safety and security
-rules](../docs/05-data-safety-and-security.md), and [test
-strategy](../docs/09-test-strategy.md). Those documents remain the authority
-for cross-iteration product and engineering constraints.
+本目录不建立第二份产品规格。迭代文档链接到全局[产品章程](../docs/00-product-charter.md)、[Typora 1.13.8 Windows 公开证据基线](../docs/22-typora-1.13.8-windows-evidence-baseline.md)、[架构](../docs/03-architecture.md)、[数据安全与安全边界](../docs/05-data-safety-and-security.md)和[测试策略](../docs/09-test-strategy.md)。跨迭代的产品与工程约束仍以这些文档为权威。
 
-## Document roles
+## 文档职责
 
-Every iteration has three entry documents:
+每个迭代有三份入口文档：
 
-1. `01-requirements.md` defines objectives, observable outcomes, scope,
-   non-goals, requirement coverage, dependencies, risks, and iteration-level
-   acceptance criteria.
-2. `02-detailed-design.md` defines architecture boundaries, responsibilities,
-   interfaces, data flow, safety and compatibility constraints, dependency
-   admission, and implementation order.
-3. `03-test-cases.md` defines the automated and manual verification contract,
-   including parameter matrices, fixtures, expected results, evidence, and
-   stop conditions.
+1. `01-requirements.md` 定义目标、可观察结果、范围、非目标、`REF-*`/`COMP-*`/需求覆盖、依赖、风险和迭代级验收标准。
+2. `02-detailed-design.md` 定义架构边界、职责、接口、数据流、独立实现、安全与复刻约束、依赖准入和实施顺序。
+3. `03-test-cases.md` 定义自动化验证契约，以及经独立设计批准时才适用的人工验证契约，包括公开对照依据、参数矩阵、夹具、预期结果、证据和停止条件。
 
-Every iteration has two exit documents:
+每个迭代有两份出口文档：
 
-1. `04-test-report.md` is the controlled working record of commands,
-   environments, exit codes, results, failures, fixes, regression evidence,
-   unexecuted work, and residual risks.
-2. `05-exit-report.md` is the final exit decision: completed requirements,
-   delivered artifacts, material changes, gate conclusions, limitations,
-   rollback approach, and the explicit inputs that the next iteration may
-   depend on.
+1. `04-test-report.md` 是命令、环境、退出码、结果、失败、修复、回归证据、未执行工作和剩余风险的受控工作记录。
+2. `05-exit-report.md` 是最终出口决定，记录已完成需求、交付制品、重要变更、门禁结论、限制、回滚方法以及下一迭代可以依赖的明确输入。
 
-The reusable role templates live in [`templates/`](templates/). An instantiated
-document replaces `{{ITERATION_ID}}` and contains no unresolved marker.
+可复用角色模板位于 [`templates/`](templates/)。实例化文档必须替换 `{{ITERATION_ID}}`，且不得含有未解决的规划内容。
 
-## Lifecycle and state transitions
+## 生命周期与状态转换
 
-The entry sequence is:
+入口顺序为：
 
 ```text
-01-requirements.md -> 02-detailed-design.md -> 03-test-cases.md -> development and continuous verification
+01-requirements.md -> 02-detailed-design.md -> 03-test-cases.md -> 开发与持续验证
 ```
 
-An iteration may enter `ready` or `in_progress` only after all three entry
-documents are complete, contain no unresolved planning content, and every
-predecessor in `iterations/state.json` is `passed`.
+只有在三份入口文档完整、不含未解决规划内容，且 `iterations/state.json` 中所有前置迭代均为 `passed` 后，迭代才能进入 `ready` 或 `in_progress`。
 
-The exit sequence is:
+出口顺序为：
 
 ```text
 04-test-report.md -> 05-exit-report.md
 ```
 
-The allowed M-level state flow is:
+允许的 M 级状态流为：
 
 ```text
 blocked -> ready -> in_progress -> awaiting_manual -> passed
@@ -64,54 +43,26 @@ blocked -> ready -> in_progress -> awaiting_manual -> passed
                          +---- failed <---+
 ```
 
-At most one iteration may be `in_progress` or `awaiting_manual`. A failed
-iteration preserves failure evidence and is repaired within that same
-iteration; it does not create a bypass item. `awaiting_manual` requires a
-complete test report. `passed` requires both an exit report and successful
-completion of every manual gate required by that iteration. Only then may its
-direct successor be unblocked.
+最多只能有一个迭代处于 `in_progress` 或 `awaiting_manual`。失败迭代保留失败证据并在同一迭代内修复，不建立绕过项。`awaiting_manual` 只适用于 `manual_gate:true`，并要求完整测试报告；`passed` 要求完整测试报告、出口报告，以及在启用人工门禁时要求全部人工门禁成功。满足这些条件后，才可解除其直接后继迭代的阻塞。
 
-## Evidence and manual gates
+## 证据与人工门禁
 
-Evidence is owned by the iteration and recorded through its state entry and
-exit documents. Automated evidence belongs in the test report with the actual
-environment, command, exit code, result, and artifact or report reference.
-Manual evidence belongs to the named manual case and is approved only by the
-user or designated evaluator; an agent may prepare steps and collect automated
-evidence but cannot self-approve a manual gate.
+证据归迭代所有，并通过状态项和出口文档记录。自动化证据写入测试报告，包括实际环境、命令、退出码、结果以及制品或报告引用。人工证据归属于指定人工用例，只能由用户或指定评估人批准；代理可以准备步骤和收集自动化证据，但不能自行批准人工门禁。
 
-`manual_gate` in `iterations/state.json` determines whether the iteration must
-pause at `awaiting_manual`. The test-case document defines the applicable
-manual cases and the evidence required to close them.
+自动化是 M1–M8 的默认且阻断性的验收方式，当前规划的 `manual_gate` 均为 `false`；自动门禁通过后可以直接形成出口报告并进入 `passed`。只有独立设计证明存在无法通过受控环境、虚拟设备或确定性适配器观察的物理边界时，才能把特定迭代改为 `manual_gate:true`。既有 `MAN-*` 在迁移为自动用例前作为可追踪的迁移输入保留，不能被当作已执行结果，也不能以人工观察绕过缺失的自动覆盖。M0 的已通过人工门禁作为历史工程证据保留。
 
-### Machine-checkable exit contract
+每个 `COMP-*` 必须至少关联一个 `REF-*`，并在所属迭代形成自动化或人工执行证据。已知复刻差异不得写成 `passed`；`evidence_gap` 只能表示仍需补证的风险，不能代替已确认行为的验收。
 
-For `awaiting_manual` and `passed`, `04-test-report.md` contains an
-`## Automated case results` table with the exact header `Case ID | Result |
-Evidence | Notes`. Its case IDs equal the iteration's declared `TC-*` IDs
-exactly once each; every result is `passed` and every evidence cell is
-non-empty.
+### 机器可检查的出口契约
 
-For `passed`, the same report contains an `## Manual case results` table with
-the exact header `Case ID | Result | Evaluator | Evidence`. Its case IDs equal
-the declared `MAN-*` IDs exactly once each; every result is `passed`, and every
-evaluator and evidence cell is non-empty. An iteration with no declared manual
-cases may leave this table empty.
+对于 `awaiting_manual` 和 `passed`，`04-test-report.md` 必须包含 `## 自动化用例结果` 表格，精确表头为 `用例 ID | 结果 | 证据 | 备注`。表格必须把本迭代声明的每个 `TC-*` ID 恰好列出一次；所有结果均为 `passed`，且证据单元格均非空。
 
-For `passed`, `05-exit-report.md` contains one completion row for every global
-requirement and compatibility ID declared by that iteration, exactly once.
-Every row has a non-empty required outcome and completion evidence and a
-`passed` result. Under `## Final iteration decision`, the report contains the
-literal machine line `Decision: passed`. Headings, table headers, prose, or a
-generic state evidence object do not substitute for these per-ID results.
+对于 `manual_gate:true` 且状态为 `passed` 的迭代，同一报告必须包含 `## 人工用例结果` 表格，精确表头为 `用例 ID | 结果 | 评估人 | 证据`。表格必须把声明的每个有效 `MAN-*` ID 恰好列出一次；所有结果均为 `passed`，且评估人和证据单元格均非空。`manual_gate:false` 的迭代保留空表并注明不适用；迁移记录中的旧 `MAN-*` 不构成执行要求。
 
-## No subtask ownership
+对于 `passed`，`05-exit-report.md` 必须为本迭代声明的每个全局需求和 `COMP-*` 复刻验收 ID 恰好提供一行完成记录。每一行必须包含非空要求结果、非空完成证据和 `passed` 结果，并在复刻证据结论中说明所属 `REF-*` 已知差异为零。在 `## 最终迭代结论` 下，报告必须包含机器行 `结论：passed`。标题、表头、普通叙述或通用状态证据对象均不能替代这些逐 ID 结果。
 
-Implementation order and checklists may organize work inside a detailed design,
-but they have no independent status, dependency, evidence record, report, or
-unlock behavior. Git commits are change history, not planning units.
+## 不设子任务归属
 
-Stable `TC-Mx-*` and `MAN-Mx-*` values are test-case identifiers only. They
-describe verification coverage and do not own implementation work, planning
-state, dependencies, manual gates, or reports. Historical task-level material
-is traceability-only and does not participate in active planning or gates.
+实施顺序和检查清单可以组织详细设计中的工作，但没有独立状态、依赖、证据记录、报告或解锁行为。Git 提交是变更历史，不是规划单元。
+
+稳定的 `TC-Mx-*` 和 `MAN-Mx-*` 只是测试用例标识符，用于描述验证覆盖，不拥有实施工作、规划状态、依赖、人工门禁或报告。历史任务级资料仅用于追踪，不参与活跃规划或门禁。

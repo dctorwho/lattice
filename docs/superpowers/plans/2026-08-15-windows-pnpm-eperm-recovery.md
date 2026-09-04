@@ -1,38 +1,38 @@
-# Remove the Unused Squirrel Peer Implementation Plan
+# 移除未使用 Squirrel peer 的实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **供自动化执行者使用：** 必须使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐项实施本计划。步骤使用复选框（`- [ ]`）追踪。
 
-**Goal:** Keep electron-builder's pinned NSIS/dir capability while removing its unused Squirrel peer and electron-winstaller dependency from every frozen install.
+**目标：** 保留 electron-builder 固定的 NSIS/dir 能力，同时从每次冻结安装中移除未使用的 Squirrel peer 和 electron-winstaller 依赖。
 
-**Architecture:** Express the capability decision as one version-scoped pnpm root override, regenerate the lockfile, and restore bootstrap failure handling to one strict install attempt. Lock the dependency policy with focused text-contract tests and verify it through a real offline clean copy and GitHub's Windows quality gate.
+**架构：** 用一个限定版本的 pnpm 根 override 表达能力决策，重新生成锁文件，并把自举失败处理恢复为一次严格安装尝试。通过聚焦文本契约测试固定依赖策略，再使用真实离线干净副本和 GitHub Windows 质量门禁验证。
 
-**Tech Stack:** pnpm 11.12.0 workspace settings and lockfile, TypeScript 5.9, Vitest 4.1, Electron Builder 26.15.3, Windows GitHub Actions.
+**技术栈：** pnpm 11.12.0 工作区设置和锁文件、TypeScript 5.9、Vitest 4.1、Electron Builder 26.15.3、Windows GitHub Actions。
 
-## Global Constraints
+## 全局约束
 
-- Keep `electron-builder@26.15.3`, Windows x64 `dir`, and NSIS capability.
-- Remove only `app-builder-lib@26.15.3>electron-builder-squirrel-windows`.
-- Do not set `autoInstallPeers: false` globally.
-- Keep only the reviewed `allowBuilds.esbuild: true` install script.
-- Do not add install retries, timeout increases, Squirrel support, or new dependencies.
-- Any frozen install error remains terminal.
+- 保留 `electron-builder@26.15.3`、Windows x64 `dir` 和 NSIS 能力。
+- 只移除 `app-builder-lib@26.15.3>electron-builder-squirrel-windows`。
+- 不全局设置 `autoInstallPeers: false`。
+- 只保留已审阅的 `allowBuilds.esbuild: true` 安装脚本。
+- 不增加安装重试、超时扩展、Squirrel 支持或新依赖。
+- 任何冻结安装错误继续作为终止结果。
 
 ---
 
-### Task 1: Lock the dependency-graph policy with RED tests
+### 阶段 1：用 RED 测试固定依赖图策略
 
-**Files:**
+**文件：**
 
-- Modify: `tests/unit/quality-config.spec.ts`
+- 修改：`tests/unit/quality-config.spec.ts`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: committed `pnpm-workspace.yaml`, `pnpm-lock.yaml`, and `package.json` text.
-- Produces: a focused regression contract for the exact override and forbidden package entries.
+- 输入：已提交的 `pnpm-workspace.yaml`、`pnpm-lock.yaml` 和 `package.json` 文本。
+- 输出：精确 override 和禁止包条目的聚焦回归契约。
 
-- [ ] **Step 1: Add the failing policy test**
+- [ ] **步骤 1：增加失败策略测试**
 
-Read all three files and add this case:
+读取三个文件并增加以下用例：
 
 ```ts
 it('removes only the unused pinned Squirrel peer from the packaging graph', async () => {
@@ -55,35 +55,33 @@ it('removes only the unused pinned Squirrel peer from the packaging graph', asyn
 })
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [ ] **步骤 2：运行聚焦测试并确认 RED**
 
-Run:
+运行：
 
 ```powershell
 pnpm.cmd test tests/unit/quality-config.spec.ts
 ```
 
-Expected: the new case fails because the override is absent and the forbidden
-package entries still exist. Existing quality-configuration cases remain green.
+预期：新用例因缺少 override 且禁止包条目仍存在而失败；既有质量配置用例继续通过。
 
-### Task 2: Remove the unused peer and symptom-level retry
+### 阶段 2：移除未使用 peer 和症状级重试
 
-**Files:**
+**文件：**
 
-- Modify: `pnpm-workspace.yaml`
-- Modify: `pnpm-lock.yaml`
-- Modify: `tests/helpers/bootstrap-project.ts`
-- Modify: `tests/unit/helpers/bootstrap-project.spec.ts`
+- 修改：`pnpm-workspace.yaml`
+- 修改：`pnpm-lock.yaml`
+- 修改：`tests/helpers/bootstrap-project.ts`
+- 修改：`tests/unit/helpers/bootstrap-project.spec.ts`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: pnpm's root `overrides` edge-removal syntax.
-- Produces: a 489-package frozen graph with the current `verifyBootstrap(options): Promise<BootstrapEvidence>` API and one install attempt.
+- 输入：pnpm 根 `overrides` 依赖边移除语法。
+- 输出：包含当前 `verifyBootstrap(options): Promise<BootstrapEvidence>` API 且只安装一次的 489 包冻结图。
 
-- [ ] **Step 1: Apply the narrow workspace policy**
+- [ ] **步骤 1：应用窄工作区策略**
 
-Make `pnpm-workspace.yaml` exactly preserve the workspace and esbuild approval
-while adding the scoped override:
+让 `pnpm-workspace.yaml` 精确保留工作区和 esbuild 批准，同时增加限定 override：
 
 ```yaml
 packages:
@@ -96,36 +94,30 @@ overrides:
   'app-builder-lib@26.15.3>electron-builder-squirrel-windows': '-'
 ```
 
-- [ ] **Step 2: Regenerate the lockfile offline**
+- [ ] **步骤 2：离线重新生成锁文件**
 
-Run:
+运行：
 
 ```powershell
 pnpm.cmd install --offline --lockfile-only
 pnpm.cmd install --offline --frozen-lockfile
 ```
 
-Expected: both commands exit `0`; pnpm reports 489 installed packages; no
-Squirrel or electron-winstaller package directory is present.
+预期：两个命令均退出 `0`；pnpm 报告安装 489 个包；不存在 Squirrel 或 electron-winstaller 包目录。
 
-- [ ] **Step 3: Restore strict one-attempt bootstrap behavior**
+- [ ] **步骤 3：恢复严格单次尝试自举行为**
 
-In `tests/helpers/bootstrap-project.ts`, remove `BootstrapOptions.wait`, the
-retry delay and classifier helpers, `runPnpmOnce`, and the retry branch. Restore
-the install call to:
+在 `tests/helpers/bootstrap-project.ts` 移除 `BootstrapOptions.wait`、重试延迟与分类辅助器、`runPnpmOnce` 和重试分支。把安装调用恢复为：
 
 ```ts
 await runPnpm(run, projectRoot, installArguments, 'pnpm install')
 ```
 
-In `tests/unit/helpers/bootstrap-project.spec.ts`, remove the transient failure
-fixture, ordered install-result support, common retry options helper, and the
-five retry-specific cases. Retain the existing `reports an install-stage exit
-code` case as the fail-closed contract.
+在 `tests/unit/helpers/bootstrap-project.spec.ts` 移除瞬态失败夹具、有序安装结果支持、公共重试选项辅助器和五个重试专用用例。保留既有 `reports an install-stage exit code` 用例作为失败关闭契约。
 
-- [ ] **Step 4: Run focused GREEN**
+- [ ] **步骤 4：运行聚焦 GREEN**
 
-Run:
+运行：
 
 ```powershell
 pnpm.cmd test tests/unit/quality-config.spec.ts tests/unit/helpers/bootstrap-project.spec.ts
@@ -133,47 +125,41 @@ pnpm.cmd peers check
 pnpm.cmd ignored-builds
 ```
 
-Expected: focused tests pass; peer check reports no issues; ignored builds
-reports automatic `None` and no explicit denial section.
+预期：聚焦测试通过；peer 检查报告无问题；ignored builds 报告自动 `None` 且无显式拒绝区段。
 
-### Task 3: Align the admitted-dependency record
+### 阶段 3：对齐已准入依赖记录
 
-**Files:**
+**文件：**
 
-- Modify: `docs/04-technology-stack.md`
-- Modify: `iterations/M0-foundation/02-detailed-design.md`
-- Modify after verification: `iterations/M0-foundation/04-test-report.md`
+- 修改：`docs/04-technology-stack.md`
+- 修改：`iterations/M0-foundation/02-detailed-design.md`
+- 验证后修改：`iterations/M0-foundation/04-test-report.md`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: Task 2's exact graph and observed command output.
-- Produces: an accurate M0 dependency decision and test evidence.
+- 输入：阶段 2 的精确依赖图和已观察命令输出。
+- 输出：准确的 M0 依赖决策和测试证据。
 
-- [ ] **Step 1: Replace the obsolete explicit-denial decision**
+- [ ] **步骤 1：替换过时显式拒绝决策**
 
-Record that the version-scoped override removes the unused Squirrel peer,
-electron-winstaller no longer installs or exposes its script, all other peer
-resolution remains enabled, and electron-builder upgrades require reassessing
-or removing the override.
+记录限定版本 override 移除未使用 Squirrel peer、electron-winstaller 不再安装或暴露脚本、所有其他 peer 解析继续启用，以及 electron-builder 升级要求重新评估或移除 override。
 
-- [ ] **Step 2: Record only fresh verification evidence**
+- [ ] **步骤 2：只记录新鲜验证证据**
 
-After Task 4, update the M0 test report with exact package count, peer-check,
-ignored-build, local full-gate, and GitHub required-check results. Do not mark
-M0 passed or create an exit report.
+阶段 4 后，用精确包数量、peer 检查、ignored-build、本地完整门禁和 GitHub 必需检查结果更新 M0 测试报告。不要把 M0 标为 passed，也不要创建出口报告。
 
-### Task 4: Verify, commit, publish, and observe the required gate
+### 阶段 4：验证、提交、发布并观察必需门禁
 
-**Files:**
+**文件：**
 
-- No additional source files.
+- 不增加源文件。
 
-**Interfaces:**
+**接口：**
 
-- Consumes: Tasks 1-3 final tree.
-- Produces: local and GitHub Windows acceptance evidence.
+- 输入：阶段 1–3 的最终文件树。
+- 输出：本地和 GitHub Windows 验收证据。
 
-- [ ] **Step 1: Run local gates**
+- [ ] **步骤 1：运行本地门禁**
 
 ```powershell
 pnpm.cmd test:integration tests/integration/project-bootstrap.spec.ts
@@ -182,20 +168,16 @@ pnpm.cmd check
 git diff --check
 ```
 
-Expected: every command exits `0`, including the Chinese-and-space clean-copy
-bootstrap, full unit/integration matrix, and production build.
+预期：每个命令均退出 `0`，包括中文和空格路径干净副本自举、完整单元/集成矩阵和生产构建。
 
-- [ ] **Step 2: Commit the correction**
+- [ ] **步骤 2：提交修正**
 
-Stage only the workspace policy, lockfile, strict bootstrap helper/tests,
-quality-config test, and M0 documentation. Commit with:
+只暂存工作区策略、锁文件、严格自举辅助器/测试、质量配置测试和 M0 文档。提交命令：
 
 ```powershell
 git commit -m "fix: remove unused Squirrel packaging peer"
 ```
 
-- [ ] **Step 3: Push and wait for GitHub**
+- [ ] **步骤 3：推送并等待 GitHub**
 
-Fast-forward `codex/iteration-governance`, verify the remote tree matches the
-locally tested tree, and wait for PR #1's required `quality` job to reach a
-terminal conclusion. Do not merge on pending or failure.
+快进 `codex/iteration-governance`，验证远程文件树与本地已测试文件树一致，并等待 PR #1 必需 `quality` 作业达到终态。pending 或失败时不得合并。

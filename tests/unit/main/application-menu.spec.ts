@@ -10,13 +10,24 @@ import {
 import { registerCommandStateIpc } from '../../../src/main/ipc/register-command-state-ipc'
 import {
   COMMAND_INVOKED_CHANNEL,
-  COMMAND_UPDATE_STATES_CHANNEL
+  COMMAND_UPDATE_STATES_CHANNEL,
+  type CommandId,
+  type CommandState
 } from '../../../src/shared/contracts'
 
-const enabledStates = [
+const enabledStates: readonly CommandState[] = [
   { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.find', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.redo', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.replace', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'edit.undo', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.close', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.new', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.open', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.save', isVisible: true, isEnabled: true, isChecked: false },
+  { id: 'file.saveAs', isVisible: true, isEnabled: true, isChecked: false },
   { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
-] as const
+]
 
 interface MenuHarness {
   readonly adapter: ApplicationMenuAdapter<object>
@@ -63,10 +74,7 @@ function requireTemplate(harness: MenuHarness): readonly ApplicationMenuTemplate
   return template
 }
 
-function findTemplateItem(
-  template: readonly ApplicationMenuTemplate[],
-  id: 'app.about' | 'view.toggleSidebar'
-) {
+function findTemplateItem(template: readonly ApplicationMenuTemplate[], id: CommandId) {
   for (const group of template) {
     const item = group.submenu.find((candidate) => candidate.id === id)
     if (item !== undefined) return item
@@ -74,8 +82,8 @@ function findTemplateItem(
   throw new Error(`Expected menu item ${id}`)
 }
 
-describe('M0 application menu projection', () => {
-  it('installs only the fixed fail-closed View and Help commands', () => {
+describe('M1 application menu projection', () => {
+  it('installs the fixed fail-closed File, Edit, View and Help commands', () => {
     const harness = createMenuHarness()
     const controller = createApplicationMenu({
       adapter: harness.adapter,
@@ -86,40 +94,17 @@ describe('M0 application menu projection', () => {
 
     expect(harness.readInstalled()).toBeDefined()
     const template = requireTemplate(harness)
-    expect(
-      template.map((group) => ({
-        label: group.label,
-        items: group.submenu.map(({ id, label, accelerator, type }) => ({
-          id,
-          label,
-          accelerator,
-          type
-        }))
-      }))
-    ).toEqual([
-      {
-        label: '视图',
-        items: [
-          {
-            id: 'view.toggleSidebar',
-            label: '切换侧栏',
-            accelerator: 'CommandOrControl+Shift+L',
-            type: 'checkbox'
-          }
-        ]
-      },
-      {
-        label: '帮助',
-        items: [
-          {
-            id: 'app.about',
-            label: '关于 Lattice',
-            accelerator: 'F1',
-            type: 'normal'
-          }
-        ]
-      }
-    ])
+    expect(template.map(({ label }) => label)).toEqual(['文件', '编辑', '视图', '帮助'])
+    expect(findTemplateItem(template, 'file.save')).toMatchObject({
+      label: '保存',
+      accelerator: 'CommandOrControl+S',
+      type: 'normal'
+    })
+    expect(findTemplateItem(template, 'edit.find')).toMatchObject({
+      label: '查找',
+      accelerator: 'CommandOrControl+F',
+      type: 'normal'
+    })
     expect(harness.items.get('view.toggleSidebar')).toEqual({
       visible: true,
       enabled: false,
@@ -188,10 +173,13 @@ describe('M0 application menu projection', () => {
       checked: true
     })
 
-    const windowEightStates = [
-      { id: 'app.about', isVisible: false, isEnabled: false, isChecked: false },
-      { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: false }
-    ] as const
+    const windowEightStates: readonly CommandState[] = enabledStates.map((state) =>
+      state.id === 'app.about'
+        ? { ...state, isVisible: false, isEnabled: false }
+        : state.id === 'view.toggleSidebar'
+          ? { ...state, isChecked: false }
+          : state
+    )
     expect(controller.updateStates(8, windowEightStates)).toBe(true)
     expect(harness.items.get('app.about')?.visible).toBe(true)
 

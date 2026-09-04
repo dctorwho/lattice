@@ -119,7 +119,7 @@ const fixtureGlobalIds = (root: string, iteration: FixtureIteration): string[] =
   return [...new Set(ids)]
 }
 
-const completeTestReport = (
+const completeLegacyTestReport = (
   root: string,
   iteration: FixtureIteration,
   includeManualResults = false
@@ -168,7 +168,7 @@ ${manualRows}
 `
 }
 
-const completeExitReport = (root: string, iteration: FixtureIteration): string => {
+const completeLegacyExitReport = (root: string, iteration: FixtureIteration): string => {
   const requirementRows = fixtureGlobalIds(root, iteration)
     .map((id) => `| ${id} | completed outcome | evidence/${id}.md | passed |`)
     .join('\n')
@@ -202,7 +202,53 @@ Decision: passed
 `
 }
 
+const completeTestReport = (
+  root: string,
+  iteration: FixtureIteration,
+  includeManualResults = false
+): string =>
+  completeLegacyTestReport(root, iteration, includeManualResults)
+    .replace('test report', '测试报告')
+    .replace('## Iteration context', '## 迭代上下文')
+    .replace('## Report status', '## 报告状态')
+    .replace('## Baseline and environment', '## 基线与环境')
+    .replace('## Existing validation', '## 已有验证')
+    .replace('## Executed commands and results', '## 已执行命令与结果')
+    .replace('## Automated case results', '## 自动化用例结果')
+    .replace('| Case ID | Result | Evidence | Notes |', '| 用例 ID | 结果 | 证据 | 备注 |')
+    .replace('## Manual case results', '## 人工用例结果')
+    .replace('| Case ID | Result | Evaluator | Evidence |', '| 用例 ID | 结果 | 评估人 | 证据 |')
+    .replace('## Failures, fixes, and regression evidence', '## 失败、修复与回归证据')
+    .replace('## Unexecuted verification', '## 未执行验证')
+    .replace('## Residual risks', '## 剩余风险')
+    .replace('## Manual-gate handoff', '## 人工门禁交接')
+    .replace('## Exit-readiness statement', '## 退出就绪声明')
+
+const completeExitReport = (root: string, iteration: FixtureIteration): string =>
+  completeLegacyExitReport(root, iteration)
+    .replace('exit report', '出口报告')
+    .replace('## Iteration context', '## 迭代上下文')
+    .replace('## Requirement completion matrix', '## 需求完成矩阵')
+    .replace(
+      '| Global ID | Required outcome | Completion evidence | Result |',
+      '| 全局 ID | 要求结果 | 完成证据 | 结果 |'
+    )
+    .replace('## Final deliverables', '## 最终交付物')
+    .replace('## Material implementation and documentation changes', '## 重要实现与文档变更')
+    .replace('## Automated-gate conclusion', '## 自动化门禁结论')
+    .replace('## Manual-gate conclusion', '## 人工门禁结论')
+    .replace('## Known limitations and residual risks', '## 已知限制与剩余风险')
+    .replace('## Rollback approach', '## 回滚方法')
+    .replace('## Inputs released to the next iteration', '## 向下一迭代释放的输入')
+    .replace('## Final iteration decision', '## 最终迭代结论')
+    .replace('Decision: passed', '结论：passed')
+
 const writeCompleteExitEvidence = (root: string, iteration: FixtureIteration): void => {
+  writeFixture(root, iteration.exit.test_report, completeTestReport(root, iteration, true))
+  writeFixture(root, iteration.exit.iteration_report, completeExitReport(root, iteration))
+}
+
+const writeCompleteChineseExitEvidence = (root: string, iteration: FixtureIteration): void => {
   writeFixture(root, iteration.exit.test_report, completeTestReport(root, iteration, true))
   writeFixture(root, iteration.exit.iteration_report, completeExitReport(root, iteration))
 }
@@ -235,6 +281,7 @@ const materializeAutomationTargets = (root: string, iteration: FixtureIteration)
 const makePassedThroughM6Fixture = (): { root: string; m6: FixtureIteration } => {
   const root = makeIterationOnlyFixture()
   const iterations = fixtureIterations(root)
+  iterations[6]!.manual_gate = true
   for (let index = 0; index <= 6; index += 1) {
     const iteration = iterations[index]!
     iteration.status = 'passed'
@@ -251,6 +298,25 @@ const makePassedThroughM6Fixture = (): { root: string; m6: FixtureIteration } =>
   iterations[7]!.status = 'ready'
   writeState(root, iterations, 'M7')
   return { root, m6: iterations[6]! }
+}
+
+const makePassedThroughM8Fixture = (): string => {
+  const root = makeIterationOnlyFixture()
+  const iterations = fixtureIterations(root)
+  for (const iteration of iterations) {
+    iteration.status = 'passed'
+    if (iteration.manual_gate) {
+      iteration.evidence.push({
+        kind: 'manual',
+        summary: `${iteration.id} manual cases passed`,
+        recorded_at: '2026-08-04T01:02:03Z'
+      })
+    }
+    materializeAutomationTargets(root, iteration)
+    writeCompleteExitEvidence(root, iteration)
+  }
+  writeState(root, iterations, 'M8')
+  return root
 }
 
 const makeIterationOnlyFixture = (
@@ -300,6 +366,11 @@ const makeIterationOnlyFixture = (
   if (m0 === null || typeof m0 !== 'object') throw new Error('fixture state must contain M0')
   writeFixture(root, 'iterations/state.json', `${JSON.stringify(state, null, 2)}\n`)
   rmSync(join(root, 'iterations', 'M0-foundation', '05-exit-report.md'), { force: true })
+  for (const iteration of iterations) {
+    if (!isFixtureIteration(iteration) || iteration.id === 'M0') continue
+    rmSync(join(root, iteration.exit.test_report), { force: true })
+    rmSync(join(root, iteration.exit.iteration_report), { force: true })
+  }
   const executableIterations = new Set(
     iterations
       .filter(
@@ -329,6 +400,9 @@ const makeIterationOnlyFixture = (
     }
   }
 
+  const firstIteration = fixtureIterations(root)[0]!
+  writeFixture(root, firstIteration.exit.test_report, completeTestReport(root, firstIteration))
+
   return root
 }
 
@@ -353,6 +427,87 @@ describe('iteration planning verifier', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)
     expect(result.stdout).toContain('9 iterations')
     expect(result.stdout).not.toContain('tasks')
+  })
+
+  test('requires the Typora 1.13.8 Windows replica evidence baseline', () => {
+    const root = makeIterationOnlyFixture()
+    rmSync(join(root, 'docs', '22-typora-1.13.8-windows-evidence-baseline.md'), { force: true })
+
+    const result = runVerifier(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(
+      'missing required file: docs/22-typora-1.13.8-windows-evidence-baseline.md'
+    )
+  })
+
+  test('requires replica evidence for every COMP item', () => {
+    const root = makeIterationOnlyFixture()
+    const evidencePath = 'docs/22-typora-1.13.8-windows-evidence-baseline.md'
+    writeFixture(
+      root,
+      evidencePath,
+      readFixture(root, evidencePath).replace(/^\| REF-001 .*\r?\n/m, '')
+    )
+
+    const result = runVerifier(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('compatibility item COMP-001 has no replica evidence')
+  })
+
+  test('rejects evidence that references an undefined COMP item', () => {
+    const root = makeIterationOnlyFixture()
+    const evidencePath = 'docs/22-typora-1.13.8-windows-evidence-baseline.md'
+    writeFixture(
+      root,
+      evidencePath,
+      readFixture(root, evidencePath).replace('| COMP-001 ', '| COMP-999 ')
+    )
+
+    const result = runVerifier(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('REF-001 references undefined compatibility item COMP-999')
+  })
+
+  test('rejects evidence assigned to the wrong iteration', () => {
+    const root = makeIterationOnlyFixture()
+    const evidencePath = 'docs/22-typora-1.13.8-windows-evidence-baseline.md'
+    writeFixture(
+      root,
+      evidencePath,
+      readFixture(root, evidencePath)
+        .replace(/^(\| REF-001 .*\| COMP-001\s*\|)\s*M1\s*\|/m, '$1 M2 |')
+        .replace('TC-M1-007, TC-M1-012, TC-M1-013', 'TC-M2-001, MAN-M2-001')
+    )
+
+    const result = runVerifier(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('REF-001 iteration M2 does not match COMP-001 owner M1')
+  })
+
+  test('rejects evidence that references an undefined test case', () => {
+    const root = makeIterationOnlyFixture()
+    const evidencePath = 'docs/22-typora-1.13.8-windows-evidence-baseline.md'
+    writeFixture(
+      root,
+      evidencePath,
+      readFixture(root, evidencePath).replace('TC-M1-007', 'TC-M1-999')
+    )
+
+    const result = runVerifier(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('REF-001 references undefined test case TC-M1-999')
+  })
+
+  test('rejects an M8 passed state while replica evidence gaps remain', () => {
+    const result = runVerifier(makePassedThroughM8Fixture())
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('M8 cannot pass while REF-021 remains 证据不足')
   })
 
   test('requires the active iteration test report', () => {
@@ -433,7 +588,7 @@ describe('iteration planning verifier', () => {
 
     expect(result.status).toBe(1)
     expect(result.stderr).toContain(
-      `${reportPath} automated case results must cover every declared TC case exactly once`
+      `${reportPath} 自动化用例结果 must cover every declared TC case exactly once`
     )
   })
 
@@ -488,6 +643,20 @@ describe('iteration planning verifier', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)
   })
 
+  test('accepts a passed automatic-only iteration without manual results or evidence', () => {
+    const { root } = makePassedThroughM6Fixture()
+    const iterations = fixtureIterations(root)
+    const m6 = iterations[6]!
+    m6.manual_gate = false
+    m6.evidence = m6.evidence.filter((record) => record.kind !== 'manual')
+    writeFixture(root, m6.exit.test_report, completeTestReport(root, m6, false))
+    writeState(root, iterations, 'M7')
+
+    const result = runVerifier(root)
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)
+  })
+
   test('rejects a passed iteration with a skeletal exit report', () => {
     const { root, m6 } = makePassedThroughM6Fixture()
     writeFixture(
@@ -502,9 +671,7 @@ describe('iteration planning verifier', () => {
     expect(result.stderr).toContain(
       `${m6.exit.iteration_report} requirement completion matrix must cover every declared global ID exactly once`
     )
-    expect(result.stderr).toContain(
-      `${m6.exit.iteration_report} final iteration decision must be Decision: passed`
-    )
+    expect(result.stderr).toContain(`${m6.exit.iteration_report} 最终迭代结论必须是“结论：passed”`)
   })
 
   test('rejects M6 passed evidence when one of its two manual cases is missing', () => {
@@ -518,9 +685,7 @@ describe('iteration planning verifier', () => {
     const result = runVerifier(root)
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain(
-      'manual case results must cover every declared MAN case exactly once'
-    )
+    expect(result.stderr).toContain('人工用例结果 must cover every declared MAN case exactly once')
     expect(result.stderr).toContain('missing MAN-M6-002')
   })
 
@@ -569,14 +734,11 @@ describe('iteration planning verifier', () => {
   })
 
   test.each([
-    ['missing decision', (report: string) => report.replace('Decision: passed', '')],
-    [
-      'non-passing decision',
-      (report: string) => report.replace('Decision: passed', 'Decision: failed')
-    ],
+    ['missing decision', (report: string) => report.replace('结论：passed', '')],
+    ['non-passing decision', (report: string) => report.replace('结论：passed', '结论：failed')],
     [
       'Markdown-bulleted decision',
-      (report: string) => report.replace('Decision: passed', '- Decision: passed')
+      (report: string) => report.replace('结论：passed', '- 结论：passed')
     ]
   ])('rejects a passed exit report with %s', (_name, mutate) => {
     const { root, m6 } = makePassedThroughM6Fixture()
@@ -585,7 +747,7 @@ describe('iteration planning verifier', () => {
     const result = runVerifier(root)
 
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('final iteration decision must be Decision: passed')
+    expect(result.stderr).toContain('最终迭代结论必须是“结论：passed”')
   })
 
   test('rejects an incomplete requirement completion matrix', () => {
@@ -612,6 +774,28 @@ describe('iteration planning verifier', () => {
     const result = runVerifier(root)
 
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)
+  })
+
+  test('接受完整的中文测试报告与出口报告契约', () => {
+    const { root } = makePassedThroughM6Fixture()
+    for (const iteration of fixtureIterations(root).filter(({ status }) => status === 'passed')) {
+      writeCompleteChineseExitEvidence(root, iteration)
+    }
+
+    const result = runVerifier(root)
+
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0)
+  })
+
+  test('拒绝已废弃的英文测试报告结构', () => {
+    const root = makeIterationOnlyFixture('awaiting_manual')
+    const m0 = fixtureIterations(root)[0]!
+    writeFixture(root, m0.exit.test_report, completeLegacyTestReport(root, m0))
+
+    const result = runVerifier(root)
+
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('缺少必需章节：自动化用例结果')
   })
 
   test('rejects an automation target that normalizes outside its suite root', () => {

@@ -1,20 +1,18 @@
-# M5 test cases
+# M5 测试用例
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M5`
-- State authority: `iterations/state.json`
-- Governing test policy: [test strategy](../../docs/09-test-strategy.md)
-- Governing safety policy:
+- 迭代： `M5`
+- 状态权威： `iterations/state.json`
+- 测试策略依据： [test strategy](../../docs/09-test-strategy.md)
+- 安全策略依据：
   [data-safety and security](../../docs/05-data-safety-and-security.md)
 
-## Coverage and ownership
+## 覆盖与归属
 
-Test IDs are stable verification identifiers. They are not subtask IDs and do not own
-planning state, dependencies, implementation work, manual gates, or reports. The `覆盖能力`
-column names the capability covered by the case.
+测试 ID 是稳定的验证标识符，不是子任务 ID，也不拥有规划状态、依赖、实施工作、人工门禁或报告。`覆盖能力` 列说明用例覆盖的能力。
 
-## Automated test cases
+## 自动化测试用例
 
 | ID        | 覆盖能力           | 层级/级别                    | 数据/环境              | 步骤                                                                                                                                           | 预期                                                                                                                                            | 自动化                                                                                                                                                                                                        |
 | --------- | ------------------ | ---------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,13 +26,13 @@ column names the capability covered by the case.
 | TC-M5-008 | 媒体与主题回归门禁 | regression/P0                | GATE-M5                | Run clipboard interoperability, image fault matrix, theme security/screenshots, and writing-mode performance regressions.                      | COMP-021..024 have evidence; no script/path/process escape, permanent deletion, source/disk split, or IME regression.                           | `pnpm test:integration -- tests/integration/m5-gate.spec.ts`；证据：Consolidated automated reports.；停止条件：Any compatibility, data, or security failure stops M5.                                         |
 | TC-M5-009 | 剪贴板 HTML 安全   | security/P0                  | CLIP-XSS-M5            | Paste HTML with script/event/SVG/style/data URL/form, copy each format, and reopen.                                                            | No execution/networking; dangerous content never enters rich projection; Markdown remains explainable; reopen does not activate hidden payload. | `pnpm test:security -- tests/security/clipboard-html.spec.ts`；证据：Security report and reopened-source assertion.；停止条件：Payload activation or hidden unsafe content stops M5.                          |
 
-## Manual test cases
+## 人工测试用例
 
 | ID         | 覆盖能力                               | 环境                              | 步骤                                                                                                                                                  | 通过条件                                                                                 | 证据                                                                                                                                  |
 | ---------- | -------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | MAN-M5-001 | 剪贴板、图片、主题与写作模式实机互操作 | Word、浏览器、微信编辑器、ENV-IME | 1. 双向复制标题/列表/链接/表格；2. 普通和纯文本粘贴；3. 拖放/剪贴板插图；4. 移动/删除并故障回滚；5. 加载自定义主题；6. 开启焦点/打字机/拼写连续写作。 | 外部语义可接受且无脚本；图片路径和回滚正确；主题不遮挡安全 UI；写作模式无 IME/滚动异常。 | 外部应用版本、样本、磁盘清单、源码 diff、截图/录屏和签署结论。；停止条件：脚本执行、数据丢失、主题遮挡安全 UI、IME 或滚动异常停止 M5. |
 
-## Parameter matrix
+## 参数矩阵
 
 | Parameter ID | Variables                                                                                           | Fixture                           | Required cases     | Expected result                    |
 | ------------ | --------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------ | ---------------------------------- |
@@ -46,7 +44,7 @@ column names the capability covered by the case.
 | THEME-M5     | 内置浅/深/系统、有效 CSS、语法错、缺资源、远程 URL、高层覆盖、100/150/200/250% 和高对比             | Theme fixtures                    | 主题系统           | 安全隔离且可读。                   |
 | MODE-M5      | 焦点×打字机×只读×拼写；中英文；1/5/10MB；无选区/选区/文档首尾；缩放边界                             | Writing-mode fixtures             | 写作辅助模式       | 即时模式和稳定编辑性能。           |
 
-## Fixtures
+## 夹具
 
 | Fixture                       | Source and integrity                                                                          | Covered behavior                              | Required environment                                  |
 | ----------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------- |
@@ -55,14 +53,12 @@ column names the capability covered by the case.
 | Upload fixtures               | Controlled fake executables and bounded adapter output.                                       | argv, URL validation, cancellation, cleanup.  | No-network process harness.                           |
 | Theme and mode fixtures       | Valid/invalid CSS, protected-chrome probe, long Chinese/English documents.                    | CSS isolation, scale, IME, and modes.         | Windows scales and IME environment.                   |
 
-## Evidence requirements
+## 证据要求
 
-Record command, environment, exit code, parameter selection, result, and artifact or report
-reference for each executed automated case. Record operator, date, environment, step results,
-and conclusion evidence for each manual case.
+报告必须把 `REF-018..021` 关联到剪贴板载荷、资源事务、Windows 条件、六套主题各状态截图和 `MAN-M5-001` 签署。`REF-021` 的视觉版本依据未补足前，M5 不得从人工门禁进入 `passed`。
 
-## Stop conditions
+每个已执行自动化用例必须记录命令、环境、退出码、参数选择、结果以及制品或报告引用。每个人工用例必须记录操作人、日期、环境、步骤结果和结论证据。
 
-Data corruption, security-boundary failure, broken recovery, permanent resource loss,
-clipboard-script execution, upload shell injection, or theme control of safety UI stops
-iteration progress until it is fixed and regression evidence is recorded.
+## 停止条件
+
+一旦发生数据损坏、安全边界失效、恢复失败、资源永久丢失、剪贴板脚本执行、上传 shell 注入或主题控制安全界面，迭代必须停止推进，直至修复并记录回归证据。

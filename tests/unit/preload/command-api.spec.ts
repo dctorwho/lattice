@@ -5,15 +5,18 @@ import {
   COMMAND_INVOKED_CHANNEL,
   COMMAND_UPDATE_STATES_CHANNEL,
   commandStateSyncResultSchema,
+  commandIds,
   type CommandStateSyncResult
 } from '../../../src/shared/contracts'
 
 const requestId = '00000000-0000-4000-8000-000000000001'
 const otherRequestId = '00000000-0000-4000-8000-000000000002'
-const validStates = [
-  { id: 'app.about', isVisible: true, isEnabled: true, isChecked: false },
-  { id: 'view.toggleSidebar', isVisible: true, isEnabled: true, isChecked: true }
-] as const
+const validStates = commandIds.map((id) => ({
+  id,
+  isVisible: true,
+  isEnabled: true,
+  isChecked: id === 'view.toggleSidebar'
+}))
 
 type EventListener = (event: unknown, payload: unknown) => void
 
@@ -22,7 +25,7 @@ function expectSchemaValidFailure(result: CommandStateSyncResult): void {
   expect(result.ok).toBe(false)
 }
 
-describe('M0 command preload API', () => {
+describe('M1 command preload API', () => {
   it('sends the exact state envelope on the fixed channel', async () => {
     const calls: unknown[] = []
     const commands = createCommandApi({

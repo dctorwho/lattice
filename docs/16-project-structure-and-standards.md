@@ -60,7 +60,7 @@
    └─ planning/             iteration model and planning verification
 ```
 
-### M0 current executable ownership
+### M0 当前可执行所有权
 
 | Concern                                      | Current owner                                                                                                                                                                                                          |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -77,9 +77,7 @@
 | Unit proof                                   | `tests/unit/shared/contracts.spec.ts`, `tests/unit/main/ipc-value-budget.spec.ts`, `authorized-window-registry.spec.ts`, `validate-ipc-sender.spec.ts`, `ipc-router.spec.ts`, and `tests/unit/preload/app-api.spec.ts` |
 | Real Electron proof                          | Ordinary `playwright.config.ts` owns app/command/navigation E2E; `playwright.packaged.config.ts` owns only `packaged-app.spec.ts`; `tests/security/electron-boundary.spec.ts` owns the production privilege boundary   |
 
-No file/workspace/settings/recovery/import/export service or preload method is
-implemented by M0. Those entries in the target tree remain owned by later
-ownership.
+M0 不实现文件、工作区、设置、恢复、导入或导出服务及 preload 方法。目标目录树中的这些入口仍由后续迭代负责。
 
 ## 2. 依赖方向
 

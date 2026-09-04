@@ -1,30 +1,30 @@
-# Iteration-Level Governance Migration Implementation Plan
+# 迭代级治理迁移实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan phase-by-phase. Steps use checkbox (`- [ ]`) syntax for tracking. “Phase” is only a temporary execution checklist; it never becomes a repository task ID or status node.
+> **供自动化执行者使用：** 必须使用 superpowers:executing-plans 分阶段实施本计划。步骤使用复选框（`- [ ]`）追踪。“阶段”只是临时执行清单，绝不成为仓库任务 ID 或状态节点。
 
-**Goal:** Replace the 77-item `Mx-Tnn` planning system with one M0–M8 iteration state model, three entry documents and two exit documents per iteration, while preserving and integrating all existing M0 work.
+**目标：** 用一个 M0–M8 迭代状态模型替换包含 77 项的 `Mx-Tnn` 规划系统，每个迭代具有三个入口文档和两个出口文档，同时保留并集成所有既有 M0 工作。
 
-**Architecture:** `iterations/state.json` becomes the sole planning state and points to iteration-owned entry/exit documents. A small pure validation module checks schema/state/case-table invariants, while `scripts/verify-planning-docs.mjs` performs repository file, coverage, link and active-language checks. Legacy task material is retained under a read-only archive and excluded from gates.
+**架构：** `iterations/state.json` 成为唯一规划状态并指向迭代拥有的入口/出口文档。小型纯验证模块检查 schema、状态和用例表不变量，`scripts/verify-planning-docs.mjs` 执行仓库文件、覆盖、链接和活跃语言检查。旧任务资料保留在只读归档中并排除在门禁外。
 
-**Tech Stack:** Node.js 24, ECMAScript modules, JSON Schema 2020-12, Markdown, Vitest 4.1.10, pnpm 11.12.0, Git.
+**技术栈：** Node.js 24、ECMAScript 模块、JSON Schema 2020-12、Markdown、Vitest 4.1.10、pnpm 11.12.0、Git。
 
-## Global Constraints
+## 全局约束
 
-- Active planning IDs are exactly `M0` through `M8`; never create `Mx-Tnn` state or specifications.
-- Each iteration has exactly three entry roles: requirements, detailed design and test cases.
-- Each iteration has exactly two exit roles: test report and iteration exit report.
-- M0 migrates to `in_progress`; M1 through M8 remain `blocked`.
-- Preserve `codex/m0-t06-ci-audit-gate`, commit its two interrupted security-parser changes after verification, and integrate reviewed implementation commits without merging old task-state commits.
-- Do not rewrite Git history, delete the legacy branch, discard uncommitted changes, or weaken any data-loss/security gate.
-- Product architecture rules in `AGENTS.md` remain unchanged.
-- Focused tests run with related changes; the full `pnpm check` and applicable integration/security suites run before the migration is declared complete.
-- No unbounded watch, polling or retry command is allowed.
+- 活跃规划 ID 精确为 `M0` 至 `M8`；绝不创建 `Mx-Tnn` 状态或规格。
+- 每个迭代恰好具有三个入口角色：需求、详细设计和测试用例。
+- 每个迭代恰好具有两个出口角色：测试报告和迭代出口报告。
+- M0 迁移为 `in_progress`；M1 至 M8 保持 `blocked`。
+- 保留 `codex/m0-t06-ci-audit-gate`，验证后提交其中两个中断的安全解析器变更，并集成已审阅实施提交，不合并旧任务状态提交。
+- 不重写 Git 历史、不删除旧分支、不丢弃未提交变更，也不削弱任何数据丢失/安全门禁。
+- `AGENTS.md` 中产品架构规则保持不变。
+- 相关变更运行聚焦测试；迁移宣布完成前运行完整 `pnpm check` 和适用集成/安全套件。
+- 不允许无界 watch、轮询或重试命令。
 
 ---
 
-## File Map
+## 文件映射
 
-### New active planning
+### 新活跃规划
 
 | Path                                                                      | Responsibility                                          |
 | ------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -35,7 +35,7 @@
 | `iterations/M0-foundation/*`                                              | M0 three entries, working test report, future exit path |
 | `iterations/M1-document-core/*` through `iterations/M8-windows-release/*` | Three ready-input documents per future iteration        |
 
-### Validation
+### 验证
 
 | Path                                          | Responsibility                                                       |
 | --------------------------------------------- | -------------------------------------------------------------------- |
@@ -44,7 +44,7 @@
 | `scripts/verify-planning-docs.mjs`            | Filesystem orchestration, links, coverage and active-language checks |
 | `tests/unit/planning/iteration-model.spec.ts` | State, dependencies, case parsing and fail-closed regressions        |
 
-### Governing documents
+### 治理文档
 
 | Path                                         | Responsibility                                    |
 | -------------------------------------------- | ------------------------------------------------- |
@@ -64,7 +64,7 @@
 | `docs/17-settings-and-storage-schema.md`     | Iteration ownership for schema migrations         |
 | `docs/18-error-catalog.md`                   | Iteration ownership for error contracts           |
 
-### Historical archive
+### 历史归档
 
 | Source                                                                   | Destination                                               |
 | ------------------------------------------------------------------------ | --------------------------------------------------------- |
@@ -76,37 +76,37 @@
 
 ---
 
-### Phase 1: Preserve and Finish the Interrupted M0 Safety Fix
+### 阶段 1：保留并完成中断的 M0 安全修复
 
-**Files:**
+**文件：**
 
-- Existing worktree: `.worktrees/m0-t06-ci-audit-gate`
-- Modify: `tests/helpers/bootstrap-project.ts`
-- Modify: `tests/unit/helpers/bootstrap-project.spec.ts`
+- 既有工作树：`.worktrees/m0-t06-ci-audit-gate`
+- 修改：`tests/helpers/bootstrap-project.ts`
+- 修改：`tests/unit/helpers/bootstrap-project.spec.ts`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: branch `codex/m0-t06-ci-audit-gate` at `ea8aac1`
-- Produces: one reviewed M0 commit that fails closed on malformed `pnpm ignored-builds` output
+- 输入：位于 `ea8aac1` 的分支 `codex/m0-t06-ci-audit-gate`
+- 输出：一个已审阅 M0 提交，对畸形 `pnpm ignored-builds` 输出失败关闭
 
-- [ ] **Step 1: Confirm the preserved work before mutation**
+- [ ] **步骤 1：变更前确认保留工作**
 
 ```powershell
 git -C .worktrees/m0-t06-ci-audit-gate status --short --branch
 git -C .worktrees/m0-t06-ci-audit-gate diff -- tests/helpers/bootstrap-project.ts tests/unit/helpers/bootstrap-project.spec.ts
 ```
 
-Expected: exactly the two known files are modified and HEAD is `ea8aac1`; no file is discarded.
+预期：精确修改两个已知文件且 HEAD 为 `ea8aac1`；没有文件被丢弃。
 
-- [ ] **Step 2: Run the focused parser test**
+- [ ] **步骤 2：运行聚焦解析器测试**
 
 ```powershell
 pnpm.cmd test -- tests/unit/helpers/bootstrap-project.spec.ts
 ```
 
-Expected: legal automatic/explicit sections pass; unknown suffixes, naked lines, mixed `None`, missing headings and malformed sections fail closed.
+预期：合法自动/显式区段通过；未知后缀、裸行、混合 `None`、缺少标题和畸形区段失败关闭。
 
-- [ ] **Step 3: Run related integration and full regression**
+- [ ] **步骤 3：运行相关集成和完整回归**
 
 ```powershell
 pnpm.cmd test:integration
@@ -114,9 +114,9 @@ pnpm.cmd check
 git diff --check
 ```
 
-Expected: all commands exit 0. Run under the normal Windows process environment when sandboxed process cleanup would create a false failure.
+预期：全部命令退出 0。当沙箱进程清理会造成假失败时，在正常 Windows 进程环境运行。
 
-- [ ] **Step 4: Commit the preserved safety fix**
+- [ ] **步骤 4：提交保留安全修复**
 
 ```powershell
 git add tests/helpers/bootstrap-project.ts tests/unit/helpers/bootstrap-project.spec.ts
@@ -124,23 +124,23 @@ git diff --cached --check
 git commit -m "fix(M0): reject malformed ignored-build output"
 ```
 
-Record the resulting SHA; do not merge or delete the branch.
+记录结果 SHA；不要合并或删除分支。
 
 ---
 
-### Phase 2: Build the Iteration State Core With TDD
+### 阶段 2：使用 TDD 构建迭代状态核心
 
-**Files:**
+**文件：**
 
-- Create: `scripts/planning/iteration-model.mjs`
-- Create: `scripts/planning/iteration-model.d.mts`
-- Create: `tests/unit/planning/iteration-model.spec.ts`
-- Create: `iterations/state.schema.json`
-- Create: `iterations/state.json`
+- 创建：`scripts/planning/iteration-model.mjs`
+- 创建：`scripts/planning/iteration-model.d.mts`
+- 创建：`tests/unit/planning/iteration-model.spec.ts`
+- 创建：`iterations/state.schema.json`
+- 创建：`iterations/state.json`
 
-**Interfaces:**
+**接口：**
 
-- Produces:
+- 输出：
 
 ```ts
 export interface EvidenceRecord {
@@ -182,30 +182,30 @@ export function parseIterationTestCases(
 }
 ```
 
-- [ ] **Step 1: Write failing state-model tests**
+- [ ] **步骤 1：编写失败状态模型测试**
 
-Add tests proving:
+增加测试以证明：
 
-- valid M0–M8 linear state passes;
-- missing/duplicate/out-of-range IDs fail;
-- a `Mx-Tnn` ID fails;
-- dependency cycles, self-dependency and unknown dependency fail;
-- more than one `in_progress`/`awaiting_manual` iteration fails;
-- M0 is `in_progress`, M1–M8 are `blocked`, and a blocked iteration whose dependency passed fails;
-- `passed` manual gates require manual evidence and both exit paths;
-- invalid RFC 3339 evidence time fails.
+- 有效 M0–M8 线性状态通过；
+- 缺失、重复和越界 ID 失败；
+- `Mx-Tnn` ID 失败；
+- 依赖循环、自依赖和未知依赖失败；
+- 多于一个 `in_progress`/`awaiting_manual` 迭代失败；
+- M0 为 `in_progress`、M1–M8 为 `blocked`，且依赖已通过的阻塞迭代失败；
+- `passed` 人工门禁要求人工证据和两个出口路径；
+- 无效 RFC 3339 证据时间失败。
 
-- [ ] **Step 2: Run RED**
+- [ ] **步骤 2：运行 RED**
 
 ```powershell
 pnpm.cmd test -- tests/unit/planning/iteration-model.spec.ts
 ```
 
-Expected: FAIL because `scripts/planning/iteration-model.mjs` does not exist.
+预期：因 `scripts/planning/iteration-model.mjs` 不存在而失败。
 
-- [ ] **Step 3: Add schema v2 and the initial state**
+- [ ] **步骤 3：增加 schema v2 和初始状态**
 
-`iterations/state.schema.json` must require exactly:
+`iterations/state.schema.json` 必须精确要求：
 
 ```json
 {
@@ -217,21 +217,21 @@ Expected: FAIL because `scripts/planning/iteration-model.mjs` does not exist.
 }
 ```
 
-Create `iterations/state.json` with M0 `in_progress`, no M0 dependency, and M1→M0 through M8→M7 linear dependencies. M0 is a manual gate; retain the existing manual-gate intent for later iterations in their iteration records. Do not copy old task evidence into state; reports own detailed history.
+创建 `iterations/state.json`：M0 为 `in_progress` 且无依赖，M1→M0 至 M8→M7 使用线性依赖。M0 是人工门禁；在后续迭代记录中保留既有人工门禁意图。不要把旧任务证据复制进状态；详细历史由报告拥有。
 
-- [ ] **Step 4: Implement the pure validator**
+- [ ] **步骤 4：实现纯验证器**
 
-The implementation must:
+实现必须：
 
-- return error strings rather than call `process.exit`;
-- reject unknown object properties and malformed entry/exit paths;
-- require paths to stay repository-relative and to match their owning iteration directory;
-- enforce status/dependency/evidence rules from the design;
-- parse `TC-Mx-*` and `MAN-Mx-*` tables without a task column;
-- reject duplicate IDs and case/iteration mismatches;
-- expand requirement ranges such as `DOC-001..008` deterministically.
+- 返回错误字符串，不调用 `process.exit`；
+- 拒绝未知对象属性和畸形入口/出口路径；
+- 要求路径保持仓库相对并匹配所属迭代目录；
+- 执行设计中的状态/依赖/证据规则；
+- 解析没有任务列的 `TC-Mx-*` 和 `MAN-Mx-*` 表；
+- 拒绝重复 ID 和用例/迭代不匹配；
+- 确定性展开 `DOC-001..008` 等需求范围。
 
-- [ ] **Step 5: Run GREEN and strict checks**
+- [ ] **步骤 5：运行 GREEN 和严格检查**
 
 ```powershell
 pnpm.cmd test -- tests/unit/planning/iteration-model.spec.ts
@@ -239,9 +239,9 @@ pnpm.cmd typecheck
 git diff --check
 ```
 
-Expected: new unit tests and strict type checks pass.
+预期：新单元测试和严格类型检查通过。
 
-- [ ] **Step 6: Commit the state core**
+- [ ] **步骤 6：提交状态核心**
 
 ```powershell
 git add iterations/state.json iterations/state.schema.json scripts/planning tests/unit/planning
@@ -251,31 +251,31 @@ git commit -m "chore: introduce iteration-level state model"
 
 ---
 
-### Phase 3: Create M0–M8 Entry Documents and Templates
+### 阶段 3：创建 M0–M8 入口文档和模板
 
-**Files:**
+**文件：**
 
-- Create: `iterations/README.md`
-- Create: `iterations/templates/requirements.md`
-- Create: `iterations/templates/detailed-design.md`
-- Create: `iterations/templates/test-cases.md`
-- Create: `iterations/templates/test-report.md`
-- Create: `iterations/templates/exit-report.md`
-- Create: three entry files under each `iterations/M0-foundation/` through `iterations/M8-windows-release/`
-- Create: `iterations/M0-foundation/04-test-report.md`
+- 创建：`iterations/README.md`
+- 创建：`iterations/templates/requirements.md`
+- 创建：`iterations/templates/detailed-design.md`
+- 创建：`iterations/templates/test-cases.md`
+- 创建：`iterations/templates/test-report.md`
+- 创建：`iterations/templates/exit-report.md`
+- 在 `iterations/M0-foundation/` 至 `iterations/M8-windows-release/` 的每个目录创建三个入口文件
+- 创建：`iterations/M0-foundation/04-test-report.md`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: global requirement IDs from `docs/01-product-requirements.md`, compatibility IDs from `docs/02-compatibility-matrix.md`, old milestone specs and old test-case matrices
-- Produces: complete entry documents with no subtask ownership
+- 输入：`docs/01-product-requirements.md` 中全局需求 ID、`docs/02-compatibility-matrix.md` 中复刻项 ID、旧里程碑规格和旧测试用例矩阵
+- 输出：没有子任务所有权的完整入口文档
 
-- [ ] **Step 1: Create the five templates**
+- [ ] **步骤 1：创建五个模板**
 
-Each template must contain the exact sections defined by the design. Templates use the documented literal marker `{{ITERATION_ID}}`, while instantiated documents must contain no unresolved marker, `TBD` or “待定”.
+每个模板必须包含设计定义的精确章节。模板使用已记录的字面标记 `{{ITERATION_ID}}`，实例化文档不得包含未解决标记、`TBD` 或“待定”。
 
-- [ ] **Step 2: Consolidate the nine requirement documents**
+- [ ] **步骤 2：整合九份需求文档**
 
-Use these exact scope mappings:
+使用以下精确范围映射：
 
 | Iteration | Required coverage                                                                                                 |
 | --------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -289,27 +289,27 @@ Use these exact scope mappings:
 | M7        | `UI-005..008`, `DOC-010`, `NFR-001..006`, `NFR-009..010`, `COMP-001..036`                                         |
 | M8        | `OS-001..003`, `OS-005..006`, `COMP-033..035`, release security and stable audit                                  |
 
-Every document includes objectives, non-goals, external dependencies, risks, iteration-level acceptance criteria and links to global architecture/security rules.
+每份文档均包含目标、非目标、外部依赖、风险、迭代级验收标准和全局架构/安全规则链接。
 
-- [ ] **Step 3: Consolidate the nine detailed designs**
+- [ ] **步骤 3：整合九份详细设计**
 
-Convert old task headings into unnumbered capability sections and an implementation-order checklist. Preserve all architecture, dependency, data-safety, failure and manual-gate decisions, but remove task statuses, unlock claims and per-task report requirements.
+把旧任务标题转换为无编号能力章节和实施顺序清单。保留全部架构、依赖、数据安全、失败和人工门禁决策，但移除任务状态、解锁声明和逐任务报告要求。
 
-- [ ] **Step 4: Consolidate the nine test-case documents**
+- [ ] **步骤 4：整合九份测试用例文档**
 
-Copy every existing `TC-Mx-*` and `MAN-Mx-*` case exactly once. Replace the old task-owner column with `覆盖能力`; use descriptive values such as `原子保存与冲突处理` rather than `M1-T03`. Preserve automation target, parameter matrix, fixtures, expected result, evidence and stop conditions.
+每个既有 `TC-Mx-*` 和 `MAN-Mx-*` 用例精确复制一次。用 `覆盖能力` 替换旧任务所有者列；使用 `原子保存与冲突处理` 等描述值，不使用 `M1-T03`。保留自动化目标、参数矩阵、夹具、预期结果、证据和停止条件。
 
-- [ ] **Step 5: Create the working M0 test report**
+- [ ] **步骤 5：创建 M0 工作测试报告**
 
-Record:
+记录：
 
-- main baseline `6db91f13f88f5349f4afea24525fcf64b7d00d82`;
-- archived evidence for the completed bootstrap, quality toolchain, secure Electron shell, shared contracts and command shell work;
-- preserved branch/commit references for `ea8aac1` and the Phase 1 safety-fix SHA;
-- status `in_progress`; CI/audit/package/ruleset/manual gate remain incomplete;
-- no M0 exit conclusion.
+- main 基线 `6db91f13f88f5349f4afea24525fcf64b7d00d82`；
+- 已完成自举、质量工具链、安全 Electron 外壳、共享契约和命令外壳工作的归档证据；
+- `ea8aac1` 和阶段 1 安全修复 SHA 的保留分支/提交引用；
+- 状态 `in_progress`；CI/审计/打包/ruleset/人工门禁仍未完成；
+- 没有 M0 出口结论。
 
-- [ ] **Step 6: Run document formatting and coverage preparation checks**
+- [ ] **步骤 6：运行文档格式和覆盖准备检查**
 
 ```powershell
 pnpm.cmd exec prettier --check iterations
@@ -317,9 +317,9 @@ rg -n "M[0-8]-T[0-9]{2}|TBD|待定" iterations -g "!M0-foundation/04-test-report
 git diff --check
 ```
 
-Expected: Prettier passes; no instantiated entry document contains task IDs or unresolved content. Historical filenames may appear only in M0 test-report links.
+预期：Prettier 通过；实例化入口文档不包含任务 ID 或未解决内容。历史文件名只能出现在 M0 测试报告链接中。
 
-- [ ] **Step 7: Commit iteration documents**
+- [ ] **步骤 7：提交迭代文档**
 
 ```powershell
 git add iterations
@@ -329,68 +329,68 @@ git commit -m "docs: consolidate planning by iteration"
 
 ---
 
-### Phase 4: Rewrite the Planning Verifier and Active Runbooks
+### 阶段 4：重写规划验证器和活跃运行手册
 
-**Files:**
+**文件：**
 
-- Modify: `scripts/verify-planning-docs.mjs`
-- Modify: `AGENTS.md`
-- Modify: `docs/03-architecture.md`
-- Modify: `docs/04-technology-stack.md`
-- Modify: `docs/05-data-safety-and-security.md`
-- Modify: `docs/06-ui-interaction-spec.md`
-- Modify: `docs/07-iteration-roadmap.md`
-- Modify: `docs/08-development-plan.md`
-- Modify: `docs/09-test-strategy.md`
-- Modify: `docs/11-codex-cli-runbook.md`
-- Modify: `docs/14-planning-acceptance.md`
-- Modify: `docs/15-public-contracts.md`
-- Modify: `docs/16-project-structure-and-standards.md`
-- Modify: `docs/17-settings-and-storage-schema.md`
-- Modify: `docs/18-error-catalog.md`
-- Modify: `docs/README.md`
+- 修改：`scripts/verify-planning-docs.mjs`
+- 修改：`AGENTS.md`
+- 修改：`docs/03-architecture.md`
+- 修改：`docs/04-technology-stack.md`
+- 修改：`docs/05-data-safety-and-security.md`
+- 修改：`docs/06-ui-interaction-spec.md`
+- 修改：`docs/07-iteration-roadmap.md`
+- 修改：`docs/08-development-plan.md`
+- 修改：`docs/09-test-strategy.md`
+- 修改：`docs/11-codex-cli-runbook.md`
+- 修改：`docs/14-planning-acceptance.md`
+- 修改：`docs/15-public-contracts.md`
+- 修改：`docs/16-project-structure-and-standards.md`
+- 修改：`docs/17-settings-and-storage-schema.md`
+- 修改：`docs/18-error-catalog.md`
+- 修改：`docs/README.md`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: `iterations/state.json`, schema v2 and the iteration documents
-- Produces: `node scripts/verify-planning-docs.mjs` with one deterministic pass/fail result
+- 输入：`iterations/state.json`、schema v2 和迭代文档
+- 输出：具有单一确定通过/失败结果的 `node scripts/verify-planning-docs.mjs`
 
-- [ ] **Step 1: Capture the old planning verifier behavior**
+- [ ] **步骤 1：记录旧规划验证器行为**
 
-Run before replacing it:
+替换前运行：
 
 ```powershell
 node scripts/verify-planning-docs.mjs
 ```
 
-Expected: exit 0 with a summary containing `77 tasks`. Record this as characterization evidence that the old command still validates the obsolete model and does not prove the new iteration contract.
+预期：退出 0，摘要包含 `77 tasks`。将其记录为特征证据，说明旧命令仍验证过时模型，不能证明新迭代契约。
 
-- [ ] **Step 2: Rewrite the verifier orchestration**
+- [ ] **步骤 2：重写验证器编排**
 
-Import the pure functions from `scripts/planning/iteration-model.mjs` and validate:
+从 `scripts/planning/iteration-model.mjs` 导入纯函数并验证：
 
-- exact M0–M8 state and all entry paths;
-- output files only when status requires them (`04-test-report.md` for active/awaiting/passed; `05-exit-report.md` for passed);
-- requirement and `COMP-*` coverage across iteration requirements;
-- unique iteration-matching `TC-*`/`MAN-*` cases and valid automation targets;
-- required sections, balanced fences and local links;
-- no active execution instruction matching `\bM[0-8]-T\d{2}\b`, `tasks/state.json`, `current_task` or task-unlock language in `AGENTS.md`, `iterations/`, and active runbooks;
-- `AGENTS.md` stays below 32 KiB;
-- archive files are excluded from active coverage and language scans.
+- 精确 M0–M8 状态和全部入口路径；
+- 只在状态要求时存在输出文件（active/awaiting/passed 需要 `04-test-report.md`；passed 需要 `05-exit-report.md`）；
+- 跨迭代需求的需求和 `COMP-*` 覆盖；
+- 唯一且迭代匹配的 `TC-*`/`MAN-*` 用例及有效自动化目标；
+- 必需章节、平衡围栏和本地链接；
+- `AGENTS.md`、`iterations/` 和活跃运行手册没有匹配 `\bM[0-8]-T\d{2}\b`、`tasks/state.json`、`current_task` 或任务解锁语言的活跃执行指令；
+- `AGENTS.md` 保持低于 32 KiB；
+- 归档文件排除在活跃覆盖和语言扫描之外。
 
-Keep existing dependency-table and Pandoc contract checks, but point their planning ownership to M6 entry/test documents instead of old tasks.
+保留既有依赖表和 Pandoc 契约检查，但把规划所有权从旧任务指向 M6 入口/测试文档。
 
-- [ ] **Step 3: Rewrite `AGENTS.md` and runbooks**
+- [ ] **步骤 3：重写 `AGENTS.md` 和运行手册**
 
-Replace one-task selection with one-iteration execution. Update every listed active product document so ownership references point to `M0`–`M8`, never `Mx-Tnn`. Specify:
+用单迭代执行替换单任务选择。更新每份列出的活跃产品文档，使所有权引用指向 `M0`–`M8`，绝不指向 `Mx-Tnn`。明确：
 
-- read state plus the three current entry documents;
-- no subtask plan/state/report generation;
-- focused tests during development and full gates at iteration exit;
-- test report before `awaiting_manual`, exit report plus manual evidence before `passed`;
-- documentation and product architecture invariants remain mandatory.
+- 读取状态和当前三个入口文档；
+- 不生成子任务计划、状态或报告；
+- 开发期间运行聚焦测试，迭代出口运行完整门禁；
+- `awaiting_manual` 前完成测试报告，`passed` 前完成出口报告和人工证据；
+- 文档和产品架构不变量继续强制执行。
 
-- [ ] **Step 4: Run GREEN and targeted tests**
+- [ ] **步骤 4：运行 GREEN 和定向测试**
 
 ```powershell
 pnpm.cmd test -- tests/unit/planning/iteration-model.spec.ts
@@ -399,9 +399,9 @@ pnpm.cmd exec prettier --check AGENTS.md iterations scripts/planning scripts/ver
 git diff --check
 ```
 
-Expected: all commands exit 0 and verifier summary reports 9 iterations rather than 77 tasks.
+预期：全部命令退出 0，验证器摘要报告 9 个迭代而不是 77 个任务。
 
-- [ ] **Step 5: Commit active governance**
+- [ ] **步骤 5：提交活跃治理**
 
 ```powershell
 git add AGENTS.md iterations scripts/planning scripts/verify-planning-docs.mjs tests/unit/planning docs/03-architecture.md docs/04-technology-stack.md docs/05-data-safety-and-security.md docs/06-ui-interaction-spec.md docs/07-iteration-roadmap.md docs/08-development-plan.md docs/09-test-strategy.md docs/11-codex-cli-runbook.md docs/14-planning-acceptance.md docs/15-public-contracts.md docs/16-project-structure-and-standards.md docs/17-settings-and-storage-schema.md docs/18-error-catalog.md docs/README.md
@@ -411,27 +411,27 @@ git commit -m "chore: activate iteration-level governance"
 
 ---
 
-### Phase 5: Archive the Legacy Task Model Without Data Loss
+### 阶段 5：无数据丢失归档旧任务模型
 
-**Files:**
+**文件：**
 
-- Create: `docs/archive/task-model-v1/README.md`
-- Move: sources listed in the File Map into `docs/archive/task-model-v1/`
-- Modify: `docs/test-cases/README.md`
+- 创建：`docs/archive/task-model-v1/README.md`
+- 移动：把文件映射中列出的来源移入 `docs/archive/task-model-v1/`
+- 修改：`docs/test-cases/README.md`
 
-**Interfaces:**
+**接口：**
 
-- Produces: immutable historical paths reachable from the archive index but ignored by active validation
+- 输出：可从归档索引访问、但被活跃验证忽略的不可变历史路径
 
-- [ ] **Step 1: Record the exact archive manifest before moving**
+- [ ] **步骤 1：移动前记录精确归档清单**
 
-The archive README records original path, destination, purpose and the main/feature commit holding the source. It explicitly states that T IDs are historical and never selectable.
+归档 README 记录原始路径、目标、用途和持有来源的 main/feature 提交，并明确说明 T ID 属于历史记录且不可选择。
 
-- [ ] **Step 2: Move files with Git-aware renames**
+- [ ] **步骤 2：使用 Git 感知重命名移动文件**
 
-Use `git mv` for each bounded source group. Keep `docs/test-cases/fixture-catalog.md` as a shared active fixture catalog; replace `docs/test-cases/README.md` with a short pointer to `iterations/*/03-test-cases.md` and the archive.
+对每个受限来源组使用 `git mv`。保留 `docs/test-cases/fixture-catalog.md` 作为共享活跃夹具目录；把 `docs/test-cases/README.md` 替换为指向 `iterations/*/03-test-cases.md` 和归档的简短说明。
 
-- [ ] **Step 3: Prove archive exclusion and link integrity**
+- [ ] **步骤 3：证明归档排除和链接完整性**
 
 ```powershell
 node scripts/verify-planning-docs.mjs
@@ -439,9 +439,9 @@ rg -n "tasks/state.json|current_task|M[0-8]-T[0-9]{2}" AGENTS.md iterations docs
 git diff --check
 ```
 
-Expected: verifier passes; the active scan has no matches except explicitly allowed historical links in the M0 test report.
+预期：验证器通过；除 M0 测试报告中明确允许的历史链接外，活跃扫描无匹配。
 
-- [ ] **Step 4: Commit the archive migration**
+- [ ] **步骤 4：提交归档迁移**
 
 ```powershell
 git add -A -- tasks docs/archive docs/test-cases docs/superpowers
@@ -451,21 +451,21 @@ git commit -m "docs: archive legacy task planning"
 
 ---
 
-### Phase 6: Integrate the Preserved M0 Implementation
+### 阶段 6：集成保留的 M0 实现
 
-**Files:**
+**文件：**
 
-- Cherry-pick: `ea8aac1` (`build(M0-T06): admit packager and brand assets`)
-- Cherry-pick: Phase 1 safety-fix SHA
-- Update: `iterations/M0-foundation/02-detailed-design.md`
-- Update: `iterations/M0-foundation/04-test-report.md`
+- Cherry-pick：`ea8aac1`（`build(M0-T06): admit packager and brand assets`）
+- Cherry-pick：阶段 1 安全修复 SHA
+- 更新：`iterations/M0-foundation/02-detailed-design.md`
+- 更新：`iterations/M0-foundation/04-test-report.md`
 
-**Interfaces:**
+**接口：**
 
-- Consumes: only implementation commits from the preserved branch
-- Excludes: `9a286ad` and `c50a8e0`, whose T-level state/document changes remain historical
+- 输入：只接收保留分支中的实施提交
+- 排除：`9a286ad` 和 `c50a8e0`，其 T 级状态/文档变更继续属于历史记录
 
-- [ ] **Step 1: Cherry-pick the two reviewed implementation commits**
+- [ ] **步骤 1：Cherry-pick 两个已审阅实施提交**
 
 ```powershell
 git cherry-pick ea8aac1
@@ -473,18 +473,18 @@ $m0SafetySha = git -C .worktrees/m0-t06-ci-audit-gate rev-parse codex/m0-t06-ci-
 git cherry-pick $m0SafetySha
 ```
 
-Resolve only real content conflicts. Do not reintroduce `tasks/state.json` or active T-level contracts.
+只解决真实内容冲突。不要重新引入 `tasks/state.json` 或活跃 T 级契约。
 
-- [ ] **Step 2: Install from the resulting frozen lockfile**
+- [ ] **步骤 2：从结果冻结锁文件安装**
 
 ```powershell
 pnpm.cmd install --frozen-lockfile
 pnpm.cmd ignored-builds
 ```
 
-Expected: `electron-builder@26.15.3` is exact; automatic pending builds are `None`; `electron-winstaller` remains explicitly denied because Squirrel is not used.
+预期：`electron-builder@26.15.3` 精确；自动待构建项为 `None`；因未使用 Squirrel，`electron-winstaller` 继续显式拒绝。
 
-- [ ] **Step 3: Verify assets and M0 regressions**
+- [ ] **步骤 3：验证资源和 M0 回归**
 
 ```powershell
 node scripts/assets/build-lattice-icon.mjs --check
@@ -495,13 +495,13 @@ pnpm.cmd check
 git diff --check
 ```
 
-Expected: all commands exit 0; asset hashes match the reviewed README; malformed ignored-build output remains rejected.
+预期：全部命令退出 0；资源哈希匹配已审阅 README；畸形 ignored-build 输出继续被拒绝。
 
-- [ ] **Step 4: Update M0 entry/report facts**
+- [ ] **步骤 4：更新 M0 入口/报告事实**
 
-Mark dependency admission, brand assets and parser hardening as implemented in the detailed design sequence. Add exact commands, exit codes, hashes and commit SHAs to the working test report. Keep CI/audit/package/ruleset/manual items incomplete and M0 `in_progress`.
+在详细设计顺序中把依赖准入、品牌资源和解析器加固标为已实现。向工作测试报告增加精确命令、退出码、哈希和提交 SHA。保持 CI/审计/打包/ruleset/人工项未完成，M0 为 `in_progress`。
 
-- [ ] **Step 5: Commit the M0 integration record**
+- [ ] **步骤 5：提交 M0 集成记录**
 
 ```powershell
 git add iterations/M0-foundation/02-detailed-design.md iterations/M0-foundation/04-test-report.md
@@ -511,18 +511,18 @@ git commit -m "docs(M0): record retained foundation work"
 
 ---
 
-### Phase 7: Final Review, Verification and Integration
+### 阶段 7：最终审查、验证和集成
 
-**Files:**
+**文件：**
 
-- Review: all changes from `c6f3fab` to final HEAD
-- Update if necessary: only files with verified review findings
+- 审查：从 `c6f3fab` 到最终 HEAD 的全部变更
+- 必要时更新：只修改有已验证审查发现的文件
 
-**Interfaces:**
+**接口：**
 
-- Produces: one clean iteration-governance branch ready for GitHub review and main integration
+- 输出：一个可供 GitHub 审阅和 main 集成的干净迭代治理分支
 
-- [ ] **Step 1: Run final local gates once**
+- [ ] **步骤 1：运行一次最终本地门禁**
 
 ```powershell
 node scripts/verify-planning-docs.mjs
@@ -533,22 +533,22 @@ git diff --check main...HEAD
 git status --short --branch
 ```
 
-All commands are bounded. If Electron process cleanup needs normal Windows privileges, rerun once in that environment and record the reason.
+全部命令均有界。如果 Electron 进程清理需要正常 Windows 权限，在该环境重跑一次并记录原因。
 
-- [ ] **Step 2: Perform whole-branch review**
+- [ ] **步骤 2：执行全分支审查**
 
-Review for:
+审查以下问题：
 
-- lost requirements, compatibility cases or historical evidence;
-- active T-level state/instructions;
-- state/schema/verifier disagreement;
-- broken links or archive paths;
-- premature M0 completion;
-- lost or weakened M0 security/dependency behavior.
+- 丢失需求、复刻用例或历史证据；
+- 活跃 T 级状态/指令；
+- 状态/schema/验证器不一致；
+- 断链或归档路径错误；
+- M0 过早完成；
+- 丢失或削弱 M0 安全/依赖行为。
 
-Fix only verified findings and rerun their covering checks.
+只修复已验证发现，并重跑覆盖检查。
 
-- [ ] **Step 3: Push and merge through GitHub**
+- [ ] **步骤 3：通过 GitHub 推送和合并**
 
 ```powershell
 git push -u origin codex/iteration-governance
@@ -556,9 +556,9 @@ gh pr create --repo dctorwho/lattice --base main --head codex/iteration-governan
 gh pr checks --repo dctorwho/lattice --watch --interval 10 --fail-fast
 ```
 
-Wrap the check watch in the existing outer 30-minute timeout. Merge only when all checks are green, then update local main with fast-forward only. Do not delete `codex/m0-t06-ci-audit-gate` until the integrated SHAs and preserved history are verified reachable.
+用既有外层 30 分钟超时包裹检查监视。仅在全部检查为绿时合并，然后只以快进更新本地 main。在确认已集成 SHA 和保留历史可达前，不删除 `codex/m0-t06-ci-audit-gate`。
 
-- [ ] **Step 4: Verify final state on main**
+- [ ] **步骤 4：验证 main 最终状态**
 
 ```powershell
 git rev-parse main
@@ -567,4 +567,4 @@ node scripts/verify-planning-docs.mjs
 git status --short --branch
 ```
 
-Expected: local and remote main match; state contains only M0–M8; M0 remains `in_progress`; the worktree is clean.
+预期：本地与远程 main 一致；状态只包含 M0–M8；M0 保持 `in_progress`；工作树干净。

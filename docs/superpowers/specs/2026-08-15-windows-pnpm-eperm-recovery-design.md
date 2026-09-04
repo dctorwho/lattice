@@ -1,100 +1,71 @@
-# Remove the unused Squirrel peer design
+# 移除未使用 Squirrel peer 的设计
 
-## Context
+## 背景
 
-M0 requires a frozen, offline-capable Windows bootstrap in a path containing
-Chinese characters and spaces. GitHub-hosted Windows runners consistently fail
-while pnpm imports `electron-winstaller@5.4.0`: Windows denies pnpm's temporary
-directory rename with `ERR_PNPM_EPERM`.
+M0 要求在含中文和空格的路径中完成冻结、可离线的 Windows 自举。GitHub 托管 Windows runner 在 pnpm 导入 `electron-winstaller@5.4.0` 时持续失败：Windows 以 `ERR_PNPM_EPERM` 拒绝 pnpm 临时目录重命名。
 
-A bounded cleanup and one-retry implementation was tested locally and in the
-required GitHub `quality` job. The second install hit the same package lock, so
-the failure is not safely addressed as a single transient event. Path analysis
-also excludes the classic 260-character limit: the failing package directory is
-158 characters and its deepest projected child is 207 characters.
+有限清理和单次重试实现已在本地及必需 GitHub `quality` 作业测试。第二次安装遇到同一包锁，因此不能把失败安全归因于一次性瞬态事件。路径分析也排除经典 260 字符限制：失败包目录为 158 字符，其最深预计子项为 207 字符。
 
-The dependency exists because pnpm automatically satisfies
-`app-builder-lib@26.15.3`'s `electron-builder-squirrel-windows` peer. Lattice M0
-uses only Windows x64 `dir` and NSIS packaging. It does not use Squirrel, so the
-peer and its `electron-winstaller` dependency provide no accepted capability.
+该依赖存在是因为 pnpm 自动满足 `app-builder-lib@26.15.3` 的 `electron-builder-squirrel-windows` peer。Lattice M0 只使用 Windows x64 `dir` 和 NSIS 打包，不使用 Squirrel，因此该 peer 及其 `electron-winstaller` 依赖没有提供任何已准入能力。
 
-## Goal
+## 目标
 
-Preserve the pinned `electron-builder@26.15.3` NSIS/dir capability while
-removing the unused Squirrel dependency edge from the resolved and installed
-graph. The bootstrap must then remain strict: any install failure is terminal,
-with no retry or timeout expansion.
+保留固定 `electron-builder@26.15.3` 的 NSIS/dir 能力，同时从解析和安装图中移除未使用的 Squirrel 依赖边。之后自举必须保持严格：任何安装失败都是终止结果，不重试，也不扩大超时。
 
-## Dependency policy
+## 依赖策略
 
-Add one version-scoped root override to `pnpm-workspace.yaml`:
+在 `pnpm-workspace.yaml` 增加一个限定版本的根 override：
 
 ```yaml
 overrides:
   'app-builder-lib@26.15.3>electron-builder-squirrel-windows': '-'
 ```
 
-pnpm 11 applies root overrides to peer dependencies and supports `-` as an
-explicit dependency-edge removal. The parent and version are fixed so an
-electron-builder upgrade cannot silently inherit the exception.
+pnpm 11 会把根 override 应用于 peer 依赖，并支持以 `-` 显式移除依赖边。父包和版本均固定，因此 electron-builder 升级不能静默继承该例外。
 
-Remove `allowBuilds.electron-winstaller: false` because the package no longer
-belongs in the dependency graph. Keep `allowBuilds.esbuild: true` unchanged.
-Do not disable `autoInstallPeers` globally; unrelated peer resolution must keep
-its current behavior.
+移除 `allowBuilds.electron-winstaller: false`，因为该包不再属于依赖图。保持 `allowBuilds.esbuild: true` 不变。不要全局禁用 `autoInstallPeers`；无关 peer 解析必须保持当前行为。
 
-Regenerate `pnpm-lock.yaml` with pinned pnpm 11.12.0. The resulting graph must
-not contain package or snapshot entries for `electron-winstaller@5.4.0` or
-`electron-builder-squirrel-windows@26.15.3`. The version-scoped override remains
-recorded as lockfile policy metadata.
+使用固定 pnpm 11.12.0 重新生成 `pnpm-lock.yaml`。结果图不得包含 `electron-winstaller@5.4.0` 或 `electron-builder-squirrel-windows@26.15.3` 的 package 或 snapshot 条目。限定版本 override 继续作为锁文件策略元数据记录。
 
-## Bootstrap behavior
+## 自举行为
 
-Restore `verifyBootstrap` to a single pnpm install attempt. Remove the injected
-wait boundary, EPERM classifier, partial `node_modules` cleanup, and retry tests.
-The existing install-stage error test continues to prove that every install
-failure stops the bootstrap and retains its exit code.
+把 `verifyBootstrap` 恢复为单次 pnpm 安装尝试。移除注入的等待边界、EPERM 分类器、部分 `node_modules` 清理和重试测试。既有安装阶段错误测试继续证明每次安装失败都会停止自举并保留退出码。
 
-The ignored-build parser remains fail-closed and keeps support for pnpm's
-explicit-denial section, but the live project output must be:
+ignored-build 解析器继续失败关闭并支持 pnpm 显式拒绝区段，但活跃项目输出必须为：
 
 ```text
 Automatically ignored builds during installation:
   None
 ```
 
-## Verification
+## 验证
 
-Add focused configuration tests which prove:
+增加聚焦配置测试以证明：
 
-- the exact version-scoped override exists;
-- global `autoInstallPeers: false` is absent;
-- only `esbuild: true` remains under `allowBuilds`;
-- the lockfile has no Squirrel or electron-winstaller package/snapshot entry;
-- the pinned electron-builder version remains declared.
+- 存在精确限定版本 override；
+- 不存在全局 `autoInstallPeers: false`；
+- `allowBuilds` 下只保留 `esbuild: true`；
+- 锁文件没有 Squirrel 或 electron-winstaller package/snapshot 条目；
+- 仍声明固定 electron-builder 版本。
 
-Then regenerate dependencies and require:
+然后重新生成依赖并要求：
 
-- frozen offline install succeeds;
-- `pnpm peers check` reports no issues;
-- `pnpm ignored-builds` reports automatic `None` with no explicit denial;
-- focused unit coverage passes;
-- the isolated Chinese-and-space bootstrap passes;
-- `node scripts/verify-planning-docs.mjs` and `pnpm check` pass;
-- the GitHub required `quality` job succeeds.
+- 冻结离线安装成功；
+- `pnpm peers check` 报告无问题；
+- `pnpm ignored-builds` 报告自动 `None`，且无显式拒绝；
+- 聚焦单元覆盖通过；
+- 隔离中文和空格路径自举通过；
+- `node scripts/verify-planning-docs.mjs` 和 `pnpm check` 通过；
+- GitHub 必需 `quality` 作业成功。
 
-## Documentation
+## 文档
 
-Update the technology ledger and M0 detailed design to record the exact removed
-peer edge, its version scope, the retained NSIS/dir capability, the removal of
-the unused install-script exposure, and the required upgrade review. Update the
-M0 test report only with commands and results that were actually observed.
+更新技术台账和 M0 详细设计，记录精确移除的 peer 边、版本范围、保留的 NSIS/dir 能力、未使用安装脚本暴露的移除，以及必需升级审阅。M0 测试报告只记录实际观察到的命令和结果。
 
-## Non-goals
+## 非目标
 
-- Retrying or ignoring arbitrary pnpm failures.
-- Disabling peer auto-installation across the project.
-- Adding Squirrel packaging support.
-- Changing pnpm, Electron, electron-builder, runner security, antivirus, or
-  workflow timeout settings.
-- Replacing electron-builder or weakening the Chinese-and-space path contract.
+- 重试或忽略任意 pnpm 失败。
+- 在全项目禁用 peer 自动安装。
+- 增加 Squirrel 打包支持。
+- 更改 pnpm、Electron、electron-builder、runner 安全、杀毒软件或工作流超时设置。
+- 替换 electron-builder 或削弱中文和空格路径契约。

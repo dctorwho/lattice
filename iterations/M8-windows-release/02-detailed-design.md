@@ -1,92 +1,61 @@
-# M8 detailed design
+# M8 详细设计
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M8`
-- State authority: `iterations/state.json`
-- Governing architecture: [architecture](../../docs/03-architecture.md)
-- Governing data-safety and security rules: [data-safety and security](../../docs/05-data-safety-and-security.md)
+- 迭代： `M8`
+- 状态权威： `iterations/state.json`
+- 架构依据：[架构](../../docs/03-architecture.md)
+- 数据安全与安全规则：[数据安全与安全边界](../../docs/05-data-safety-and-security.md)
 
-## Architecture boundaries
+## 架构边界
 
-Packaging is a main-process/build concern; renderer code never gains installer, registry,
-signing, update, or arbitrary-shell capability. User documents remain independent Markdown
-files. Installation directory and Electron `userData` are distinct; source/recovery safeguards
-remain active before, during, and after OS integration.
+打包属于主进程/构建职责；渲染器代码绝不获得安装器、注册表、签名、更新或任意 shell 能力。用户文档仍是独立 Markdown 文件。安装目录与 Electron `userData` 相互分离；源码/恢复防护在系统集成前、期间和之后始终有效。
 
-## Capability design
+## 能力设计
 
-### Reproducible NSIS artifacts and lifecycle
+### 可复现 NSIS 产物和生命周期
 
-Build clean x64 unpacked and NSIS artifacts from an identified source state with versioned
-resources, no development files, and recorded hashes. Per-user installation, repair, upgrade,
-failure rollback, and uninstall use a narrowly declared file scope. Uninstall offers explicit
-userData retention/cleanup; it never enumerates or removes workspace, Documents, neighboring,
-junction, or symlink paths as application data.
+从已标识源码状态构建干净 x64 unpacked 和 NSIS 产物，使用版本化资源、不包含开发文件并记录哈希。逐用户安装、修复、升级、失败回滚和卸载采用严格声明的文件范围。卸载提供明确的 userData 保留/清理选择；绝不把工作区、Documents、相邻目录、junction 或符号链接路径枚举或删除为应用数据。
 
-### Instance, association, and argv routing
+### 实例、关联和 argv 路由
 
-The single-instance coordinator receives parsed second-launch argv, validates supported files,
-folders, and line/column location values, and routes them to a current or new window according
-to settings. Explorer/association and PowerShell inputs preserve Unicode/long/quoted paths
-without shell concatenation. Unauthorized or malformed paths fail safely; a dirty active
-session is protected before opening a replacement target.
+单实例协调器接收已解析的第二次启动 argv，校验受支持文件、文件夹和行/列位置值，并按设置路由到当前或新窗口。资源管理器/文件关联和 PowerShell 输入保留 Unicode、长路径和带引号路径，不进行 shell 拼接。未授权或畸形路径安全失败；打开替代目标前保护活动脏会话。
 
-### Update readiness and release evidence
+### 更新准备和发布证据
 
-The update adapter is hidden/disabled until a trusted public key and signed channel/feed are
-configured. It validates downloaded artifact/hash/signature, preserves dirty sessions through
-save/recovery, and keeps a runnable prior version on interruption or failure. Release tooling
-generates an SBOM, third-party notices, hashes, signing verification steps, naming, release
-notes, privacy/security entry points, VM evidence links, gap inventory, and rollback rehearsal.
+可信公钥与签名通道/feed 配置前，更新适配器保持隐藏/禁用。它校验下载产物、哈希和签名，通过保存/恢复保护脏会话，并在中断或失败时保留可运行的上一版本。发布工具生成 SBOM、第三方声明、哈希、签名验证步骤、命名、发行说明、隐私/安全入口、VM 证据链接、差异清单和回滚演练。
 
-## Module responsibilities
+## 模块职责
 
-- Build/release tooling: clean artifact construction, metadata, SBOM/license/hash reports,
-  signing input/output verification, and reproducibility comparison.
-- Main process: single-instance lock, argv dispatch, association integration, updater state,
-  recovery/save handoff, and localized error reporting.
-- Installer: declared app/userData lifecycle only, rollback, and explicit userData choice.
-- Shared contracts: bounded route/update requests, stable state/error schemas, and evidence
-  manifest shape.
+- 构建/发布工具：干净产物构造、元数据、SBOM/许可证/哈希报告、签名输入/输出验证和可复现性比较。
+- 主进程：单实例锁、argv 分发、关联集成、更新器状态、恢复/保存移交和本地化错误报告。
+- 安装器：只处理声明的应用/userData 生命周期、回滚和明确 userData 选择。
+- 共享契约：受限路由/更新请求、稳定状态/错误 schema 和证据清单形状。
 
-## Interfaces and data flow
+## 接口与数据流
 
-`clean source -> packaged artifacts -> hashes/SBOM/licenses -> signing verification -> VM
-evidence`; `Explorer/argv -> parsed route request -> authorization -> single-instance dispatch
--> protected session/window`; and `trusted signed feed -> verified download -> recovery/save
-handoff -> installer rollback-safe apply` are the only flows. No renderer-supplied command
-line, path, signature, or update package is trusted without main-process validation.
+允许的数据流只有：`干净源码 -> 打包产物 -> 哈希/SBOM/许可证 -> 签名验证 -> VM 证据`；`资源管理器/argv -> 已解析路由请求 -> 授权 -> 单实例分发 -> 受保护会话/窗口`；以及 `可信签名 feed -> 已验证下载 -> 恢复/保存移交 -> 安装器回滚安全应用`。未经主进程校验，不信任渲染器提供的命令行、路径、签名或更新包。
 
-## Data safety, failure handling, migration, and compatibility constraints
+## 数据安全、失败处理、迁移与兼容性约束
 
-Upgrade preserves settings, themes, and recovery under their versioned migration rules; failure
-does not strand the user without a runnable prior version. Routing never drops unsaved work.
-Uninstall has exact declared deletion boundaries and verifies canary hashes before/after.
-Updates remain disabled in personal/unsigned builds. Release evidence contains hashes and
-safe metadata, not private document/log/secret contents. Rollback proves settings/document
-preservation and recovery compatibility.
+`REF-027..029` 驱动 Windows 系统入口和发布生命周期对照。安装、升级、更新或卸载的外观一致性不能削弱签名、参数验证、回滚和删除范围；M8 为 `passed` 时所有 `REF-*` 必须不存在已知差异和关键证据缺口。
 
-## Dependency admission
+升级按版本化迁移规则保留设置、主题和恢复数据；失败不会让用户失去可运行的上一版本。路由绝不丢弃未保存工作。卸载具有精确声明的删除边界，并校验前后金丝雀哈希。个人/未签名构建保持禁用更新。发布证据包含哈希和安全元数据，不包含私有文档、日志或秘密内容。回滚证明设置/文档保留和恢复兼容性。
 
-Packaging, updater, SBOM, license, and signing tools require documented licenses, pinned
-provenance, reproducible execution, and secret-free logs. Signing private keys stay in an
-external controlled store; CI/repository artifacts may contain only public verification data.
+## 依赖准入
 
-## Manual-gate design
+打包、更新器、SBOM、许可证和签名工具要求有记录的许可证、固定来源、可复现执行和无秘密日志。签名私钥保存在外部受控存储；CI/仓库产物只能包含公开验证数据。
 
-M8 has a state-defined manual gate. The evaluator performs the Win10/Win11 VM journey with
-Explorer, PowerShell, IME, printing, scaling, multi-monitor, upgrade, and both uninstall
-choices, then independently reviews the seven-day Stable audit, signing, rollback, and
-artifact evidence. Agents may prepare evidence but never approve these observations.
+## 人工门禁设计
 
-## Implementation order
+M8 具有状态定义的人工门禁。评估人在 Win10/Win11 VM 上完成资源管理器、PowerShell、IME、打印、缩放、多显示器、升级和两种卸载选择旅程，然后独立审阅七天 Stable 审计、签名、回滚和产物证据。代理可以准备证据，但绝不能批准这些观察。
 
-- [ ] Establish clean reproducible packaging and artifact inventory.
-- [ ] Add bounded single-instance, association, and command-line routing.
-- [ ] Prove upgrade/uninstall scope and rollback with VM canaries.
-- [ ] Add disabled-by-default signed update adapter and failure handling.
-- [ ] Produce supply-chain evidence, run VM matrix, rehearse rollback, and collect Stable audit approval.
+## 实施顺序
 
-The checklist orders work only. Its items do not have individual status, dependencies,
-evidence, reports, or independent gating behavior; `M8` is the sole execution and acceptance unit.
+- [ ] 建立干净可复现打包和产物清单。
+- [ ] 增加受限单实例、关联和命令行路由。
+- [ ] 用 VM 金丝雀证明升级/卸载范围和回滚。
+- [ ] 增加默认禁用的签名更新适配器和失败处理。
+- [ ] 生成供应链证据、运行 VM 矩阵、演练回滚并收集 Stable 审计批准。
+
+此清单只规定工作顺序，各项没有独立状态、依赖、证据、报告或门禁行为；`M8` 是唯一执行和验收单元。

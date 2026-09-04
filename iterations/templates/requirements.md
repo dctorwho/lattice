@@ -1,38 +1,34 @@
-# {{ITERATION_ID}} requirements
+# {{ITERATION_ID}} 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `{{ITERATION_ID}}`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md),
-  [architecture](../../docs/03-architecture.md), [data-safety and
-  security](../../docs/05-data-safety-and-security.md), and [test
-  strategy](../../docs/09-test-strategy.md)
+- 迭代：`{{ITERATION_ID}}`
+- 状态权威：`iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[公开证据基线](../../docs/22-typora-1.13.8-windows-evidence-baseline.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-## User-observable outcomes
+## 用户可观察结果
 
-## Scope
+## 范围
 
-## Non-goals
+## 非目标
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID | Iteration outcome | Acceptance evidence |
-| --------- | ----------------- | ------------------- |
+| 全局 ID | 公开证据 | 迭代结果 | 验收证据 |
+| ------- | -------- | -------- | -------- |
 
-## Preconditions and external dependencies
+## 前置条件与外部依赖
 
-## Risks and mitigations
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+## 迭代级验收标准
 
-## Entry completeness
+## 入口完整性
 
-This document, the detailed design, and the test cases are the three entry
-documents. All three must be complete and predecessor iterations must be
-`passed` before `{{ITERATION_ID}}` may become `ready` or `in_progress`.
+本文档、详细设计和测试用例是三份迭代入口文档。三者必须完整，且所有前置迭代均为 `passed`，`{{ITERATION_ID}}` 才能进入 `ready` 或 `in_progress`。
 
-No subtask, task-level status, or task-level ownership belongs in this
-document.
+每个 `COMP-*` 都必须关联有效 `REF-*`。资料不足或存在已知复刻差异时，入口必须明确记录风险和停止条件，不能把替代流程当作一致结果。
+
+本文档不包含任何子任务、任务级状态或任务级归属。

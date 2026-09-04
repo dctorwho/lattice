@@ -1,76 +1,59 @@
-# M1 requirements
+# M1 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M1`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md).
+- 迭代：`M1`
+- 状态权威：`iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Deliver lossless Markdown document lifecycle and CodeMirror source editing:
-safe opening, atomic saving, conflict handling, recovery, session history,
-document commands, watcher/autosave behavior, find/replace, and status data.
+交付无损 Markdown 文档生命周期和 CodeMirror 源码编辑能力，包括安全打开、原子保存、冲突处理、恢复、会话历史、文档命令、监视器与自动保存行为、查找替换和状态数据。
 
-## User-observable outcomes
+## 用户可观察结果
 
-- Supported encodings, BOMs, line endings, whitespace, and untouched bytes
-  survive open/save; a save failure never corrupts the original file.
-- Users can create, open, save, save as, close, recover, and resolve external
-  changes without silent loss.
-- Source editing, selection, history, search/replace, and status information
-  remain session-scoped and work for Unicode and long documents.
+- 打开并保存后，受支持的编码、BOM、换行符、空白和未触碰字节保持不变；保存失败绝不损坏原文件。
+- 用户可以新建、打开、保存、另存为、关闭、恢复文档并处理外部变更，不发生静默丢失。
+- 源码编辑、选区、历史、搜索替换和状态信息按会话隔离，并支持 Unicode 和长文档。
 
-## Scope
+## 范围
 
-Lossless SourceBuffer and DocumentSession domain models; authorized native file
-access; transactional persistence and recovery; CodeMirror 6 source mode;
-unified document commands; watcher/autosave/conflict flows; find/replace and
-localized status bar; full data-safety/performance gate.
+无损 `SourceBuffer` 和 `DocumentSession` 领域模型；授权的原生文件访问；事务式持久化与恢复；CodeMirror 6 源码模式；统一文档命令；监视器、自动保存和冲突流程；查找替换与本地化状态栏；完整数据安全和性能门禁。
 
-## Non-goals
+## 非目标
 
-Hybrid projection, rich-text serialization, workspace management, image
-operations, export, or an unbounded renderer filesystem API.
+混合模式投影、富文本序列化、工作区管理、图片操作、导出或无边界的渲染进程文件系统 API。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID     | Iteration outcome                                                  | Acceptance evidence                     |
-| ------------- | ------------------------------------------------------------------ | --------------------------------------- |
-| DOC-001..010  | Lossless lifecycle, recovery, encoding, and large-file degradation | Document, recovery, and gate cases      |
-| EDT-002..003  | CodeMirror source mode and shared document state                   | Source editor and mode-continuity cases |
-| EDT-005       | Session-consistent undo/redo                                       | Property tests                          |
-| EDT-009       | Find and replace                                                   | Search/replace cases                    |
-| EDT-013       | Stable document and selection statistics                           | Status-bar cases                        |
-| UI-001        | Editor and status-area integration                                 | Command/status E2E evidence             |
-| COMP-001..004 | Document lifecycle, lossless encoding, recovery, source mode       | Compatibility gate evidence             |
-| COMP-036      | Word/selection statistics and status bar                           | Find/status evidence                    |
-| NFR-001       | Silent corruption is release-blocking                              | Failure injection and manual review     |
+复刻证据范围为 `REF-001..005`，对应 `COMP-001..004` 与 `COMP-036`。M1 出口必须逐项证明文件入口、换行与编码、恢复、源码模式和状态统计符合公开依据；任何数据漂移或已知复刻差异都阻止进入 M2。
 
-## Preconditions and external dependencies
+| 全局 ID       | 迭代结果                               | 验收证据                   |
+| ------------- | -------------------------------------- | -------------------------- |
+| DOC-001..010  | 无损生命周期、恢复、编码和大文件降级   | 文档、恢复和门禁用例       |
+| EDT-002..003  | CodeMirror 源码模式与共享文档状态      | 源码编辑器和模式连续性用例 |
+| EDT-005       | 会话一致的撤销与重做                   | 属性测试                   |
+| EDT-009       | 查找与替换                             | 搜索替换用例               |
+| EDT-013       | 稳定的文档和选区统计                   | 状态栏用例                 |
+| UI-001        | 编辑器和状态区集成                     | 命令与状态端到端证据       |
+| COMP-001..004 | 文档生命周期、无损编码、恢复和源码模式 | 兼容性门禁证据             |
+| COMP-036      | 字数、选区统计和状态栏                 | 查找与状态证据             |
+| NFR-001       | 静默损坏是发布阻断问题                 | 故障注入和自动验收         |
 
-Requires the M0 secure IPC and command foundation, OS file dialogs, authorized
-filesystem adapters, CodeMirror 6, and byte/encoding/recovery fixtures. The
-manual gate requires a designated evaluator using real IME and Windows files.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+依赖 M0 的安全 IPC 与命令基础、操作系统文件对话框、授权文件系统适配器、CodeMirror 6，以及字节、编码和恢复夹具。Windows 自动验收需要真实生产 Electron、CDP 组合输入和隔离的临时用户数据目录。
 
-Byte normalization, partial writes, conflict overwrite, unsafe path access,
-bad recovery cleanup, and IME/history loss are mitigated by pure domain tests,
-fault injection, authorized paths, atomic files, and real-Electron/manual
-coverage.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+通过纯领域测试、故障注入、授权路径、原子文件和真实 Electron 自动覆盖，缓解字节规范化、部分写入、冲突覆盖、不安全路径访问、错误恢复清理以及 IME 或历史丢失。
 
-- Every M1 automated case passes with preserved fixture hashes and failure
-  evidence.
-- Untouched bytes remain identical; failed saves leave a complete old or new
-  file; conflicts and recovery retain recoverable choices.
-- The evaluator completes the IME, encoding, conflict, recovery, and close
-  workflow manual case. No data-loss or P0/P1 blocker remains.
+## 迭代级验收标准
 
-## Entry completeness
+- 全部 M1 自动化用例通过，并保留夹具哈希和失败证据。
+- 未触碰字节完全相同；保存失败后文件只能是完整旧版本或完整新版本；冲突与恢复流程保留可恢复选择。
+- `TC-M1-013` 自动完成 CDP 组合输入、编码、冲突、恢复、关闭和公开依据覆盖；不存在数据丢失或 P0/P1 阻断问题。
 
-This document, the detailed design, and the test cases are the three entry
-documents. All three must be complete and predecessor iterations must be
-`passed` before `M1` may become `ready` or `in_progress`.
+## 入口完整性
+
+本文档、详细设计和测试用例是三份入口文档。三者必须完整，且前置迭代均为 `passed`，M1 才能进入 `ready` 或 `in_progress`。

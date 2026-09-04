@@ -1,66 +1,53 @@
-# M3 requirements
+# M3 需求
 
-## Iteration context
+## 迭代上下文
 
-- Iteration: `M3`
-- State authority: `iterations/state.json`
-- Global rules: [product charter](../../docs/00-product-charter.md), [architecture](../../docs/03-architecture.md), [data-safety and security](../../docs/05-data-safety-and-security.md), and [test strategy](../../docs/09-test-strategy.md).
+- 迭代：`M3`
+- 状态权威：`iterations/state.json`
+- 全局规则：[产品章程](../../docs/00-product-charter.md)、[架构](../../docs/03-architecture.md)、[数据安全与安全边界](../../docs/05-data-safety-and-security.md)和[测试策略](../../docs/09-test-strategy.md)
 
-## Objectives
+## 目标
 
-Deliver the full workspace desktop shell: command menu, authorized folder
-enumeration, file tree/list operations, outline, quick open, global search,
-recent projects, and resilient window sessions.
+交付完整工作区桌面外壳：命令菜单、授权文件夹枚举、文件树与列表操作、大纲、快速打开、全局搜索、最近项目和可靠的窗口会话。
 
-## User-observable outcomes
+## 用户可观察结果
 
-Users can safely browse and manage an authorized folder, navigate large
-projects, cancel long work, use unified commands, and reopen windows in visible
-positions without exposing document text or unauthorized paths.
+用户可以安全浏览和管理已授权文件夹、导航大型项目、取消长耗时工作、使用统一命令，并在可见位置重新打开窗口，同时不暴露文档文本或未授权路径。
 
-## Scope
+## 范围
 
-Full menu/toolbar/context/shortcut shell; workspace authorization/enumeration;
-tree/list and file operations; outline; quick open; ripgrep search; recent
-projects and per-window state; large-workspace/performance verification.
+完整菜单、工具栏、上下文菜单和快捷键外壳；工作区授权与枚举；树、列表和文件操作；大纲；快速打开；ripgrep 搜索；最近项目和逐窗口状态；大型工作区与性能验证。
 
-## Non-goals
+## 非目标
 
-Unrestricted filesystem access, shell-string subprocesses, permanent deletion
-without confirmation, cloud sync implementation, or rich-text document state.
+无限制文件系统访问、以 shell 字符串启动子进程、未经确认的永久删除、云同步实现或富文本文档状态。
 
-## Requirement and compatibility coverage
+## 需求与兼容性覆盖
 
-| Global ID     | Iteration outcome                                               | Acceptance evidence |
-| ------------- | --------------------------------------------------------------- | ------------------- |
-| WS-001..008   | Workspace, files, outline, quick open, search, sorting, recents | Workspace cases     |
-| UI-001..002   | Full shell and unified commands                                 | Command E2E         |
-| UI-006        | Shortcut behavior and conflict diagnostics                      | Command case        |
-| OS-001        | File routing/window behavior                                    | Session cases       |
-| OS-004        | Window/session restoration                                      | Session cases       |
-| COMP-010..013 | Shell, workspace, outline, open/search compatibility            | Gate case           |
-| NFR-005       | Cancelable large directory work without blocked editing         | Performance gate    |
+复刻证据范围为 `REF-011`，对应 `COMP-010..013`。M3 出口必须对照 Windows 窗口、菜单、侧栏、文件树/列表、大纲、快速打开和全局搜索的可观察行为，并由人工门禁确认布局和真实工作区流程。
 
-## Preconditions and external dependencies
+| 全局 ID       | 迭代结果                                           | 验收证据       |
+| ------------- | -------------------------------------------------- | -------------- |
+| WS-001..008   | 工作区、文件、大纲、快速打开、搜索、排序和最近项目 | 工作区用例     |
+| UI-001..002   | 完整外壳与统一命令                                 | 命令端到端测试 |
+| UI-006        | 快捷键行为和冲突诊断                               | 命令用例       |
+| OS-001        | 文件路由与窗口行为                                 | 会话用例       |
+| OS-004        | 窗口与会话恢复                                     | 会话用例       |
+| COMP-010..013 | 外壳、工作区、大纲、打开和搜索兼容性               | 门禁用例       |
+| NFR-005       | 大目录工作可取消且不阻塞编辑                       | 性能门禁       |
 
-Requires M2 editor continuity, M0 command/IPC boundaries, authorized filesystem
-adapters, a packaged ripgrep sidecar, and real large-workspace fixtures.
+## 前置条件与外部依赖
 
-## Risks and mitigations
+依赖 M2 编辑连续性、M0 命令与 IPC 边界、授权文件系统适配器、随应用打包的 ripgrep 边车程序和真实大型工作区夹具。
 
-Path/symlink escape, destructive file operations, subprocess injection,
-uncancelled processes, blocked input, and off-screen restoration are mitigated
-by root authorization, preflight/rollback, argument-array spawning,
-termination tests, background work, and display-bound clamping.
+## 风险与缓解措施
 
-## Iteration-level acceptance criteria
+通过根目录授权、预检与回滚、参数数组启动、终止测试、后台执行和显示边界钳制，缓解路径或符号链接逃逸、破坏性文件操作、子进程注入、进程无法取消、输入阻塞和窗口恢复到屏幕外。
 
-All workspace cases pass with snapshots, seeds, process exit records, and
-P50/P95 data. Dangerous operations are confirmed/recoverable; no root escape,
-process leak, data loss, P0/P1, or editor blocking remains. The M3 manual gate
-is not required by state but its practical real-workspace scenario remains
-recorded for release confidence.
+## 迭代级验收标准
 
-## Entry completeness
+全部工作区用例通过，并记录快照、种子、进程退出记录和 P50/P95 数据。危险操作可确认且可恢复；不存在根目录逃逸、进程泄漏、数据丢失、P0/P1 或编辑器阻塞。状态未要求 M3 人工门禁，但实际工作区场景仍保留为发布信心证据。
 
-This document, the detailed design, and the test cases are the three entry documents. All three must be complete and predecessor iterations must be `passed` before `M3` may become `ready` or `in_progress`.
+## 入口完整性
+
+本文档、详细设计和测试用例是三份入口文档。三者必须完整，且前置迭代均为 `passed`，M3 才能进入 `ready` 或 `in_progress`。

@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest'
 import {
   collectReferenceIds,
   parseIterationTestCases,
+  parseReplicaEvidenceBaseline,
   validateIterationState
 } from '../../../scripts/planning/iteration-model.mjs'
 
@@ -64,7 +65,7 @@ const statuses: Status[] = [
   'failed'
 ]
 
-const manualGateIterations = new Set(['M0', 'M1', 'M2', 'M5', 'M6', 'M8'])
+const manualGateIterations = new Set(['M0'])
 
 const makeIteration = (index: number): MutableIteration => {
   const id = `M${index}`
@@ -91,7 +92,7 @@ const makeIteration = (index: number): MutableIteration => {
 
 const makeValidState = (): MutableState => ({
   schema_version: 2,
-  product_baseline: 'Typora 1.13.8 documented feature compatibility',
+  product_baseline: 'Typora 1.13.8 Windows observable product replica',
   current_iteration: 'M0',
   allowed_statuses: [...statuses],
   iterations: Array.from({ length: 9 }, (_, index) => makeIteration(index))
@@ -136,17 +137,26 @@ describe('validateIterationState', () => {
     expect(validateIterationState(shippedState, schema)).toEqual([])
   })
 
-  test.each(['M0', 'M1', 'M2', 'M5', 'M6', 'M8'])(
-    'does not allow the mandatory %s manual gate to be disabled',
-    (iterationId) => {
-      const state = cloneState()
-      const iteration = state.iterations.find((candidate) => candidate.id === iterationId)
-      if (iteration === undefined) throw new Error(`missing fixture iteration ${iterationId}`)
-      iteration.manual_gate = false
+  test('accepts automatic-only gates while preserving the explicit M0 historical gate', () => {
+    const state = cloneState()
+    markPassed(state, 0)
+    state.iterations[1]!.status = 'in_progress'
+    state.current_iteration = 'M1'
 
-      expectError(validateIterationState(state, schema), `${iterationId} manual_gate is mandatory`)
-    }
-  )
+    expect(validateIterationState(state, schema)).toEqual([])
+  })
+
+  test('rejects awaiting_manual when the iteration has no explicit manual gate', () => {
+    const state = cloneState()
+    markPassed(state, 0)
+    state.iterations[1]!.status = 'awaiting_manual'
+    state.current_iteration = 'M1'
+
+    expectError(
+      validateIterationState(state, schema),
+      'M1 cannot await a manual gate when manual_gate is false'
+    )
+  })
 
   test.each([
     ['missing M8', (state: MutableState) => state.iterations.pop()],
@@ -587,6 +597,76 @@ describe('collectReferenceIds', () => {
     expect(ids[0]).toBe('DOC-001')
     expect(ids[500]).toBe('DOC-501')
     expect(ids[998]).toBe('DOC-999')
+  })
+})
+
+describe('parseReplicaEvidenceBaseline', () => {
+  const header = `## 证据台账
+
+| 证据 ID | 来源 | 采集日期 | 来源类型 | 版本依据 | Windows 适用性 | 观察 | 可信度 | 需求 | 复刻项 | 迭代 | 测试 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |`
+  const validRow =
+    '| REF-001 | https://typora.io/releases/stable | 2026-08-16 | official-release | 页面明确列出 1.13.8 | Windows 10/11 | 新建、打开、保存和另存入口 | high | DOC-001..005 | COMP-001 | M1 | TC-M1-001, MAN-M1-001 | 未实现 |'
+
+  test('解析完整的版本化公开证据记录', () => {
+    expect(parseReplicaEvidenceBaseline(`${header}\n${validRow}`)).toEqual({
+      records: [
+        {
+          id: 'REF-001',
+          source: 'https://typora.io/releases/stable',
+          collectedAt: '2026-08-16',
+          sourceType: 'official-release',
+          versionBasis: '页面明确列出 1.13.8',
+          windowsApplicability: 'Windows 10/11',
+          observation: '新建、打开、保存和另存入口',
+          confidence: 'high',
+          requirements: ['DOC-001', 'DOC-002', 'DOC-003', 'DOC-004', 'DOC-005'],
+          compatibility: ['COMP-001'],
+          iteration: 'M1',
+          tests: ['TC-M1-001', 'MAN-M1-001'],
+          status: '未实现'
+        }
+      ],
+      errors: []
+    })
+  })
+
+  test.each([
+    [
+      '重复证据 ID',
+      `${validRow}\n${validRow.replace('新建、打开、保存和另存入口', '重复记录')}`,
+      'duplicate evidence id: REF-001'
+    ],
+    ['非规范证据 ID', validRow.replace('REF-001', 'REF-1'), 'malformed evidence id: REF-1'],
+    [
+      '无效采集日期',
+      validRow.replace('2026-08-16', '2026-02-30'),
+      'REF-001 采集日期必须是有效的 YYYY-MM-DD'
+    ],
+    [
+      '无效来源类型',
+      validRow.replace('official-release', 'unknown-source'),
+      'REF-001 来源类型无效'
+    ],
+    ['无效可信度', validRow.replace('high', 'certain'), 'REF-001 可信度必须是 high、medium 或 low'],
+    ['越界迭代', validRow.replace('| M1 |', '| M9 |'), 'REF-001 迭代必须是 M0 至 M8'],
+    [
+      '非规范测试 ID',
+      validRow.replace('TC-M1-001', 'TC-M1-01'),
+      'REF-001 测试包含非规范 ID: TC-M1-01'
+    ],
+    [
+      '跨迭代测试 ID',
+      validRow.replace('TC-M1-001', 'TC-M2-001'),
+      'REF-001 测试 TC-M2-001 不属于 M1'
+    ],
+    ['空观察结果', validRow.replace('新建、打开、保存和另存入口', ''), 'REF-001 观察不能为空'],
+    ['非法状态', validRow.replace('未实现', 'planned'), 'REF-001 状态无效']
+  ])('拒绝%s', (_name, row, expectedError) => {
+    const result = parseReplicaEvidenceBaseline(`${header}\n${row}`)
+
+    expect(result.records).toEqual([])
+    expectError(result.errors, expectedError)
   })
 })
 
